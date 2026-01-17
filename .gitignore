@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Build
+dist
+.next
+.turbo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea
+.DS_Store
+*.log
+
+# Debug
+npm-debug.log*
