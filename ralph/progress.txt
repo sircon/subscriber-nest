@@ -269,3 +269,23 @@ Started: Sat Jan 17 2026
   - Suspense fallback: provide loading skeleton that matches page layout for better UX
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-015
+- Created onboarding provider selection page with card-based UI
+- Created shadcn Card component following standard shadcn pattern
+- Implemented provider selection UI showing Kit, beehiiv, and Mailchimp as clickable cards
+- Each card displays provider name and description with a selection button
+- On selection, redirects to /onboarding/api-key?provider={provider}
+- Files changed:
+  - `apps/frontend/src/components/ui/card.tsx` - New Card component with CardHeader, CardTitle, CardDescription, CardContent, and CardFooter subcomponents
+  - `apps/frontend/src/app/onboarding/page.tsx` - New onboarding page with provider selection grid layout
+- **Learnings for future iterations:**
+  - shadcn Card component follows same pattern as Button: forwardRef, className merging with cn(), and TypeScript interfaces extending HTML element props
+  - Card subcomponents (CardHeader, CardTitle, CardDescription, CardContent, CardFooter) are separate forwardRef components for flexibility
+  - Provider list is defined as a constant array with type safety using TypeScript union types
+  - Grid layout uses `grid-cols-1 md:grid-cols-3` for responsive design (1 column on mobile, 3 on desktop)
+  - Card click handler and button click handler both trigger navigation (with stopPropagation on button to prevent double navigation)
+  - Provider values match EspProvider enum from backend (kit, beehiiv, mailchimp) for consistency
+  - All quality checks (typecheck, lint, build) passed successfully
+  - Page verified rendering correctly in browser (dev server on port 3000)
+---
