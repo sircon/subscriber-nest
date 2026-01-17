@@ -61,3 +61,23 @@ Started: Sat Jan 17 2026
   - Basic HTML email template included in service (will be replaced with react-email template in US-004)
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-004
+- Created react-email verification code template with professional styling
+- Installed react-email, @react-email/components, react, and react-dom packages
+- Created VerificationCodeEmail component in apps/backend/src/emails/verification-code-email.tsx
+- Updated EmailService to use react-email render function to convert template to HTML
+- Added JSX support to TypeScript configuration (jsx: "react")
+- Files changed:
+  - `apps/backend/package.json` - Added react-email, @react-email/components, react, react-dom dependencies
+  - `apps/backend/tsconfig.json` - Added "jsx": "react" to compilerOptions
+  - `apps/backend/src/emails/verification-code-email.tsx` - New email template component with professional styling
+  - `apps/backend/src/email.service.ts` - Updated to use react-email template rendering
+- **Learnings for future iterations:**
+  - react-email requires React and react-dom to be installed even in backend projects
+  - Use `render` from `@react-email/render` with `React.createElement` to render templates to HTML
+  - Template components use JSX syntax, so TypeScript config needs `"jsx": "react"` option
+  - react-email templates compile to JavaScript and are included in the build output
+  - Use `{ pretty: true }` option in render() for formatted HTML output
+  - All quality checks (typecheck, lint, build) passed successfully
+---
