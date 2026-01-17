@@ -60,4 +60,20 @@ Started: Sat Jan 17 2026
   - Email validation uses regex pattern `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` to ensure basic email format
   - The function throws descriptive errors for invalid inputs (empty strings, non-string types, invalid format)
   - Masking always shows the first character of the local part for consistency, even for single-character emails
+
+## 2026-01-18 - US-004
+- Created `IEspConnector` interface in `src/interfaces/esp-connector.interface.ts` with three methods: `validateApiKey()`, `fetchPublications()`, and `fetchSubscribers()`
+- Created `Publication` and `SubscriberData` interfaces in `src/interfaces/esp.interface.ts` to define the data structures returned by ESP APIs
+- `Publication` interface includes `id`, `name`, and allows additional ESP-specific fields via index signature
+- `SubscriberData` interface includes `id` (ESP's subscriber ID), `email`, `status`, `firstName`, `lastName`, `subscribedAt`, `unsubscribedAt`, and allows additional ESP-specific fields via index signature
+- All interfaces use proper TypeScript typing with optional/nullable fields where appropriate
+- Files changed:
+  - `apps/backend/src/interfaces/esp.interface.ts` (new)
+  - `apps/backend/src/interfaces/esp-connector.interface.ts` (new)
+- **Learnings for future iterations:**
+  - Interfaces are placed in `src/interfaces/` directory with `.interface.ts` extension
+  - Use index signatures (`[key: string]: any`) to allow ESP-specific fields while maintaining type safety for known fields
+  - The `IEspConnector` interface defines the contract that all ESP implementations must follow, enabling a consistent pattern for multiple ESP integrations
+  - `Publication` and `SubscriberData` interfaces represent the raw data from ESP APIs before mapping to our database schema
+  - The `publicationId` parameter in `validateApiKey()` is optional to support ESPs that may or may not require it for validation
 ---
