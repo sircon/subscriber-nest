@@ -253,4 +253,31 @@ Started: Sat Jan 17 2026
   - The mapper service handles all the data transformation (encryption, masking, status mapping, metadata storage), so the sync service just orchestrates the flow
   - Use `NotFoundException` for missing resources (404), `InternalServerErrorException` for unexpected errors (500)
   - The sync service will be used by the queue processor (US-009) to handle background sync jobs
+
+## 2026-01-18 - US-009
+- Created `SubscriberSyncProcessor` class with `@Processor('subscriber-sync')` decorator extending `WorkerHost`
+- Implemented `process()` method that handles `sync-publication` job type (checks `job.name` since `@Process` decorator is not available in this version of `@nestjs/bullmq`)
+- Handler retrieves ESP connection from database, decrypts API key using `SubscriberSyncService.syncSubscribers()`
+- Handler uses `SubscriberSyncService` which internally uses appropriate ESP connector to fetch all subscribers
+- Handler processes subscribers in batches and saves to database via the sync service
+- Handler updates ESP connection `lastSyncedAt` timestamp on success using `espConnectionRepository.update()`
+- Added `lastSyncedAt` field to `EspConnection` entity (nullable timestamp column)
+- Created migration `1768693294548-AddLastSyncedAtToEspConnection.ts` to add `lastSyncedAt` column to `esp_connections` table
+- Registered `SubscriberSyncProcessor` in `AppModule` providers
+- Files changed:
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` (new)
+  - `apps/backend/src/entities/esp-connection.entity.ts` (added `lastSyncedAt` field)
+  - `apps/backend/src/migrations/1768693294548-AddLastSyncedAtToEspConnection.ts` (new)
+  - `apps/backend/src/app.module.ts` (added SubscriberSyncProcessor to providers)
+- **Learnings for future iterations:**
+  - Processors are placed in `src/processors/` directory with `.processor.ts` extension
+  - Processors extend `WorkerHost` from `@nestjs/bullmq` and use `@Processor('queue-name')` decorator
+  - In `@nestjs/bullmq` v11, the `@Process` decorator is not available - instead, implement `process()` method and check `job.name` to handle specific job types
+  - Processors must be registered in the module's `providers` array to be instantiated
+  - Processors inject repositories and services like regular services using `@InjectRepository()` and constructor injection
+  - The processor delegates the actual sync logic to `SubscriberSyncService` to keep concerns separated
+  - Update `lastSyncedAt` timestamp after successful sync using `repository.update()` method
+  - Processors should re-throw errors so BullMQ can handle retries according to the queue's retry policy
+  - Use `Logger` from `@nestjs/common` for logging in processors
+  - Job data is accessed via `job.data` and job metadata via `job.id`, `job.name`, etc.
 ---

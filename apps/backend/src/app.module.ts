@@ -14,6 +14,7 @@ import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
 import { SubscriberMapperService } from './services/subscriber-mapper.service';
 import { SubscriberSyncService } from './services/subscriber-sync.service';
+import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { SubscriberSyncService } from './services/subscriber-sync.service';
     EspConnectionService,
     SubscriberMapperService,
     SubscriberSyncService,
+    SubscriberSyncProcessor,
   ],
 })
 export class AppModule {}

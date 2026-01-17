@@ -48,6 +48,9 @@ export class EspConnection {
   @Column({ type: 'timestamp', nullable: true })
   lastValidatedAt: Date | null;
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastSyncedAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
