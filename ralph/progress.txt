@@ -301,4 +301,19 @@ Started: Sat Jan 17 2026
   - The `findById()` method pattern: check existence first, then validate ownership if userId provided
   - Convert `BadRequestException` from ownership validation to `ForbiddenException` (403) in controller for proper HTTP semantics
   - The endpoint returns immediately after queuing the job, allowing the API to respond quickly while sync happens asynchronously
+
+## 2026-01-18 - US-015
+- Added `GET /api/esp-connections/:id` endpoint to `EspConnectionController` for retrieving ESP connection status
+- Endpoint uses existing `EspConnectionService.findById()` method to find connection and validate ownership
+- Returns connection details including: `id`, `espType`, `publicationId`, `status`, `lastValidatedAt`, `lastSyncedAt`, `createdAt`
+- Excludes `encryptedApiKey` from response using object destructuring pattern
+- Handles errors appropriately: `NotFoundException` (404) if connection not found, `ForbiddenException` (403) if user doesn't own connection, `InternalServerErrorException` (500) for other errors
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added GET endpoint)
+- **Learnings for future iterations:**
+  - GET endpoints for retrieving resources follow the same pattern as POST endpoints: validate ownership → retrieve → exclude sensitive fields → return
+  - Use `@Get(':id')` decorator for GET endpoints with path parameters
+  - The `findById()` service method already handles ownership validation, so controllers can reuse it for both GET and POST operations
+  - Error handling pattern: NotFoundException (404) → ForbiddenException (403) → InternalServerErrorException (500)
+  - The endpoint placement in the controller doesn't matter for route matching since GET and POST are different HTTP methods, but placing GET before POST is more conventional
 ---
