@@ -37,6 +37,13 @@ import { EspConnectionController } from './controllers/esp-connection.controller
     }),
     BullModule.registerQueue({
       name: 'subscriber-sync',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
     }),
   ],
   controllers: [AppController, EspConnectionController],
