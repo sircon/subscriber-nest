@@ -289,3 +289,23 @@ Started: Sat Jan 17 2026
   - All quality checks (typecheck, lint, build) passed successfully
   - Page verified rendering correctly in browser (dev server on port 3000)
 ---
+
+## 2026-01-17 - US-016
+- Created onboarding API key entry page with provider selection and API key input form
+- Implemented form that reads provider from query params and displays provider name
+- Form includes password-type API key input and 'Sync subscribers to vault' CTA button
+- On submit, calls POST /esp-connections to save connection, then POST /auth/complete-onboarding, then redirects to /dashboard
+- Added loading and error states with proper error handling
+- Files changed:
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - New API key entry page with form, API integration, and conditional redirects
+- **Learnings for future iterations:**
+  - API key entry page follows same pattern as verify-code page: Suspense boundary for useSearchParams, form component with state management
+  - Provider validation: redirect to /onboarding if provider is missing or invalid (handled in useEffect)
+  - Token retrieval: read auth token from localStorage (stored by verify-code page) for authenticated API calls
+  - Multi-step API flow: save ESP connection first, then complete onboarding, then update localStorage with new user data, then redirect
+  - Error handling: check for token existence before making API calls, show user-friendly error messages
+  - Form validation: check for empty API key before submission, disable button during loading
+  - Card component usage: use Card, CardHeader, CardTitle, CardDescription, and CardContent for consistent layout
+  - Suspense fallback: provide loading skeleton that matches page layout for better UX
+  - All quality checks (typecheck, lint, build) passed successfully
+---
