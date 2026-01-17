@@ -231,4 +231,26 @@ Started: Sat Jan 17 2026
   - Metadata should only include non-null/undefined values and exclude fields that are mapped to specific columns
   - The mapper service will be used by the sync service (US-010) to transform ESP data before database storage
   - Always validate required fields (externalId, email) and throw descriptive errors if missing
+
+## 2026-01-18 - US-010
+- Created `SubscriberSyncService` with `syncSubscribers(espConnectionId: string): Promise<void>` method
+- Service retrieves ESP connection from database, decrypts API key using `EncryptionService`
+- Uses `getConnector()` private method to get appropriate ESP connector based on `espType` (similar pattern to `EspConnectionService`)
+- Fetches all subscribers from ESP using connector's `fetchSubscribers()` method
+- For each subscriber: uses `SubscriberMapperService.mapToCreateSubscriberDto()` to encrypt email, create masked email, and map ESP data to our schema
+- Stores subscribers in database using `SubscriberService.upsertSubscriber()` (upsert by `externalId` + `espConnectionId`)
+- ESP-specific fields are automatically stored in `metadata` JSONB column by the mapper service
+- Handles errors appropriately: throws `NotFoundException` if ESP connection not found, wraps other errors in `InternalServerErrorException`
+- Individual subscriber processing errors are logged but don't stop the sync process (continues processing remaining subscribers)
+- Added `SubscriberSyncService` to `AppModule` providers
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include SubscriberSyncService)
+- **Learnings for future iterations:**
+  - Sync services orchestrate the full sync process: retrieve connection → decrypt API key → get connector → fetch subscribers → map data → upsert to database
+  - Use the same `getConnector()` pattern as `EspConnectionService` to support multiple ESP types via switch statement
+  - Process subscribers in a loop, but handle individual subscriber errors gracefully to avoid stopping the entire sync
+  - The mapper service handles all the data transformation (encryption, masking, status mapping, metadata storage), so the sync service just orchestrates the flow
+  - Use `NotFoundException` for missing resources (404), `InternalServerErrorException` for unexpected errors (500)
+  - The sync service will be used by the queue processor (US-009) to handle background sync jobs
 ---

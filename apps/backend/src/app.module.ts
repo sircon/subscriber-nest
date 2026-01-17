@@ -13,6 +13,7 @@ import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
 import { SubscriberMapperService } from './services/subscriber-mapper.service';
+import { SubscriberSyncService } from './services/subscriber-sync.service';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { SubscriberMapperService } from './services/subscriber-mapper.service';
     SubscriberService,
     EspConnectionService,
     SubscriberMapperService,
+    SubscriberSyncService,
   ],
 })
 export class AppModule {}
