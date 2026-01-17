@@ -47,4 +47,17 @@ Started: Sat Jan 17 2026
   - Each encryption uses a unique IV (initialization vector) for security
   - The service throws descriptive errors if `ENCRYPTION_KEY` is missing or if encryption/decryption fails
   - ConfigService is already available globally via `ConfigModule.forRoot({ isGlobal: true })` in AppModule
+
+## 2026-01-18 - US-003
+- Created `maskEmail()` utility function in `src/utils/email.util.ts` that masks the local part of email addresses while keeping the domain visible
+- Function handles edge cases: single character emails (e.g., "a@example.com" → "a****@example.com"), very short emails, and invalid formats (throws descriptive errors)
+- Uses regex validation to ensure email format is valid before processing
+- Masking pattern: shows first character of local part followed by 4 asterisks (e.g., "john.doe@example.com" → "j****@example.com")
+- Files changed:
+  - `apps/backend/src/utils/email.util.ts` (new)
+- **Learnings for future iterations:**
+  - Utility functions (non-injectable, pure functions) are placed in `src/utils/` directory with `.util.ts` extension
+  - Email validation uses regex pattern `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` to ensure basic email format
+  - The function throws descriptive errors for invalid inputs (empty strings, non-string types, invalid format)
+  - Masking always shows the first character of the local part for consistency, even for single-character emails
 ---
