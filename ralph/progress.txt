@@ -147,4 +147,32 @@ Started: Sat Jan 17 2026
   - The service pattern: validate → encrypt → create entity → save to database
   - Always set `lastValidatedAt` timestamp when validation succeeds for audit purposes
   - The connector's `validateApiKey()` method handles API errors internally and returns boolean, so the service just needs to check the result
+
+## 2026-01-18 - US-007
+- Created `EspConnectionController` with `POST /api/esp-connections` endpoint
+- Created `CreateEspConnectionDto` with validation decorators (`@IsNotEmpty()`, `@IsEnum()`, `@IsString()`) for request body validation
+- Endpoint accepts `{ espType: EspType, apiKey: string, publicationId: string }` and validates all required fields
+- Uses `EspConnectionService.createConnection()` to validate API key, encrypt it, and store the connection
+- Returns connection record without `encryptedApiKey` field using object destructuring
+- Handles errors appropriately: `BadRequestException` (400) from service validation, `InternalServerErrorException` (500) for other errors
+- Configured global `ValidationPipe` in `main.ts` with `transform: true`, `whitelist: true`, and `forbidNonWhitelisted: true` options
+- Installed `class-validator` and `class-transformer` packages for DTO validation
+- Registered `EspConnectionController` in `AppModule` controllers array
+- Files changed:
+  - `apps/backend/src/dto/create-esp-connection.dto.ts` (new)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include EspConnectionController)
+  - `apps/backend/src/main.ts` (updated to configure global ValidationPipe)
+  - `apps/backend/package.json` (updated with class-validator and class-transformer dependencies)
+- **Learnings for future iterations:**
+  - Controllers are placed in `src/controllers/` directory with `.controller.ts` extension
+  - Use `class-validator` decorators (`@IsNotEmpty()`, `@IsString()`, `@IsEnum()`, etc.) on DTO properties for validation
+  - Configure `ValidationPipe` globally in `main.ts` using `app.useGlobalPipes()` to enable automatic validation
+  - Global ValidationPipe options: `transform: true` (auto-transform payloads to DTO instances), `whitelist: true` (strip non-whitelisted properties), `forbidNonWhitelisted: true` (throw error on non-whitelisted properties)
+  - Use `@HttpCode(HttpStatus.CREATED)` decorator to set the HTTP status code for POST endpoints that create resources
+  - Return type should use `Omit<Entity, 'sensitiveField'>` to exclude sensitive fields from the response
+  - Use object destructuring to exclude sensitive fields: `const { encryptedApiKey, ...response } = entity`
+  - Handle service exceptions appropriately: re-throw `BadRequestException` (400), wrap other errors in `InternalServerErrorException` (500)
+  - Note: Authentication is not yet implemented, so `userId` is currently a placeholder. Future iterations should add authentication guards and extract userId from the authenticated user context
+  - The controller delegates business logic to the service layer, keeping controllers thin and focused on HTTP concerns
 ---

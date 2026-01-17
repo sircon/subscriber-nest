@@ -10,6 +10,7 @@ import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
 import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
+import { EspConnectionController } from './controllers/esp-connection.controller';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { EspConnectionService } from './services/esp-connection.service';
     TypeOrmModule.forFeature([Subscriber, EspConnection]),
     HttpModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, EspConnectionController],
   providers: [AppService, EncryptionService, BeehiivConnector, SubscriberService, EspConnectionService],
 })
 export class AppModule {}
