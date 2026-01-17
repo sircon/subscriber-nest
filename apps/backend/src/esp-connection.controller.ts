@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { EspConnectionService } from './esp-connection.service';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -24,5 +24,15 @@ export class EspConnectionController {
       body.provider,
       body.apiKey,
     );
+  }
+
+  @Get()
+  @UseGuards(AuthGuard)
+  async getUserConnections(
+    @CurrentUser() user: User,
+  ): Promise<
+    Array<{ id: string; provider: string; isActive: boolean; createdAt: Date }>
+  > {
+    return this.espConnectionService.getUserConnections(user);
   }
 }

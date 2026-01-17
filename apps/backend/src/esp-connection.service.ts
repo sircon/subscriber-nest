@@ -45,4 +45,17 @@ export class EspConnectionService {
       createdAt: saved.createdAt,
     };
   }
+
+  async getUserConnections(
+    user: User,
+  ): Promise<
+    Array<{ id: string; provider: EspProvider; isActive: boolean; createdAt: Date }>
+  > {
+    const connections = await this.espConnectionRepository.find({
+      where: { userId: user.id },
+      select: ['id', 'provider', 'isActive', 'createdAt'],
+    });
+
+    return connections;
+  }
 }
