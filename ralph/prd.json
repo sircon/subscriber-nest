@@ -1,1 +1,233 @@
-{}
+{
+  "project": "SubscriberNest",
+  "branchName": "ralph/esp-subscriber-sync",
+  "description": "ESP Subscriber Sync System - Connect to Email Service Providers (ESPs) like Beehiiv, validate API credentials, and sync subscriber data into our database using a queue-based architecture with BullMQ and Redis",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create ESP Connection Entity and Migration",
+      "description": "As a developer, I need database tables to store ESP connections and their encrypted credentials so the system can persist connection information.",
+      "acceptanceCriteria": [
+        "Create `EspConnection` entity with fields: `id`, `userId`, `espType` (enum: 'beehiiv', etc.), `encryptedApiKey`, `publicationId`, `status` (enum: 'active', 'invalid', 'error'), `lastValidatedAt`, `createdAt`, `updatedAt`",
+        "Create `Subscriber` entity with fields: `id`, `espConnectionId` (FK), `externalId` (ESP's subscriber ID), `encryptedEmail`, `maskedEmail`, `status` (enum: 'active', 'unsubscribed', 'bounced', etc.), `firstName`, `lastName`, `subscribedAt`, `unsubscribedAt`, `metadata` (JSONB for ESP-specific fields), `createdAt`, `updatedAt`",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Encryption Service",
+      "description": "As a developer, I need a service to encrypt and decrypt sensitive data (API keys and email addresses) so they can be stored securely in the database.",
+      "acceptanceCriteria": [
+        "Create `EncryptionService` with methods: `encrypt(plaintext: string): string` and `decrypt(ciphertext: string): string`",
+        "Use AES-256 encryption with a key from environment variable `ENCRYPTION_KEY`",
+        "Handle encryption/decryption errors gracefully",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Email Masking Utility",
+      "description": "As a developer, I need a utility function to create masked email addresses (e.g., `m****@gmail.com`) for display purposes while keeping the original encrypted.",
+      "acceptanceCriteria": [
+        "Create utility function `maskEmail(email: string): string` that masks the local part (before @) but keeps domain visible",
+        "Handles edge cases: single character emails, very short emails, invalid formats",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Abstract ESP Interface",
+      "description": "As a developer, I need an abstract interface that defines the contract for ESP integrations so we can support multiple ESPs with a consistent pattern.",
+      "acceptanceCriteria": [
+        "Create `IEspConnector` interface with methods: `validateApiKey(apiKey: string, publicationId?: string): Promise<boolean>`, `fetchPublications(apiKey: string): Promise<Publication[]>`, `fetchSubscribers(apiKey: string, publicationId: string): Promise<SubscriberData[]>`",
+        "Create `Publication` and `SubscriberData` DTOs/interfaces",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Beehiiv ESP Connector",
+      "description": "As a developer, I need a concrete implementation of the ESP connector for Beehiiv so we can connect to Beehiiv accounts.",
+      "acceptanceCriteria": [
+        "Create `BeehiivConnector` class implementing `IEspConnector`",
+        "`validateApiKey` calls `GET https://api.beehiiv.com/v2/publications` with Bearer token, returns true if status 200 and publication exists",
+        "`fetchPublications` calls Beehiiv API and returns list of publications",
+        "`fetchSubscribers` calls `GET https://api.beehiiv.com/v2/publications/:publicationId/subscriptions` with pagination, returns all subscribers",
+        "Handles API errors (401, 403, 429, 500) appropriately",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create Subscriber Repository and Service",
+      "description": "As a developer, I need a service to manage subscriber data in the database so we can query and update subscribers.",
+      "acceptanceCriteria": [
+        "Create `SubscriberService` with methods: `findByEspConnection(espConnectionId: string): Promise<Subscriber[]>`, `upsertSubscriber(data: CreateSubscriberDto): Promise<Subscriber>`",
+        "`upsertSubscriber` uses `externalId` + `espConnectionId` as unique key",
+        "Updates existing subscriber if found, creates new if not",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create ESP Connection Service",
+      "description": "As a developer, I need a service to manage ESP connections, including validating API keys and storing encrypted credentials.",
+      "acceptanceCriteria": [
+        "Create `EspConnectionService` with method `createConnection(userId: string, espType: string, apiKey: string, publicationId: string): Promise<EspConnection>`",
+        "Method validates API key using appropriate ESP connector before saving",
+        "Encrypts API key using `EncryptionService` before storing",
+        "Sets `status` to 'active' if validation succeeds, throws error if validation fails",
+        "Sets `lastValidatedAt` timestamp",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create ESP Connection Controller",
+      "description": "As a user, I want to connect my ESP account via API so I can start syncing subscribers.",
+      "acceptanceCriteria": [
+        "Create `EspConnectionController` with `POST /api/esp-connections` endpoint",
+        "Endpoint accepts `{ espType: string, apiKey: string, publicationId: string }`",
+        "Validates request body (required fields, valid ESP type)",
+        "Uses `EspConnectionService` to create connection",
+        "Returns connection record (without encrypted API key) on success",
+        "Returns appropriate error responses (400, 401, 500)",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Install and Configure BullMQ",
+      "description": "As a developer, I need BullMQ and Redis configured so we can process background jobs for subscriber syncing.",
+      "acceptanceCriteria": [
+        "Install `@nestjs/bullmq`, `bullmq`, and `ioredis` packages",
+        "Add Redis connection configuration to `AppModule` using `BullModule.forRoot()`",
+        "Configure Redis connection from environment variables (`REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`)",
+        "Create `subscriber-sync` queue using `BullModule.registerQueue()`",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Configure Queue Job Retry Policy",
+      "description": "As a developer, I need automatic retries with exponential backoff for failed sync jobs so transient errors don't cause permanent failures.",
+      "acceptanceCriteria": [
+        "Configure queue job options with `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }`",
+        "Failed jobs are automatically retried up to 3 times with increasing delays (2s, 4s, 8s)",
+        "After 3 failed attempts, job is marked as failed and logged",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Map Beehiiv Subscriber Data to Our Schema",
+      "description": "As a developer, I need to map Beehiiv API subscriber response to our database schema so we store all available information.",
+      "acceptanceCriteria": [
+        "Map Beehiiv subscriber fields: `email` → encrypted + masked, `status` → our status enum, `created_at` → `subscribedAt`, `first_name` → `firstName`, `last_name` → `lastName`",
+        "Store all other Beehiiv fields (tags, custom fields, etc.) in `metadata` JSONB column",
+        "Handle missing/null fields gracefully",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Subscriber Sync Service",
+      "description": "As a developer, I need a service to orchestrate subscriber syncing, including encrypting emails and storing subscriber data.",
+      "acceptanceCriteria": [
+        "Create `SubscriberSyncService` with method `syncSubscribers(espConnectionId: string): Promise<void>`",
+        "Method fetches subscribers using ESP connector",
+        "For each subscriber: encrypts email, creates masked email, maps ESP data to our schema",
+        "Stores subscribers in database (upsert by `externalId` + `espConnectionId`)",
+        "Stores ESP-specific fields in `metadata` JSONB column",
+        "Handles errors and throws appropriate exceptions",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Subscriber Sync Queue Processor",
+      "description": "As a developer, I need a queue processor that handles subscriber sync jobs so syncing happens asynchronously without blocking the API.",
+      "acceptanceCriteria": [
+        "Create `SubscriberSyncProcessor` class with `@Processor('subscriber-sync')` decorator",
+        "Create `@Process('sync-publication')` handler method that accepts job data: `{ espConnectionId: string }`",
+        "Handler retrieves ESP connection from database, decrypts API key",
+        "Handler uses appropriate ESP connector to fetch all subscribers",
+        "Handler processes subscribers in batches and saves to database",
+        "Handler updates ESP connection `lastSyncedAt` timestamp on success",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add Queue Job Producer for Manual Sync",
+      "description": "As a user, I want to trigger a manual subscriber sync via API so I can refresh my subscriber list on demand.",
+      "acceptanceCriteria": [
+        "Add `POST /api/esp-connections/:id/sync` endpoint to `EspConnectionController`",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Endpoint adds job to `subscriber-sync` queue with `{ espConnectionId: string }` data",
+        "Returns job ID and status immediately (doesn't wait for sync to complete)",
+        "Returns appropriate error responses (404 if connection not found, 403 if not owner)",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Add ESP Connection Status Endpoint",
+      "description": "As a user, I want to check the status of my ESP connection and see when it was last synced.",
+      "acceptanceCriteria": [
+        "Add `GET /api/esp-connections/:id` endpoint to `EspConnectionController`",
+        "Returns connection details including: `id`, `espType`, `publicationId`, `status`, `lastValidatedAt`, `lastSyncedAt`, `createdAt`",
+        "Does NOT return encrypted API key",
+        "Validates user owns the connection (returns 403 if not)",
+        "Returns 404 if connection not found",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

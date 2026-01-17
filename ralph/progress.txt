@@ -1,3 +1,31 @@
 # Ralph Progress Log
 Started: Sat Jan 17 2026
 ---
+
+## Codebase Patterns
+- TypeORM entities are placed in `src/entities/` directory with `.entity.ts` extension
+- Migrations are placed in `src/migrations/` and use timestamp-based naming (e.g., `1737129600000-MigrationName.ts`)
+- PostgreSQL enum types must be created explicitly in migrations using `CREATE TYPE` with `DO $$ BEGIN ... EXCEPTION ... END $$;` pattern to handle existing types
+- Entities use TypeORM decorators: `@Entity()`, `@PrimaryGeneratedColumn('uuid')`, `@Column()`, `@CreateDateColumn()`, `@UpdateDateColumn()`
+- Foreign keys use `@ManyToOne()` and `@JoinColumn()` decorators
+- Unique constraints use `@Index()` decorator with `isUnique: true`
+- The data-source.ts file uses `entities: ['src/**/*.entity.ts']` pattern to auto-discover entities
+- Migrations reference built files in `dist/migrations/*.js` but source files are in `src/migrations/`
+
+## 2026-01-17 - US-001
+- Created `EspConnection` entity with all required fields: id (UUID), userId, espType (enum), encryptedApiKey, publicationId, status (enum), lastValidatedAt, createdAt, updatedAt
+- Created `Subscriber` entity with all required fields: id (UUID), espConnectionId (FK), externalId, encryptedEmail, maskedEmail, status (enum), firstName, lastName, subscribedAt, unsubscribedAt, metadata (JSONB), createdAt, updatedAt
+- Created migration file `1737129600000-CreateEspConnectionAndSubscriber.ts` with proper PostgreSQL enum type creation
+- Added unique index on `espConnectionId + externalId` for subscribers table
+- Added foreign key relationship from subscribers to esp_connections with CASCADE delete
+- Files changed:
+  - `apps/backend/src/entities/esp-connection.entity.ts` (new)
+  - `apps/backend/src/entities/subscriber.entity.ts` (new)
+  - `apps/backend/src/migrations/1737129600000-CreateEspConnectionAndSubscriber.ts` (new)
+- **Learnings for future iterations:**
+  - PostgreSQL requires explicit enum type creation in migrations before using them in table columns
+  - Use `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` pattern to safely create enum types that may already exist
+  - TypeORM's `@Index()` decorator with `isUnique: true` creates a unique constraint, which is needed for the upsert pattern in US-013
+  - The `@OneToMany()` relationship on EspConnection and `@ManyToOne()` on Subscriber creates the proper bidirectional relationship
+  - Migration files should include both `up()` and `down()` methods for rollback capability
+---
