@@ -175,3 +175,26 @@ Started: Sat Jan 17 2026
   - If session doesn't exist (edge case), logout still returns success to avoid leaking information
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-010
+- Created POST /esp-connections endpoint protected by AuthGuard
+- Implemented EncryptionService using Node's built-in crypto module with AES-256-GCM encryption
+- Created EspConnectionService with createConnection method that validates provider, encrypts API key, and creates connection
+- Endpoint accepts { provider: string, apiKey: string } and returns { id, provider, createdAt } without API key
+- Files changed:
+  - `apps/backend/src/encryption.service.ts` - New EncryptionService with encrypt/decrypt methods using AES-256-GCM
+  - `apps/backend/src/esp-connection.service.ts` - New EspConnectionService with createConnection method
+  - `apps/backend/src/esp-connection.controller.ts` - New EspConnectionController with POST /esp-connections endpoint
+  - `apps/backend/src/app.module.ts` - Added EspConnectionController, EspConnectionService, EncryptionService, and EspConnection entity
+  - `apps/backend/.env.example` - Added ENCRYPTION_KEY environment variable with documentation
+- **Learnings for future iterations:**
+  - Use Node's built-in `crypto` module for encryption (no external dependencies needed)
+  - AES-256-GCM provides authenticated encryption (encryption + integrity verification)
+  - Encryption format: `iv:authTag:encryptedData` (colon-separated hex strings)
+  - EncryptionService uses ConfigService to read ENCRYPTION_KEY from environment and throws error if missing (fail-fast)
+  - Convert encryption key to 32-byte buffer using SHA-256 hash for AES-256 key requirement
+  - Provider validation checks against EspProvider enum values using `Object.values(EspProvider).includes()`
+  - Use `BadRequestException` for invalid provider validation errors
+  - API keys are encrypted before storing in database, never returned in API responses
+  - All quality checks (typecheck, lint, build) passed successfully
+---

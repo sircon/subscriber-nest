@@ -159,7 +159,7 @@
         "TODO: Add API key validation when user clicks 'Sync subscribers to vault' (skip for now)"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "TODO: API key validation deferred"
     },
     {

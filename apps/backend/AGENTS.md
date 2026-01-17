@@ -56,6 +56,25 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - AuthGuard expects token in `Authorization: Bearer <token>` header format
 - Guard attaches authenticated user to request object (`request.user`) for use with `@CurrentUser()` decorator
 
+## ESP Connections
+
+- `src/esp-connection.controller.ts` – EspConnectionController with ESP connection endpoints
+- `src/esp-connection.service.ts` – EspConnectionService with business logic for ESP connections
+- `src/entities/esp-connection.entity.ts` – EspConnection entity with provider enum and encrypted API key
+- Provider validation checks against EspProvider enum values using `Object.values(EspProvider).includes()`
+- API keys are encrypted before storing in database using EncryptionService
+- API keys are never returned in API responses (only id, provider, createdAt, isActive)
+
+## Encryption
+
+- `src/encryption.service.ts` – EncryptionService using Node's built-in crypto module with AES-256-GCM
+- Use Node's built-in `crypto` module for encryption (no external dependencies needed)
+- AES-256-GCM provides authenticated encryption (encryption + integrity verification)
+- Encryption format: `iv:authTag:encryptedData` (colon-separated hex strings)
+- EncryptionService uses ConfigService to read ENCRYPTION_KEY from environment and throws error if missing (fail-fast)
+- Convert encryption key to 32-byte buffer using SHA-256 hash for AES-256 key requirement
+- Always encrypt sensitive data (like API keys) before storing in database
+
 ## Scripts
 
 - `dev` – `nest start --watch`  
