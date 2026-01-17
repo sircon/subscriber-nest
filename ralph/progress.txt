@@ -143,3 +143,18 @@ Started: Sat Jan 17 2026
   - TypeScript requires null checking when assigning `findOne()` result (can return null)
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-008
+- Created GET /auth/me endpoint protected by AuthGuard
+- Endpoint returns current user information (id, email, isOnboarded)
+- Uses @UseGuards(AuthGuard) and @CurrentUser() decorator to access authenticated user
+- Returns 401 if not authenticated (handled by AuthGuard)
+- Files changed:
+  - `apps/backend/src/auth.controller.ts` - Added GET /auth/me endpoint with AuthGuard protection
+- **Learnings for future iterations:**
+  - GET endpoints can be protected with @UseGuards(AuthGuard) just like POST endpoints
+  - Use @CurrentUser() decorator to access the authenticated user that was attached to the request by AuthGuard
+  - The endpoint simply returns the user data from the request - no additional database queries needed since AuthGuard already loaded the user
+  - Response format matches the user object structure returned by verify-code endpoint for consistency
+  - All quality checks (typecheck, lint, build) passed successfully
+---
