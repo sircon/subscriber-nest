@@ -22,6 +22,7 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `src/services/` – Injectable services (e.g., `SubscriberService`, `EncryptionService`).  
 - `src/dto/` – Data Transfer Objects for API requests/responses (e.g., `CreateSubscriberDto`).  
 - `src/entities/` – TypeORM entities (e.g., `Subscriber`, `EspConnection`).  
+- `src/processors/` – BullMQ queue processors (e.g., `SubscriberSyncProcessor`).  
 
 ## Env (see `.env.example` or root README)
 
@@ -40,4 +41,5 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 
 - **Services with TypeORM**: Use `@InjectRepository(Entity)` to inject repositories. Register entities with `TypeOrmModule.forFeature([Entity])` in the module.
 - **Upsert pattern**: Use `findOne()` to check existence, then `save()` to create or update. The unique constraint on `externalId + espConnectionId` ensures data integrity.
-- **BullMQ queues**: Configure queues using `BullModule.registerQueue()` with `defaultJobOptions` for retry policies. Use `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }` for automatic retries with exponential backoff (2s, 4s, 8s delays).  
+- **BullMQ queues**: Configure queues using `BullModule.registerQueue()` with `defaultJobOptions` for retry policies. Use `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }` for automatic retries with exponential backoff (2s, 4s, 8s delays).
+- **BullMQ processors**: Processors extend `WorkerHost` from `@nestjs/bullmq` and use `@Processor('queue-name')` decorator. In `@nestjs/bullmq` v11, implement `process(job: Job<JobData>)` method and check `job.name` to handle specific job types (the `@Process` decorator is not available). Processors must be registered in the module's `providers` array. Re-throw errors so BullMQ can handle retries according to the queue's retry policy.  
