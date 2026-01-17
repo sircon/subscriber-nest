@@ -12,6 +12,7 @@ import {
     Zap,
     CheckCircle2,
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
     return (
@@ -50,8 +51,10 @@ function Navigation() {
                     >
                         FAQ
                     </a>
-                    <Button size="sm" className="gap-2">
-                        Get Started <ArrowRight className="w-3 h-3" />
+                    <Button size="sm" className="gap-2" asChild>
+                        <Link href="/login">
+                            Get Started <ArrowRight className="w-3 h-3" />
+                        </Link>
                     </Button>
                 </div>
             </div>
@@ -92,9 +95,12 @@ function HeroSection() {
                         <Button
                             size="lg"
                             className="gap-2 text-base px-8 h-14 animate-pulse-glow"
+                            asChild
                         >
-                            Get Started Free{' '}
-                            <ArrowRight className="w-4 h-4" />
+                            <Link href="/login">
+                                Get Started Free{' '}
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
                         </Button>
                         <span className="text-sm text-muted-foreground">
                             No credit card required
@@ -428,11 +434,10 @@ function FAQSection() {
                                         {faq.question}
                                     </span>
                                     <ChevronDown
-                                        className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
-                                            openIndex === index
-                                                ? 'rotate-180'
-                                                : ''
-                                        }`}
+                                        className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${openIndex === index
+                                            ? 'rotate-180'
+                                            : ''
+                                            }`}
                                     />
                                 </button>
                                 <div

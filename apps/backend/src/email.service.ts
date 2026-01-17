@@ -18,14 +18,14 @@ export class EmailService {
   }
 
   async sendVerificationCode(email: string, code: string): Promise<void> {
-    const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
-    
+    const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'onboarding@nest.miguelncorreia.com';
+
     // Render react-email template to HTML
     const emailHtml = await render(
       React.createElement(VerificationCodeEmail, { code }),
       { pretty: true },
     );
-    
+
     await this.resend.emails.send({
       from: fromEmail,
       to: email,
