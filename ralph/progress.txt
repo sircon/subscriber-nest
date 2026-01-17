@@ -119,3 +119,27 @@ Started: Sat Jan 17 2026
   - Session expiration is set to 30 days from creation (configurable in verifyCode method)
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-007
+- Created AuthGuard that validates session tokens from request headers
+- Guard implements CanActivate interface and checks token in Authorization header (Bearer format)
+- Guard validates token exists in database, is not expired, and loads user
+- Created CurrentUser decorator to access authenticated user in controllers
+- Guard can be applied to controllers/routes via @UseGuards(AuthGuard)
+- Returns 401 UnauthorizedException if token invalid, missing, or expired
+- Files changed:
+  - `apps/backend/src/guards/auth.guard.ts` - New AuthGuard class with session validation logic
+  - `apps/backend/src/decorators/current-user.decorator.ts` - New CurrentUser decorator to extract user from request
+  - `apps/backend/src/app.module.ts` - Added AuthGuard to providers
+- **Learnings for future iterations:**
+  - Guards in NestJS implement `CanActivate` interface with `canActivate(context: ExecutionContext)` method
+  - Use `context.switchToHttp().getRequest()` to access HTTP request object
+  - Extract token from Authorization header with format "Bearer <token>"
+  - Use `@InjectRepository()` in guards to inject TypeORM repositories (guards need to be in providers)
+  - Guards that use dependency injection must be added to module providers
+  - Use `relations: ['user']` in findOne to eagerly load related entities
+  - Attach user to request object (`request.user = user`) so it's available in controllers via decorators
+  - Use `UnauthorizedException` from `@nestjs/common` for authentication failures
+  - TypeScript requires null checking when assigning `findOne()` result (can return null)
+  - All quality checks (typecheck, lint, build) passed successfully
+---

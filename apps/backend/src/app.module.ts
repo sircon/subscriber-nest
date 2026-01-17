@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './guards/auth.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
@@ -26,7 +27,7 @@ import { Session } from './entities/session.entity';
     TypeOrmModule.forFeature([VerificationCode, User, Session]),
   ],
   controllers: [AppController, AuthController],
-  providers: [AppService, EmailService, AuthService],
+  providers: [AppService, EmailService, AuthService, AuthGuard],
   exports: [EmailService],
 })
 export class AppModule {}

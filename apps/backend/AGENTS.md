@@ -39,6 +39,8 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 
 - `src/auth.controller.ts` – AuthController with authentication endpoints
 - `src/auth.service.ts` – AuthService with business logic for auth flows
+- `src/guards/auth.guard.ts` – AuthGuard for protecting routes with session validation
+- `src/decorators/current-user.decorator.ts` – CurrentUser decorator to access authenticated user in controllers
 - To inject TypeORM repositories into services, use `@InjectRepository(Entity)` decorator
 - Import `TypeOrmModule.forFeature([Entity])` in the module to make repository available for injection
 - Use `MoreThan()` from TypeORM to query records created after a specific date (useful for rate limiting)
@@ -48,6 +50,11 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - Sessions expire after 30 days (configurable in AuthService.verifyCode)
 - When verifying codes, always mark the verification code as used after successful verification
 - User creation happens automatically during code verification if user doesn't exist (with isOnboarded: false)
+- **Guards**: Guards implement `CanActivate` interface and use `context.switchToHttp().getRequest()` to access request
+- Guards that use dependency injection (e.g., `@InjectRepository()`) must be added to module providers
+- Apply guards to routes using `@UseGuards(AuthGuard)` decorator on controllers or route handlers
+- AuthGuard expects token in `Authorization: Bearer <token>` header format
+- Guard attaches authenticated user to request object (`request.user`) for use with `@CurrentUser()` decorator
 
 ## Scripts
 
