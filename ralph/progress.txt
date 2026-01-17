@@ -41,3 +41,23 @@ Started: Sat Jan 17 2026
   - Enum values in TypeORM are defined as a TypeScript enum and referenced in the Column decorator
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-003
+- Set up Resend email service with EmailService class
+- Installed `resend` package (not `@resend/node`)
+- Updated .env.example with placeholder RESEND_API_KEY and documentation
+- Created EmailService with sendVerificationCode method that uses Resend API
+- Added EmailService to AppModule providers and exports
+- Files changed:
+  - `apps/backend/package.json` - Added resend dependency
+  - `apps/backend/.env.example` - Added RESEND_API_KEY with placeholder and documentation
+  - `apps/backend/src/email.service.ts` - New EmailService class with Resend integration
+  - `apps/backend/src/app.module.ts` - Added EmailService to providers and exports
+- **Learnings for future iterations:**
+  - Resend package name is `resend`, not `@resend/node`
+  - EmailService uses ConfigService to read RESEND_API_KEY from environment
+  - Service throws error on initialization if RESEND_API_KEY is missing (fail-fast pattern)
+  - EmailService is exported from AppModule so it can be injected into other modules
+  - Basic HTML email template included in service (will be replaced with react-email template in US-004)
+  - All quality checks (typecheck, lint, build) passed successfully
+---
