@@ -169,4 +169,29 @@ export class AuthService {
 
     return { success: true };
   }
+
+  /**
+   * Mark user as onboarded
+   */
+  async completeOnboarding(
+    userId: string,
+  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean } }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    user.isOnboarded = true;
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        isOnboarded: user.isOnboarded,
+      },
+    };
+  }
 }

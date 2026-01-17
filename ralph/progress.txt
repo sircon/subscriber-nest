@@ -198,3 +198,19 @@ Started: Sat Jan 17 2026
   - API keys are encrypted before storing in database, never returned in API responses
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-011
+- Created POST /auth/complete-onboarding endpoint protected by AuthGuard
+- Implemented completeOnboarding method in AuthService that sets user's isOnboarded to true
+- Endpoint uses @CurrentUser() decorator to get authenticated user and updates their onboarding status
+- Returns { success: true, user: { id, email, isOnboarded: true } } on success
+- Files changed:
+  - `apps/backend/src/auth.service.ts` - Added completeOnboarding method that updates user's isOnboarded field
+  - `apps/backend/src/auth.controller.ts` - Added POST /auth/complete-onboarding endpoint with AuthGuard protection
+- **Learnings for future iterations:**
+  - User updates use `userRepository.save()` after modifying entity properties
+  - The endpoint follows the same pattern as other protected endpoints: @UseGuards(AuthGuard) and @CurrentUser() decorator
+  - Response format matches the user object structure from other auth endpoints for consistency
+  - User lookup by ID is performed even though @CurrentUser() provides the user, to ensure user still exists in database
+  - All quality checks (typecheck, lint, build) passed successfully
+---

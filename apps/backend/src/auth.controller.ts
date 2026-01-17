@@ -54,4 +54,12 @@ export class AuthController {
 
     return this.authService.logout(token);
   }
+
+  @Post('complete-onboarding')
+  @UseGuards(AuthGuard)
+  async completeOnboarding(
+    @CurrentUser() user: User,
+  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean } }> {
+    return this.authService.completeOnboarding(user.id);
+  }
 }
