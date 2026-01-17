@@ -8,6 +8,8 @@ import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
 import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
+import { EspConnection } from './entities/esp-connection.entity';
+import { EspConnectionService } from './services/esp-connection.service';
 
 @Module({
   imports: [
@@ -22,10 +24,10 @@ import { SubscriberService } from './services/subscriber.service';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([Subscriber]),
+    TypeOrmModule.forFeature([Subscriber, EspConnection]),
     HttpModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EncryptionService, BeehiivConnector, SubscriberService],
+  providers: [AppService, EncryptionService, BeehiivConnector, SubscriberService, EspConnectionService],
 })
 export class AppModule {}

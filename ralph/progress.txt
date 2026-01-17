@@ -125,4 +125,26 @@ Started: Sat Jan 17 2026
   - Use `Object.assign()` to update existing entity properties before saving
   - Use `repository.create()` to create new entity instances before saving
   - Services are injectable classes decorated with `@Injectable()` and added to module providers
+
+## 2026-01-18 - US-006
+- Created `EspConnectionService` with `createConnection()` method that validates API keys, encrypts them, and stores ESP connections
+- Method validates `espType` against `EspType` enum and throws `BadRequestException` if invalid
+- Uses `getConnector()` private method to get the appropriate ESP connector based on `espType` (currently supports BeehiivConnector)
+- Validates API key using the connector's `validateApiKey()` method before saving
+- Encrypts API key using `EncryptionService` before storing in database
+- Sets `status` to `ACTIVE` if validation succeeds, throws `BadRequestException` if validation fails
+- Sets `lastValidatedAt` timestamp to current date on successful validation
+- Registered `EspConnection` entity with `TypeOrmModule.forFeature([EspConnection])` in `AppModule`
+- Added `EspConnectionService` to `AppModule` providers
+- Files changed:
+  - `apps/backend/src/services/esp-connection.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include EspConnection entity and service)
+- **Learnings for future iterations:**
+  - Use a switch statement in `getConnector()` method to map `espType` enum values to connector instances
+  - Inject connector instances (like `BeehiivConnector`) directly into the service constructor - they're already registered as providers
+  - Validate input parameters (like `espType`) early in the method to provide clear error messages
+  - Use `BadRequestException` from `@nestjs/common` for validation errors (400 status)
+  - The service pattern: validate → encrypt → create entity → save to database
+  - Always set `lastValidatedAt` timestamp when validation succeeds for audit purposes
+  - The connector's `validateApiKey()` method handles API errors internally and returns boolean, so the service just needs to check the result
 ---
