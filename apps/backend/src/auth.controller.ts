@@ -1,5 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './guards/auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { User } from './entities/user.entity';
 
 class SendCodeDto {
   email: string;
@@ -24,5 +27,19 @@ export class AuthController {
     @Body() body: VerifyCodeDto,
   ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean } }> {
     return this.authService.verifyCode(body.email, body.code);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  async getCurrentUser(
+    @CurrentUser() user: User,
+  ): Promise<{ user: { id: string; email: string; isOnboarded: boolean } }> {
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        isOnboarded: user.isOnboarded,
+      },
+    };
   }
 }
