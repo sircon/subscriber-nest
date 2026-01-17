@@ -214,3 +214,18 @@ Started: Sat Jan 17 2026
   - User lookup by ID is performed even though @CurrentUser() provides the user, to ensure user still exists in database
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-012
+- Created GET /esp-connections endpoint protected by AuthGuard
+- Implemented getUserConnections method in EspConnectionService that fetches user's ESP connections
+- Endpoint returns array of connections with id, provider, isActive, and createdAt (excludes API key)
+- Files changed:
+  - `apps/backend/src/esp-connection.controller.ts` - Added GET /esp-connections endpoint with AuthGuard protection
+  - `apps/backend/src/esp-connection.service.ts` - Added getUserConnections method that queries connections by userId
+- **Learnings for future iterations:**
+  - Use `select` option in TypeORM `find()` to explicitly exclude sensitive fields like API keys from query results
+  - GET endpoints follow same pattern as POST endpoints: @UseGuards(AuthGuard) and @CurrentUser() decorator
+  - Service methods can use `find()` with `where` clause to filter by userId for user-specific data
+  - Response format returns array of connection objects without sensitive data (API keys are never included)
+  - All quality checks (typecheck, lint, build) passed successfully
+---
