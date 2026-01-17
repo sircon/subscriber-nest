@@ -229,3 +229,24 @@ Started: Sat Jan 17 2026
   - Response format returns array of connection objects without sensitive data (API keys are never included)
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-013
+- Created login page UI with email input form and verification code request functionality
+- Created shadcn Input component following the same pattern as Button component
+- Implemented form with loading, success, and error states
+- Form calls POST /auth/send-code endpoint and redirects to /verify-code with email in query params
+- Files changed:
+  - `apps/frontend/src/components/ui/input.tsx` - New Input component with shadcn styling
+  - `apps/frontend/src/app/login/page.tsx` - New login page with email form, loading/success/error states, and redirect logic
+  - `apps/frontend/.eslintrc.json` - Added "node": true to env and "process": "readonly" to globals to fix lint errors
+- **Learnings for future iterations:**
+  - Next.js client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time)
+  - Use `useRouter()` from `next/navigation` for client-side navigation in App Router
+  - shadcn components follow a consistent pattern: forwardRef, className merging with cn(), and TypeScript interfaces extending HTML element props
+  - Form state management: use useState for email, loading, error, and success states
+  - Error handling: check response.ok and parse error messages from API responses
+  - Redirect after success: use setTimeout with router.push() to show success message before redirecting
+  - ESLint config needs "node": true in env for config files (tailwind.config.ts) and "process" in globals for client components using env vars
+  - All quality checks (typecheck, lint, build) passed successfully
+  - Page verified loading correctly in browser (dev server on port 3000)
+---
