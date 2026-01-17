@@ -1,0 +1,160 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+  isOnboarded: boolean;
+}
+
+// eslint-disable-next-line no-unused-vars
+type LoginFunction = (token: string, user: User) => void;
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  login: LoginFunction;
+  logout: () => void;
+  checkAuth: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'user';
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load token and user from storage on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    const storedUser = localStorage.getItem(USER_KEY);
+    
+    if (storedToken && storedUser) {
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        // Invalid stored data, clear it
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setLoading(false);
+      }
+    } else {
+      // No stored token, set loading to false
+      setLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    const currentToken = token;
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    
+    // Optionally call logout endpoint to invalidate session on server
+    if (currentToken) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      fetch(`${apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      }).catch(() => {
+        // Ignore errors on logout
+      });
+    }
+  }, [token]);
+
+  const checkAuth = useCallback(async () => {
+    const currentToken = token;
+    if (!currentToken) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${apiUrl}/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // Token is invalid, clear auth state
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      // Update stored user data
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    } catch (error) {
+      // Network error or other issue, clear auth state
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  // Check auth status on mount and when token changes
+  useEffect(() => {
+    if (token) {
+      checkAuth();
+    } else {
+      setLoading(false);
+    }
+  }, [token, checkAuth]);
+
+  const login = useCallback((newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem(TOKEN_KEY, newToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+  }, []);
+
+  const isAuthenticated = !!user && !!token;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated,
+        login,
+        logout,
+        checkAuth,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Provider = 'kit' | 'beehiiv' | 'mailchimp';
 
@@ -17,6 +18,7 @@ const providerNames: Record<Provider, string> = {
 function ApiKeyForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { token, login } = useAuth();
     const [apiKey, setApiKey] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,6 @@ function ApiKeyForm() {
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-            const token = localStorage.getItem('auth_token');
 
             if (!token) {
                 throw new Error('Authentication required. Please log in again.');
@@ -76,9 +77,9 @@ function ApiKeyForm() {
                 throw new Error(data.message || 'Failed to complete onboarding');
             }
 
-            // Step 3: Update user in localStorage
+            // Step 3: Update user in auth context
             const onboardingData = await onboardingResponse.json();
-            localStorage.setItem('user', JSON.stringify(onboardingData.user));
+            login(token, onboardingData.user);
 
             // Step 4: Redirect to dashboard
             router.push('/dashboard');

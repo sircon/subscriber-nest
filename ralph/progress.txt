@@ -309,3 +309,29 @@ Started: Sat Jan 17 2026
   - Suspense fallback: provide loading skeleton that matches page layout for better UX
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-017
+- Created AuthContext with provider and useAuth hook for managing authentication state across the app
+- Context stores: user, token, loading, isAuthenticated
+- Context provides: login(token, user), logout(), checkAuth() methods
+- On mount, loads token from localStorage and calls GET /auth/me to restore session
+- Token stored in localStorage (can be upgraded to httpOnly cookies later)
+- Updated layout to wrap app with AuthProvider
+- Updated verify-code and onboarding/api-key pages to use auth context instead of localStorage directly
+- Files changed:
+  - `apps/frontend/src/contexts/AuthContext.tsx` - New AuthContext provider with authentication state management
+  - `apps/frontend/src/app/layout.tsx` - Added AuthProvider wrapper
+  - `apps/frontend/src/app/verify-code/page.tsx` - Updated to use auth context login() method
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated to use auth context token and login() method
+  - `apps/frontend/AGENTS.md` - Added Authentication section with context usage patterns
+- **Learnings for future iterations:**
+  - React Context pattern: create context with createContext, provide via Provider component, access via custom hook (useAuth)
+  - Token storage: use localStorage for now (keys: 'auth_token', 'user'), can be upgraded to httpOnly cookies for better security
+  - Session restoration: on mount, load token from storage and call GET /auth/me to verify session is still valid
+  - Circular dependency handling: use local variables (currentToken) in useCallback closures to avoid stale closures
+  - Loading state: set loading to false when no token exists on initial load, or after checkAuth completes
+  - Logout cleanup: clear token/user state, remove from localStorage, and optionally call logout endpoint to invalidate server session
+  - ESLint false positive: parameter names in TypeScript type definitions trigger no-unused-vars rule - use eslint-disable comment or type aliases
+  - Context provider placement: wrap app in root layout (layout.tsx) so auth state is available to all pages
+  - All quality checks (typecheck, lint, build) passed successfully
+---

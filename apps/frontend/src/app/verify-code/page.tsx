@@ -4,10 +4,12 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 function VerifyCodeForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { login } = useAuth();
     const [code, setCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,8 @@ function VerifyCodeForm() {
 
             const data = await response.json();
             
-            // Store token in localStorage (will be moved to auth context in US-017)
-            localStorage.setItem('auth_token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            // Use auth context to store token and user
+            login(data.token, data.user);
 
             // Redirect based on isOnboarded status
             if (data.user.isOnboarded) {
