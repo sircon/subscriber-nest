@@ -335,3 +335,27 @@ Started: Sat Jan 17 2026
   - Context provider placement: wrap app in root layout (layout.tsx) so auth state is available to all pages
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-018
+- Created Next.js middleware to protect routes and redirect unauthenticated users
+- Middleware checks for auth token and user data in cookies
+- Implemented redirect logic: unauthenticated users accessing protected routes → /login, authenticated but not onboarded users accessing protected routes → /onboarding
+- Updated AuthContext to set/clear cookies in addition to localStorage so middleware can access auth state
+- Middleware allows access to /login and /verify-code without auth, and /onboarding/* if authenticated but not onboarded
+- Files changed:
+  - `apps/frontend/src/middleware.ts` - New Next.js middleware with route protection and redirect logic
+  - `apps/frontend/src/contexts/AuthContext.tsx` - Updated to set/clear cookies for middleware access
+- **Learnings for future iterations:**
+  - Next.js middleware runs on the edge/server and cannot access localStorage - must use cookies for auth state
+  - Middleware can read cookies via `request.cookies.get()` from NextRequest
+  - Use `NextResponse.redirect()` to redirect users in middleware
+  - Configure middleware matcher to exclude API routes, static files, and Next.js internal routes
+  - Cookies set from client-side must not be httpOnly if middleware needs to read them
+  - Use `SameSite=Lax` for cookies to work with middleware redirects
+  - Cookie expiration should match session expiration (30 days default)
+  - Middleware runs before page rendering, so it's the first line of defense for route protection
+  - Next.js shows deprecation warning about "middleware" convention (suggests using "proxy" instead), but middleware still works
+  - Route matching: use `pathname.startsWith(route)` to match route prefixes (e.g., `/onboarding` matches `/onboarding/api-key`)
+  - Home page (`/`) is treated as public route and doesn't require authentication
+  - All quality checks (typecheck, lint, build) passed successfully
+---
