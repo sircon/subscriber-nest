@@ -26,6 +26,55 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `PORT` – HTTP port (default 4000).  
 - `NODE_ENV` – e.g. `development` / `production`; `synchronize` is off in production.  
 
+## Email Service
+
+- `src/email.service.ts` – EmailService using Resend API for sending emails
+- `src/emails/` – react-email template components (`.tsx` files)
+- Email templates use react-email components from `@react-email/components`
+- Templates are rendered to HTML using `render()` from `@react-email/render` with `React.createElement()`
+- TypeScript config includes `"jsx": "react"` to support JSX syntax in email templates
+- React and react-dom are required dependencies for react-email to work in backend
+
+## Authentication
+
+- `src/auth.controller.ts` – AuthController with authentication endpoints
+- `src/auth.service.ts` – AuthService with business logic for auth flows
+- `src/guards/auth.guard.ts` – AuthGuard for protecting routes with session validation
+- `src/decorators/current-user.decorator.ts` – CurrentUser decorator to access authenticated user in controllers
+- To inject TypeORM repositories into services, use `@InjectRepository(Entity)` decorator
+- Import `TypeOrmModule.forFeature([Entity])` in the module to make repository available for injection
+- Use `MoreThan()` from TypeORM to query records created after a specific date (useful for rate limiting)
+- Use `BadRequestException` from `@nestjs/common` for client errors (rate limiting, validation failures)
+- Use `UnauthorizedException` from `@nestjs/common` for authentication failures (invalid/expired/used codes)
+- Session tokens are generated using `crypto.randomBytes(32).toString('hex')` for secure random tokens
+- Sessions expire after 30 days (configurable in AuthService.verifyCode)
+- When verifying codes, always mark the verification code as used after successful verification
+- User creation happens automatically during code verification if user doesn't exist (with isOnboarded: false)
+- **Guards**: Guards implement `CanActivate` interface and use `context.switchToHttp().getRequest()` to access request
+- Guards that use dependency injection (e.g., `@InjectRepository()`) must be added to module providers
+- Apply guards to routes using `@UseGuards(AuthGuard)` decorator on controllers or route handlers
+- AuthGuard expects token in `Authorization: Bearer <token>` header format
+- Guard attaches authenticated user to request object (`request.user`) for use with `@CurrentUser()` decorator
+
+## ESP Connections
+
+- `src/esp-connection.controller.ts` – EspConnectionController with ESP connection endpoints
+- `src/esp-connection.service.ts` – EspConnectionService with business logic for ESP connections
+- `src/entities/esp-connection.entity.ts` – EspConnection entity with provider enum and encrypted API key
+- Provider validation checks against EspProvider enum values using `Object.values(EspProvider).includes()`
+- API keys are encrypted before storing in database using EncryptionService
+- API keys are never returned in API responses (only id, provider, createdAt, isActive)
+
+## Encryption
+
+- `src/encryption.service.ts` – EncryptionService using Node's built-in crypto module with AES-256-GCM
+- Use Node's built-in `crypto` module for encryption (no external dependencies needed)
+- AES-256-GCM provides authenticated encryption (encryption + integrity verification)
+- Encryption format: `iv:authTag:encryptedData` (colon-separated hex strings)
+- EncryptionService uses ConfigService to read ENCRYPTION_KEY from environment and throws error if missing (fail-fast)
+- Convert encryption key to 32-byte buffer using SHA-256 hash for AES-256 key requirement
+- Always encrypt sensitive data (like API keys) before storing in database
+
 ## Scripts
 
 - `dev` – `nest start --watch`  

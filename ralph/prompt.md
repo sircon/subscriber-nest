@@ -4,7 +4,7 @@ You are an autonomous coding agent working on the SubscriberNest project.
 
 ## Repository Overview
 
-This is an **Nx monorepo** with the following structure:
+This is a **Turborepo monorepo** with the following structure:
 
 ```
 subscriber-nest/
@@ -13,35 +13,36 @@ subscriber-nest/
 │   │   └── src/         # Backend source code
 │   └── frontend/         # Next.js application (App Router)
 │       └── src/         # Frontend source code
-├── libs/                 # Shared libraries (future)
 ├── ralph/                # Ralph agent files (PRD, progress, skills)
 │   ├── prd.json         # Product Requirements Document
 │   ├── progress.txt     # Progress log with patterns
 │   └── skills/          # Structured instruction sets
+├── turbo.json           # Turborepo configuration
 └── package.json         # Root dependencies and scripts
 ```
 
 **Tech Stack:**
-- **Monorepo**: Nx workspace
+- **Monorepo**: Turborepo workspace
 - **Backend**: NestJS with TypeORM and PostgreSQL
-- **Frontend**: Next.js 14 (App Router) with React 18
-- **Package Manager**: Yarn v4 (Berry)
-- **Database**: PostgreSQL (via Docker)
+- **Frontend**: Next.js (App Router) with React
+- **Package Manager**: Yarn
+- **Database**: PostgreSQL
 
 **Key Commands:**
-- `yarn ralph` - Run Ralph agent
-- `nx serve backend` - Start backend dev server
-- `nx serve frontend` - Start frontend dev server
-- `nx test` - Run all tests
-- `nx lint` - Run linter
-- `yarn exec tsc` - Run TypeScript compiler
+- `yarn dev` - Start both apps in development mode
+- `yarn build` - Build all apps
+- `yarn lint` - Run linter for all apps
+- `yarn start` - Start all apps in production mode
+- `turbo run dev --filter=backend` - Start only backend dev server
+- `turbo run dev --filter=frontend` - Start only frontend dev server
+- `turbo run build --filter=backend` - Build only backend
+- `turbo run build --filter=frontend` - Build only frontend
 
 **Important Paths:**
 - Backend code: `apps/backend/src/`
 - Frontend code: `apps/frontend/src/`
-- TypeScript path mappings: `@subscriber-nest/backend/*` and `@subscriber-nest/frontend/*`
-- Database config: `apps/backend/src/config/database.config.ts`
-- Migrations: `apps/backend/src/migrations/`
+- Database config: `apps/backend/src/data-source.ts`
+- Migrations: `apps/backend/src/migrations/` (compiled to `dist/migrations/`)
 
 ## Your Task
 
@@ -50,7 +51,7 @@ subscriber-nest/
 3. Check you're on the correct branch from PRD `branchName`. If not, check it out or create from main.
 4. Pick the **highest priority** user story where `passes: false`
 5. Implement that single user story
-6. Run quality checks (e.g., `nx lint`, `nx test`, `yarn exec tsc` - use whatever your project requires)
+6. Run quality checks (e.g., `yarn lint`, `yarn build`, `yarn exec tsc` - use whatever your project requires)
 7. Update AGENTS.md files if you discover reusable patterns (see below)
 8. If checks pass, commit ALL changes with message: `feat: [Story ID] - [Story Title]`
 9. Update the PRD at `ralph/prd.json` to set `passes: true` for the completed story
@@ -147,6 +148,7 @@ If there are still stories with `passes: false`, end your response normally (ano
 - Commit frequently
 - Keep CI green
 - Read the Codebase Patterns section in ralph/progress.txt before starting
-- Use Nx commands (`nx serve`, `nx test`, `nx lint`) for running tasks
+- Use Turborepo commands (`turbo run dev`, `turbo run build`, `turbo run lint`) for running tasks
 - Backend code goes in `apps/backend/src/`, frontend code in `apps/frontend/src/`
 - Check app-specific `AGENTS.md` files (`apps/backend/AGENTS.md`, `apps/frontend/AGENTS.md`) for detailed patterns
+- Use `--filter` flag to run commands for specific apps (e.g., `turbo run dev --filter=backend`)

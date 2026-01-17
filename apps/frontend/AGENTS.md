@@ -17,6 +17,7 @@ Next.js app in `apps/frontend`: UI to manage subscribers, sync, and export.
 - `src/app/layout.tsx` – root layout and metadata.  
 - `src/app/page.tsx` – home.  
 - `src/app/globals.css` – global styles.  
+- `src/contexts/AuthContext.tsx` – authentication context provider and useAuth hook.  
 - `next.config.ts` – Next.js config.  
 
 ## Env
@@ -32,3 +33,17 @@ Next.js app in `apps/frontend`: UI to manage subscribers, sync, and export.
 ## Backend dependency
 
 All subscriber, sync, and export behavior depends on the backend API. Point `NEXT_PUBLIC_API_URL` at the running backend.
+
+## Authentication
+
+- **AuthContext**: Authentication state is managed via `AuthContext` provider in `src/contexts/AuthContext.tsx`. The provider wraps the app in `src/app/layout.tsx`.
+- **useAuth hook**: Use `useAuth()` hook to access authentication state: `{ user, token, loading, isAuthenticated, login, logout, checkAuth }`.
+- **Token storage**: Auth tokens are stored in localStorage (keys: `auth_token`, `user`). Can be upgraded to httpOnly cookies later.
+- **Session restoration**: On mount, AuthContext loads token from localStorage and calls `GET /auth/me` to verify and restore session.
+- **API authentication**: Include token in Authorization header: `Authorization: Bearer ${token}` when making authenticated API calls.
+
+## Next.js App Router patterns
+
+- **useSearchParams() requires Suspense**: When using `useSearchParams()` in a client component, wrap it in a Suspense boundary to avoid build errors. Split the component: create a form component that uses `useSearchParams()`, and a page component that wraps it in `<Suspense>`.
+- **Client-side navigation**: Use `useRouter()` from `next/navigation` for client-side navigation in App Router (not `next/router`).
+- **Environment variables**: Client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time).
