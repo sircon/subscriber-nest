@@ -102,4 +102,27 @@ Started: Sat Jan 17 2026
   - Always include all ESP-specific fields in the response using spread operator (`...sub`) to preserve metadata
   - Error handling should distinguish between authentication errors (401/403), not found (404), rate limits (429), and server errors (500+)
   - The connector should throw descriptive errors that can be caught and handled by calling services
+
+## 2026-01-18 - US-013
+- Created `SubscriberService` with `findByEspConnection()` and `upsertSubscriber()` methods
+- Created `CreateSubscriberDto` in `src/dto/create-subscriber.dto.ts` to define the data structure for creating/updating subscribers
+- `findByEspConnection()` retrieves all subscribers for a given ESP connection, ordered by creation date (newest first)
+- `upsertSubscriber()` implements upsert pattern: finds existing subscriber by unique key (`externalId` + `espConnectionId`), updates if found, creates new if not
+- Uses TypeORM repository pattern with `@InjectRepository(Subscriber)` decorator
+- Registered `Subscriber` entity with `TypeOrmModule.forFeature([Subscriber])` in `AppModule`
+- Added `SubscriberService` to `AppModule` providers
+- Files changed:
+  - `apps/backend/src/dto/create-subscriber.dto.ts` (new)
+  - `apps/backend/src/services/subscriber.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include TypeOrmModule.forFeature and SubscriberService)
+  - `apps/backend/AGENTS.md` (updated with service patterns and directory structure)
+- **Learnings for future iterations:**
+  - DTOs are placed in `src/dto/` directory with `.dto.ts` extension
+  - Services that use TypeORM repositories must inject them using `@InjectRepository(Entity)` decorator
+  - Register entities with `TypeOrmModule.forFeature([Entity])` in the module imports to make repositories available for injection
+  - The upsert pattern uses `findOne()` to check existence, then `save()` to create or update
+  - The unique constraint on `externalId + espConnectionId` (from US-001) ensures data integrity for the upsert operation
+  - Use `Object.assign()` to update existing entity properties before saving
+  - Use `repository.create()` to create new entity instances before saving
+  - Services are injectable classes decorated with `@Injectable()` and added to module providers
 ---
