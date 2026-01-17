@@ -26,6 +26,15 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `PORT` – HTTP port (default 4000).  
 - `NODE_ENV` – e.g. `development` / `production`; `synchronize` is off in production.  
 
+## Email Service
+
+- `src/email.service.ts` – EmailService using Resend API for sending emails
+- `src/emails/` – react-email template components (`.tsx` files)
+- Email templates use react-email components from `@react-email/components`
+- Templates are rendered to HTML using `render()` from `@react-email/render` with `React.createElement()`
+- TypeScript config includes `"jsx": "react"` to support JSX syntax in email templates
+- React and react-dom are required dependencies for react-email to work in backend
+
 ## Scripts
 
 - `dev` – `nest start --watch`  
