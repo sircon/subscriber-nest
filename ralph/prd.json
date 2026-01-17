@@ -1,1 +1,338 @@
-{}
+{
+  "project": "SubscriberNest",
+  "branchName": "ralph/auth-onboarding-flow",
+  "description": "Authentication and Onboarding Flow - Email-based auth with ESP connection setup",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create User and Session entities",
+      "description": "As a developer, I need database entities to store user accounts, email verification codes, and active sessions so authentication data persists.",
+      "acceptanceCriteria": [
+        "Create User entity with fields: id, email (unique), isOnboarded (boolean, default false), createdAt, updatedAt",
+        "Create VerificationCode entity with fields: id, email, code (6-digit string), expiresAt (timestamp), used (boolean, default false), createdAt",
+        "Create Session entity with fields: id, userId (foreign key to User), token (unique string), expiresAt (timestamp), createdAt",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create ESP Connection entity",
+      "description": "As a developer, I need to store ESP connection details (provider type and API key) so users can connect multiple ESPs.",
+      "acceptanceCriteria": [
+        "Create EspConnection entity with fields: id, userId (foreign key to User), provider (enum: 'kit', 'beehiiv', 'mailchimp', etc.), apiKey (encrypted string), isActive (boolean, default true), createdAt, updatedAt",
+        "Add relationship: User has many EspConnections",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Set up Resend email service",
+      "description": "As a developer, I need Resend configured in the backend to send verification emails.",
+      "acceptanceCriteria": [
+        "Install @resend/node package",
+        "Add RESEND_API_KEY to backend .env.example and document it",
+        "Create EmailService with method to send verification code emails",
+        "Service uses Resend API to send emails",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create react-email verification code template",
+      "description": "As a developer, I need a professional email template for verification codes using react-email.",
+      "acceptanceCriteria": [
+        "Install react-email and @react-email/components packages",
+        "Create email template component in apps/backend/src/emails/verification-code-email.tsx",
+        "Template displays 6-digit code prominently",
+        "Template includes branding and clear instructions",
+        "Template renders to HTML correctly",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Generate and send verification code",
+      "description": "As a user, I want to request a verification code by entering my email so I can log in.",
+      "acceptanceCriteria": [
+        "Create POST /auth/send-code endpoint that accepts { email: string }",
+        "Endpoint generates random 6-digit numeric code",
+        "Endpoint stores code in database with 10-minute expiration",
+        "Endpoint enforces rate limit: max 3 codes per email per hour",
+        "Endpoint sends email via Resend using react-email template",
+        "Returns { success: true } on success",
+        "Returns appropriate error if rate limited",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Verify code and create session",
+      "description": "As a user, I want to enter my verification code to log in and create a session.",
+      "acceptanceCriteria": [
+        "Create POST /auth/verify-code endpoint that accepts { email: string, code: string }",
+        "Endpoint validates code exists, matches email, is not expired, and not used",
+        "If user doesn't exist, create new User with isOnboarded: false",
+        "If user exists, use existing user",
+        "Mark verification code as used",
+        "Create new Session with unique token and expiration (e.g., 30 days)",
+        "Return { token: string, user: { id, email, isOnboarded } }",
+        "Return appropriate errors for invalid/expired/used codes",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Session validation middleware",
+      "description": "As a developer, I need middleware to validate session tokens on protected routes.",
+      "acceptanceCriteria": [
+        "Create AuthGuard that validates session token from request headers",
+        "Guard checks token exists in database and is not expired",
+        "Guard attaches user object to request",
+        "Guard can be applied to controllers/routes via @UseGuards(AuthGuard)",
+        "Returns 401 if token invalid or missing",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Get current user endpoint",
+      "description": "As a frontend developer, I need an endpoint to check if user is authenticated and get their status.",
+      "acceptanceCriteria": [
+        "Create GET /auth/me endpoint protected by AuthGuard",
+        "Returns { user: { id, email, isOnboarded } }",
+        "Returns 401 if not authenticated",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Logout endpoint",
+      "description": "As a user, I want to log out so my session is invalidated.",
+      "acceptanceCriteria": [
+        "Create POST /auth/logout endpoint protected by AuthGuard",
+        "Endpoint deletes session from database",
+        "Returns { success: true }",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create ESP connection endpoint",
+      "description": "As a user, I want to save my ESP provider and API key during onboarding.",
+      "acceptanceCriteria": [
+        "Create POST /esp-connections endpoint protected by AuthGuard",
+        "Accepts { provider: string, apiKey: string }",
+        "Validates provider is in allowed list",
+        "Encrypts API key before storing (use environment variable for encryption key)",
+        "Creates EspConnection linked to current user",
+        "Returns { id, provider, createdAt } (without API key)",
+        "Typecheck passes",
+        "TODO: Add API key validation when user clicks 'Sync subscribers to vault' (skip for now)"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "TODO: API key validation deferred"
+    },
+    {
+      "id": "US-011",
+      "title": "Mark user as onboarded endpoint",
+      "description": "As a user, after completing onboarding I want my account marked as onboarded.",
+      "acceptanceCriteria": [
+        "Create POST /auth/complete-onboarding endpoint protected by AuthGuard",
+        "Endpoint sets user's isOnboarded to true",
+        "Returns { success: true, user: { id, email, isOnboarded: true } }",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Get user ESP connections endpoint",
+      "description": "As a user, I want to see my connected ESPs.",
+      "acceptanceCriteria": [
+        "Create GET /esp-connections endpoint protected by AuthGuard",
+        "Returns array of user's ESP connections (without API keys)",
+        "Returns [{ id, provider, isActive, createdAt }, ...]",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Login page UI",
+      "description": "As a user, I want a login page where I can enter my email to receive a verification code.",
+      "acceptanceCriteria": [
+        "Create src/app/login/page.tsx with email input form",
+        "Form uses shadcn Input and Button components",
+        "Form calls POST /auth/send-code on submit",
+        "Shows loading state while sending",
+        "Shows success message after code sent",
+        "Shows error message if request fails",
+        "Redirects to /verify-code with email in query params after success",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Verify code page UI",
+      "description": "As a user, I want a page to enter my verification code after requesting it.",
+      "acceptanceCriteria": [
+        "Create src/app/verify-code/page.tsx with 6-digit code input",
+        "Page reads email from query params",
+        "Uses shadcn Input component (or code input component)",
+        "Form calls POST /auth/verify-code on submit",
+        "Shows loading state while verifying",
+        "On success, stores token and redirects based on isOnboarded: If isOnboarded: false → redirect to /onboarding, If isOnboarded: true → redirect to /dashboard",
+        "Shows error message if code invalid/expired",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Onboarding provider selection page",
+      "description": "As a new user, I want to select my email service provider during onboarding.",
+      "acceptanceCriteria": [
+        "Create src/app/onboarding/page.tsx with provider selection UI",
+        "Shows list of providers: Kit, beehiiv, Mailchimp, and others (use cards or buttons)",
+        "Uses shadcn Card or Button components for provider options",
+        "Each provider shows name and optional logo/icon",
+        "On selection, stores provider choice and redirects to /onboarding/api-key?provider={provider}",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Onboarding API key entry page",
+      "description": "As a new user, I want to enter my ESP API key to complete onboarding.",
+      "acceptanceCriteria": [
+        "Create src/app/onboarding/api-key/page.tsx with API key input form",
+        "Page reads provider from query params",
+        "Shows selected provider name",
+        "Form has API key input (password type for security)",
+        "Form has 'Sync subscribers to vault' CTA button",
+        "On submit, calls POST /esp-connections to save connection",
+        "After saving, calls POST /auth/complete-onboarding",
+        "On success, redirects to /dashboard",
+        "Shows loading and error states",
+        "Uses shadcn components (Input, Button, Card)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "TODO: API key validation deferred"
+    },
+    {
+      "id": "US-017",
+      "title": "Authentication context and hooks",
+      "description": "As a frontend developer, I need React context and hooks to manage auth state across the app.",
+      "acceptanceCriteria": [
+        "Create src/contexts/AuthContext.tsx with provider",
+        "Context stores: user, token, loading, isAuthenticated",
+        "Context provides: login(token, user), logout(), checkAuth()",
+        "Create useAuth() hook that returns context values",
+        "On mount, checks GET /auth/me to restore session",
+        "Stores token in httpOnly cookie or secure storage",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Protected route middleware",
+      "description": "As a developer, I need middleware to protect routes and redirect unauthenticated users.",
+      "acceptanceCriteria": [
+        "Create src/middleware.ts (Next.js middleware)",
+        "Middleware checks for auth token/session",
+        "If not authenticated and trying to access protected route, redirect to /login",
+        "If authenticated but isOnboarded: false and not on onboarding pages, redirect to /onboarding",
+        "Allows access to /login and /verify-code without auth",
+        "Allows access to /onboarding/* if authenticated but not onboarded",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Dashboard page (placeholder)",
+      "description": "As a user, I want to see a dashboard after completing onboarding.",
+      "acceptanceCriteria": [
+        "Create src/app/dashboard/page.tsx as protected route",
+        "Page shows welcome message with user email",
+        "Page shows connected ESP(s) from GET /esp-connections",
+        "Uses shadcn components for layout",
+        "Page is only accessible if authenticated and onboarded",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "API client with auth",
+      "description": "As a frontend developer, I need an API client that automatically includes auth tokens.",
+      "acceptanceCriteria": [
+        "Create src/lib/api.ts with API client functions",
+        "Client reads NEXT_PUBLIC_API_URL from environment",
+        "All requests include auth token in headers (from AuthContext)",
+        "Handles 401 errors by clearing auth and redirecting to login",
+        "Provides typed functions for all auth and ESP endpoints",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
