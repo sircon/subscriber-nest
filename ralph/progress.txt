@@ -28,4 +28,23 @@ Started: Sat Jan 17 2026
   - TypeORM's `@Index()` decorator with `isUnique: true` creates a unique constraint, which is needed for the upsert pattern in US-013
   - The `@OneToMany()` relationship on EspConnection and `@ManyToOne()` on Subscriber creates the proper bidirectional relationship
   - Migration files should include both `up()` and `down()` methods for rollback capability
+
+## 2026-01-18 - US-002
+- Created `EncryptionService` with `encrypt()` and `decrypt()` methods using AES-256-GCM encryption
+- Service uses `ENCRYPTION_KEY` environment variable and derives a 256-bit key using PBKDF2
+- Implemented error handling for encryption/decryption failures with descriptive error messages
+- Uses AES-256-GCM algorithm for authenticated encryption (provides both confidentiality and authenticity)
+- Encryption format: `iv:tag:encryptedData` (all base64 encoded) to support unique IV per encryption
+- Added `EncryptionService` to `AppModule` providers
+- Files changed:
+  - `apps/backend/src/services/encryption.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include EncryptionService)
+- **Learnings for future iterations:**
+  - Services are placed in `src/services/` directory with `.service.ts` extension
+  - Use Node.js built-in `crypto` module for encryption (no external dependencies needed)
+  - AES-256-GCM provides authenticated encryption, which is more secure than CBC mode
+  - PBKDF2 key derivation ensures consistent 256-bit key regardless of input key length
+  - Each encryption uses a unique IV (initialization vector) for security
+  - The service throws descriptive errors if `ENCRYPTION_KEY` is missing or if encryption/decryption fails
+  - ConfigService is already available globally via `ConfigModule.forRoot({ isGlobal: true })` in AppModule
 ---
