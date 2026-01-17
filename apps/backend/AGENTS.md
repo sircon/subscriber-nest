@@ -43,6 +43,11 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - Import `TypeOrmModule.forFeature([Entity])` in the module to make repository available for injection
 - Use `MoreThan()` from TypeORM to query records created after a specific date (useful for rate limiting)
 - Use `BadRequestException` from `@nestjs/common` for client errors (rate limiting, validation failures)
+- Use `UnauthorizedException` from `@nestjs/common` for authentication failures (invalid/expired/used codes)
+- Session tokens are generated using `crypto.randomBytes(32).toString('hex')` for secure random tokens
+- Sessions expire after 30 days (configurable in AuthService.verifyCode)
+- When verifying codes, always mark the verification code as used after successful verification
+- User creation happens automatically during code verification if user doesn't exist (with isOnboarded: false)
 
 ## Scripts
 

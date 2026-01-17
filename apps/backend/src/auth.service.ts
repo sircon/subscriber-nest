@@ -1,14 +1,21 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { VerificationCode } from './entities/verification-code.entity';
+import { User } from './entities/user.entity';
+import { Session } from './entities/session.entity';
 import { EmailService } from './email.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(VerificationCode)
     private verificationCodeRepository: Repository<VerificationCode>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
     private emailService: EmailService,
   ) {}
 
@@ -76,5 +83,74 @@ export class AuthService {
     }
 
     return { success: true };
+  }
+
+  /**
+   * Generate a secure random token for session
+   */
+  private generateToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Verify code and create session
+   */
+  async verifyCode(
+    email: string,
+    code: string,
+  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean } }> {
+    // Find verification code
+    const verificationCode = await this.verificationCodeRepository.findOne({
+      where: { email, code },
+    });
+
+    if (!verificationCode) {
+      throw new UnauthorizedException('Invalid verification code');
+    }
+
+    // Check if code is already used
+    if (verificationCode.used) {
+      throw new UnauthorizedException('Verification code has already been used');
+    }
+
+    // Check if code is expired
+    if (verificationCode.expiresAt < new Date()) {
+      throw new UnauthorizedException('Verification code has expired');
+    }
+
+    // Find or create user
+    let user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      user = this.userRepository.create({
+        email,
+        isOnboarded: false,
+      });
+      user = await this.userRepository.save(user);
+    }
+
+    // Mark verification code as used
+    verificationCode.used = true;
+    await this.verificationCodeRepository.save(verificationCode);
+
+    // Generate session token
+    const token = this.generateToken();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    // Create session
+    const session = this.sessionRepository.create({
+      userId: user.id,
+      token,
+      expiresAt,
+    });
+    await this.sessionRepository.save(session);
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        isOnboarded: user.isOnboarded,
+      },
+    };
   }
 }

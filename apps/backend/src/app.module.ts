@@ -7,6 +7,8 @@ import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { VerificationCode } from './entities/verification-code.entity';
+import { User } from './entities/user.entity';
+import { Session } from './entities/session.entity';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { VerificationCode } from './entities/verification-code.entity';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([VerificationCode]),
+    TypeOrmModule.forFeature([VerificationCode, User, Session]),
   ],
   controllers: [AppController, AuthController],
   providers: [AppService, EmailService, AuthService],

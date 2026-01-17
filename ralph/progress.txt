@@ -100,3 +100,22 @@ Started: Sat Jan 17 2026
   - Code generation uses `Math.floor(100000 + Math.random() * 900000)` to ensure exactly 6 digits
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-006
+- Created POST /auth/verify-code endpoint that validates codes and creates sessions
+- Implemented verifyCode method in AuthService that validates code, creates/finds user, marks code as used, and creates session
+- Endpoint returns token and user information on success
+- Files changed:
+  - `apps/backend/src/auth.service.ts` - Added verifyCode method with code validation, user creation/lookup, and session creation
+  - `apps/backend/src/auth.controller.ts` - Added POST /auth/verify-code endpoint
+  - `apps/backend/src/app.module.ts` - Added User and Session to TypeOrmModule.forFeature array
+  - `apps/backend/AGENTS.md` - Updated Authentication section with session creation patterns
+- **Learnings for future iterations:**
+  - Use `UnauthorizedException` from `@nestjs/common` for authentication failures (invalid/expired/used codes)
+  - Session tokens are generated using `crypto.randomBytes(32).toString('hex')` for secure random tokens
+  - Always mark verification codes as used after successful verification to prevent reuse
+  - User creation happens automatically during code verification if user doesn't exist (with isOnboarded: false)
+  - Use `findOne()` with `where` clause to find entities by specific fields
+  - Session expiration is set to 30 days from creation (configurable in verifyCode method)
+  - All quality checks (typecheck, lint, build) passed successfully
+---
