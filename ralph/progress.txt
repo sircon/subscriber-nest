@@ -76,4 +76,30 @@ Started: Sat Jan 17 2026
   - The `IEspConnector` interface defines the contract that all ESP implementations must follow, enabling a consistent pattern for multiple ESP integrations
   - `Publication` and `SubscriberData` interfaces represent the raw data from ESP APIs before mapping to our database schema
   - The `publicationId` parameter in `validateApiKey()` is optional to support ESPs that may or may not require it for validation
+
+## 2026-01-18 - US-005
+- Created `BeehiivConnector` class in `src/connectors/beehiiv.connector.ts` implementing `IEspConnector` interface
+- Implemented `validateApiKey()` method that calls `GET https://api.beehiiv.com/v2/publications` with Bearer token authentication
+- `validateApiKey()` returns true if status 200 and optionally validates that a specific publication exists
+- Implemented `fetchPublications()` method that fetches all publications from Beehiiv API and maps them to `Publication[]` format
+- Implemented `fetchSubscribers()` method with pagination support that fetches all subscribers from a publication using `GET https://api.beehiiv.com/v2/publications/:publicationId/subscriptions`
+- Added comprehensive error handling for API errors: 401/403 (invalid API key), 404 (publication not found), 429 (rate limit), 500+ (server errors)
+- Created `mapBeehiivStatus()` helper method to normalize Beehiiv status values to our standard format
+- Installed `axios` and `@nestjs/axios` packages for HTTP requests
+- Added `HttpModule` to `AppModule` imports and `BeehiivConnector` to providers
+- Files changed:
+  - `apps/backend/src/connectors/beehiiv.connector.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include HttpModule and BeehiivConnector)
+  - `apps/backend/package.json` (updated with axios and @nestjs/axios dependencies)
+- **Learnings for future iterations:**
+  - ESP connectors are placed in `src/connectors/` directory with `.connector.ts` extension
+  - Use `@nestjs/axios` HttpModule and HttpService for making HTTP requests in NestJS
+  - Use `firstValueFrom()` from RxJS to convert observables to promises when using HttpService
+  - Beehiiv API uses Bearer token authentication in the Authorization header
+  - Beehiiv API pagination: check `total_pages` or `pages` in response to determine if more pages exist
+  - Handle pagination by looping through pages until `hasMore` is false
+  - Map ESP-specific status values to our standard enum values (e.g., 'subscribed' → 'active', 'spam' → 'bounced')
+  - Always include all ESP-specific fields in the response using spread operator (`...sub`) to preserve metadata
+  - Error handling should distinguish between authentication errors (401/403), not found (404), rate limits (429), and server errors (500+)
+  - The connector should throw descriptive errors that can be caught and handled by calling services
 ---

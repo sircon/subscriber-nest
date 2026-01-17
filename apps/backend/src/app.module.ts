@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EncryptionService } from './services/encryption.service';
+import { BeehiivConnector } from './connectors/beehiiv.connector';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { EncryptionService } from './services/encryption.service';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    HttpModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EncryptionService],
+  providers: [AppService, EncryptionService, BeehiivConnector],
 })
 export class AppModule {}
