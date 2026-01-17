@@ -32,3 +32,9 @@ Next.js app in `apps/frontend`: UI to manage subscribers, sync, and export.
 ## Backend dependency
 
 All subscriber, sync, and export behavior depends on the backend API. Point `NEXT_PUBLIC_API_URL` at the running backend.
+
+## Next.js App Router patterns
+
+- **useSearchParams() requires Suspense**: When using `useSearchParams()` in a client component, wrap it in a Suspense boundary to avoid build errors. Split the component: create a form component that uses `useSearchParams()`, and a page component that wraps it in `<Suspense>`.
+- **Client-side navigation**: Use `useRouter()` from `next/navigation` for client-side navigation in App Router (not `next/router`).
+- **Environment variables**: Client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time).

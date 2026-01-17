@@ -250,3 +250,22 @@ Started: Sat Jan 17 2026
   - All quality checks (typecheck, lint, build) passed successfully
   - Page verified loading correctly in browser (dev server on port 3000)
 ---
+
+## 2026-01-17 - US-014
+- Created verify code page UI with 6-digit code input and verification functionality
+- Page reads email from query params and redirects to login if missing
+- Implemented form with loading, error states, and conditional redirects based on isOnboarded status
+- Form calls POST /auth/verify-code endpoint and stores token in localStorage
+- Files changed:
+  - `apps/frontend/src/app/verify-code/page.tsx` - New verify code page with 6-digit input, form validation, API integration, and conditional redirects
+- **Learnings for future iterations:**
+  - `useSearchParams()` must be wrapped in a Suspense boundary in Next.js App Router to avoid build errors
+  - Split component into form component and page component: form uses useSearchParams(), page wraps in Suspense
+  - Code input validation: use `replace(/\D/g, '')` to only allow digits, limit to 6 characters with maxLength
+  - Input styling: use `text-center text-2xl tracking-widest font-mono` for code input to make digits clearly visible
+  - Token storage: store in localStorage temporarily (will be moved to auth context in US-017)
+  - Conditional redirects: check `data.user.isOnboarded` to redirect to /onboarding (false) or /dashboard (true)
+  - Email validation: redirect to /login if email query param is missing (handled in useEffect)
+  - Suspense fallback: provide loading skeleton that matches page layout for better UX
+  - All quality checks (typecheck, lint, build) passed successfully
+---
