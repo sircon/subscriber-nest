@@ -1,3 +1,27 @@
 # Ralph Progress Log
 Started: Sat Jan 17 2026
 ---
+
+## Codebase Patterns
+- TypeORM entities are automatically loaded via `autoLoadEntities: true` in TypeOrmModule configuration
+- Migration files go in `src/migrations/` and are compiled to `dist/migrations/` for execution
+- Use `yarn build` before running migrations to ensure compiled files exist
+- Entity files use TypeORM decorators: `@Entity()`, `@Column()`, `@PrimaryGeneratedColumn()`, `@CreateDateColumn()`, `@UpdateDateColumn()`
+- Foreign key relationships use `@ManyToOne()` and `@JoinColumn()` decorators
+- Use `uuid` type for primary keys with `uuid_generate_v4()` default in migrations
+
+## 2026-01-17 - US-001
+- Created User, VerificationCode, and Session entities with all required fields
+- Created migration file to create the three tables with proper relationships
+- Files changed:
+  - `apps/backend/src/entities/user.entity.ts` - User entity with email (unique), isOnboarded, timestamps
+  - `apps/backend/src/entities/verification-code.entity.ts` - VerificationCode entity with 6-digit code, expiration, and used flag
+  - `apps/backend/src/entities/session.entity.ts` - Session entity with token, userId foreign key, expiration
+  - `apps/backend/src/migrations/1737000000000-CreateUserAndSessionEntities.ts` - Migration to create all three tables
+- **Learnings for future iterations:**
+  - TypeORM CLI path issue in yarn workspaces - migration generation failed, so created migration manually
+  - Migration format: class implements `MigrationInterface` with `up()` and `down()` methods using `queryRunner.query()`
+  - Use `uuid_generate_v4()` for UUID defaults in PostgreSQL migrations
+  - Foreign keys should use `ON DELETE CASCADE` for sessions when user is deleted
+  - All quality checks (typecheck, lint, build) passed successfully
+---
