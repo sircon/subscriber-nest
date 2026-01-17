@@ -26,6 +26,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 
+// Helper functions to set/clear cookies
+function setCookie(name: string, value: string, days: number = 30) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -40,10 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        // Also set cookies for middleware access
+        setCookie(TOKEN_KEY, storedToken);
+        setCookie(USER_KEY, storedUser);
       } catch (error) {
         // Invalid stored data, clear it
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        deleteCookie(TOKEN_KEY);
+        deleteCookie(USER_KEY);
         setLoading(false);
       }
     } else {
@@ -58,6 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    deleteCookie(TOKEN_KEY);
+    deleteCookie(USER_KEY);
     
     // Optionally call logout endpoint to invalidate session on server
     if (currentToken) {
@@ -97,6 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        deleteCookie(TOKEN_KEY);
+        deleteCookie(USER_KEY);
         setLoading(false);
         return;
       }
@@ -104,13 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       // Update stored user data
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      const userJson = JSON.stringify(data.user);
+      localStorage.setItem(USER_KEY, userJson);
+      setCookie(USER_KEY, userJson);
     } catch (error) {
       // Network error or other issue, clear auth state
       setToken(null);
       setUser(null);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      deleteCookie(TOKEN_KEY);
+      deleteCookie(USER_KEY);
     } finally {
       setLoading(false);
     }
@@ -128,8 +152,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback((newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
+    const userJson = JSON.stringify(newUser);
     localStorage.setItem(TOKEN_KEY, newToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+    localStorage.setItem(USER_KEY, userJson);
+    // Also set cookies for middleware access
+    setCookie(TOKEN_KEY, newToken);
+    setCookie(USER_KEY, userJson);
   }, []);
 
   const isAuthenticated = !!user && !!token;
