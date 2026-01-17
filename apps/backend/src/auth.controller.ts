@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -41,5 +41,17 @@ export class AuthController {
         isOnboarded: user.isOnboarded,
       },
     };
+  }
+
+  @Post('logout')
+  @UseGuards(AuthGuard)
+  async logout(@Headers('authorization') authHeader: string): Promise<{ success: true }> {
+    // Extract token from "Bearer <token>" format
+    const token = authHeader?.split(' ')[1];
+    if (!token) {
+      throw new Error('Token not found in authorization header');
+    }
+
+    return this.authService.logout(token);
   }
 }

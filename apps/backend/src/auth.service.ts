@@ -153,4 +153,20 @@ export class AuthService {
       },
     };
   }
+
+  /**
+   * Logout by deleting session
+   */
+  async logout(token: string): Promise<{ success: true }> {
+    // Find and delete session by token
+    const session = await this.sessionRepository.findOne({
+      where: { token },
+    });
+
+    if (session) {
+      await this.sessionRepository.remove(session);
+    }
+
+    return { success: true };
+  }
 }
