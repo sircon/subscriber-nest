@@ -12,6 +12,7 @@ import { SubscriberService } from './services/subscriber.service';
 import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
+import { SubscriberMapperService } from './services/subscriber-mapper.service';
 
 @Module({
   imports: [
@@ -47,6 +48,13 @@ import { EspConnectionController } from './controllers/esp-connection.controller
     }),
   ],
   controllers: [AppController, EspConnectionController],
-  providers: [AppService, EncryptionService, BeehiivConnector, SubscriberService, EspConnectionService],
+  providers: [
+    AppService,
+    EncryptionService,
+    BeehiivConnector,
+    SubscriberService,
+    EspConnectionService,
+    SubscriberMapperService,
+  ],
 })
 export class AppModule {}

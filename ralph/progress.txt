@@ -192,4 +192,43 @@ Started: Sat Jan 17 2026
   - The `password` field is optional in the connection config (undefined if not set), which works for Redis instances without authentication
   - Queue processors will be created in future stories (US-009) using `@Processor('subscriber-sync')` decorator
   - Jobs can be added to the queue using `@InjectQueue('subscriber-sync')` decorator in services/controllers
+
+## 2026-01-18 - US-012
+- Configured retry policy for `subscriber-sync` queue with `defaultJobOptions` in `BullModule.registerQueue()`
+- Set `attempts: 3` to retry failed jobs up to 3 times
+- Configured exponential backoff with `backoff: { type: 'exponential', delay: 2000 }` for retry delays of 2s, 4s, 8s
+- After 3 failed attempts, jobs are automatically marked as failed by BullMQ
+- Files changed:
+  - `apps/backend/src/app.module.ts` (updated to add defaultJobOptions to queue configuration)
+  - `apps/backend/AGENTS.md` (updated with BullMQ queue retry policy pattern)
+- **Learnings for future iterations:**
+  - Configure retry policies at the queue level using `defaultJobOptions` in `BullModule.registerQueue()`
+  - Exponential backoff type automatically increases delay: first retry after 2s, second after 4s, third after 8s
+  - The `attempts` value includes the initial attempt, so `attempts: 3` means 1 initial + 2 retries = 3 total attempts
+  - BullMQ automatically handles job retries and marks jobs as failed after all attempts are exhausted
+  - Failed jobs remain in the queue for inspection and can be manually retried if needed
+  - The retry policy applies to all jobs added to the queue unless overridden at the job level
+
+## 2026-01-18 - US-014
+- Created `SubscriberMapperService` in `src/services/subscriber-mapper.service.ts` to map ESP subscriber data to our database schema
+- Service maps `SubscriberData` (from ESP connectors) to `CreateSubscriberDto` (for database storage)
+- Maps email → encrypted (using `EncryptionService`) + masked (using `maskEmail()` utility)
+- Maps status string → `SubscriberStatus` enum (handles 'active', 'subscribed', 'unsubscribed', 'bounced', 'spam', 'invalid')
+- Maps `subscribedAt` and `unsubscribedAt` dates (handles both Date objects and ISO strings, returns null for invalid/missing dates)
+- Maps `firstName` and `lastName` (handles null/undefined gracefully)
+- Stores all other ESP-specific fields (tags, custom fields, etc.) in `metadata` JSONB column
+- Handles missing/null fields gracefully: validates required fields (externalId, email), defaults status to ACTIVE if missing, returns null for optional fields
+- Added `SubscriberMapperService` to `AppModule` providers
+- Files changed:
+  - `apps/backend/src/services/subscriber-mapper.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated to include SubscriberMapperService)
+- **Learnings for future iterations:**
+  - Mapper services are placed in `src/services/` directory with `.service.ts` extension and can be injected where needed
+  - Use destructuring with rest operator (`...restFields`) to separate known fields from metadata fields
+  - When destructuring with rest operator, do NOT include trailing comma after `...restFields` (TypeScript syntax error)
+  - Date mapping should handle both Date objects and ISO strings, and validate that parsed dates are valid (not NaN)
+  - Status mapping should normalize input (lowercase, trim) and provide sensible defaults (ACTIVE) for unknown values
+  - Metadata should only include non-null/undefined values and exclude fields that are mapped to specific columns
+  - The mapper service will be used by the sync service (US-010) to transform ESP data before database storage
+  - Always validate required fields (externalId, email) and throw descriptive errors if missing
 ---
