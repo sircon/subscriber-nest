@@ -25,3 +25,19 @@ Started: Sat Jan 17 2026
   - Foreign keys should use `ON DELETE CASCADE` for sessions when user is deleted
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-002
+- Created EspConnection entity with provider enum, apiKey field, and relationship to User
+- Added OneToMany relationship from User to EspConnections
+- Created migration to create esp_connections table with enum type and foreign key
+- Files changed:
+  - `apps/backend/src/entities/esp-connection.entity.ts` - EspConnection entity with provider enum (kit, beehiiv, mailchimp), apiKey, isActive, timestamps
+  - `apps/backend/src/entities/user.entity.ts` - Added OneToMany relationship to EspConnections
+  - `apps/backend/src/migrations/1737000001000-CreateEspConnectionEntity.ts` - Migration to create esp_connections table and esp_provider_enum type
+- **Learnings for future iterations:**
+  - TypeORM enum columns require creating the enum type in PostgreSQL migrations before using it in table creation
+  - Use `@OneToMany()` decorator on the parent entity (User) and `@ManyToOne()` on the child entity (EspConnection)
+  - API key encryption will be handled in the service layer (stored as text in DB for now)
+  - Enum values in TypeORM are defined as a TypeScript enum and referenced in the Column decorator
+  - All quality checks (typecheck, lint, build) passed successfully
+---

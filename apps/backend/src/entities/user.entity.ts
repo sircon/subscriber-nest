@@ -4,7 +4,9 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { EspConnection } from './esp-connection.entity';
 
 @Entity('users')
 export class User {
@@ -16,6 +18,9 @@ export class User {
 
   @Column({ default: false })
   isOnboarded: boolean;
+
+  @OneToMany(() => EspConnection, (espConnection) => espConnection.user)
+  espConnections: EspConnection[];
 
   @CreateDateColumn()
   createdAt: Date;
