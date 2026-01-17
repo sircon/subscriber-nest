@@ -359,3 +359,24 @@ Started: Sat Jan 17 2026
   - Home page (`/`) is treated as public route and doesn't require authentication
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-019
+- Created dashboard page with welcome message and ESP connections display
+- Page shows user email from auth context and fetches ESP connections from GET /esp-connections endpoint
+- Displays connected ESPs in a grid layout using Card components
+- Handles loading and error states with appropriate UI feedback
+- Page is protected by middleware (already configured in US-018)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/page.tsx` - New dashboard page with welcome message, ESP connections display, and loading/error states
+- **Learnings for future iterations:**
+  - Dashboard page follows same pattern as other pages: 'use client', useAuth hook, fetch API calls with Authorization header
+  - ESP connections endpoint returns array of { id, provider, isActive, createdAt } objects
+  - Provider names are mapped from enum values (kit, beehiiv, mailchimp) to display names using a Record type
+  - Loading state shows skeleton UI matching the final layout for better UX
+  - Empty state message shown when no ESP connections exist
+  - Date formatting uses `toLocaleDateString()` for user-friendly date display
+  - Grid layout uses `grid-cols-1 md:grid-cols-3` for responsive design (1 column on mobile, 3 on desktop)
+  - Page automatically fetches connections on mount using useEffect with token dependency
+  - Error handling displays error message in a Card with destructive styling
+  - All quality checks (typecheck, lint, build) passed successfully
+---
