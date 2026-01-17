@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { authApi, espConnectionApi } from '@/lib/api';
 
 type Provider = 'kit' | 'beehiiv' | 'mailchimp';
 
@@ -42,43 +43,27 @@ function ApiKeyForm() {
         }
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
             if (!token) {
                 throw new Error('Authentication required. Please log in again.');
             }
 
             // Step 1: Create ESP connection
-            const connectionResponse = await fetch(`${apiUrl}/esp-connections`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+            await espConnectionApi.createConnection(
+                { provider, apiKey },
+                token,
+                () => {
+                    // Handle 401: redirect to login
+                    router.push('/login');
                 },
-                body: JSON.stringify({ provider, apiKey }),
-            });
-
-            if (!connectionResponse.ok) {
-                const data = await connectionResponse.json().catch(() => ({}));
-                throw new Error(data.message || 'Failed to save ESP connection');
-            }
+            );
 
             // Step 2: Complete onboarding
-            const onboardingResponse = await fetch(`${apiUrl}/auth/complete-onboarding`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
+            const onboardingData = await authApi.completeOnboarding(token, () => {
+                // Handle 401: redirect to login
+                router.push('/login');
             });
 
-            if (!onboardingResponse.ok) {
-                const data = await onboardingResponse.json().catch(() => ({}));
-                throw new Error(data.message || 'Failed to complete onboarding');
-            }
-
             // Step 3: Update user in auth context
-            const onboardingData = await onboardingResponse.json();
             login(token, onboardingData.user);
 
             // Step 4: Redirect to dashboard

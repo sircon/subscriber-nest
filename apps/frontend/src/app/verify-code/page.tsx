@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { authApi } from '@/lib/api';
 
 function VerifyCodeForm() {
     const router = useRouter();
@@ -33,21 +34,7 @@ function VerifyCodeForm() {
         }
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-            const response = await fetch(`${apiUrl}/auth/verify-code`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, code }),
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.message || 'Invalid or expired verification code');
-            }
-
-            const data = await response.json();
+            const data = await authApi.verifyCode({ email, code });
             
             // Use auth context to store token and user
             login(data.token, data.user);

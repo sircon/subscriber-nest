@@ -380,3 +380,28 @@ Started: Sat Jan 17 2026
   - Error handling displays error message in a Card with destructive styling
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-020
+- Created centralized API client with typed functions for all backend endpoints
+- Implemented base apiRequest function that handles auth tokens, 401 errors, and automatic redirects
+- Created typed functions for all auth endpoints (sendCode, verifyCode, getCurrentUser, logout, completeOnboarding)
+- Created typed functions for all ESP connection endpoints (createConnection, getUserConnections)
+- Updated all pages and AuthContext to use the new API client instead of direct fetch calls
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` - New API client module with typed functions and 401 error handling
+  - `apps/frontend/src/app/login/page.tsx` - Updated to use authApi.sendCode
+  - `apps/frontend/src/app/verify-code/page.tsx` - Updated to use authApi.verifyCode
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated to use espConnectionApi.createConnection and authApi.completeOnboarding
+  - `apps/frontend/src/app/dashboard/page.tsx` - Updated to use espConnectionApi.getUserConnections
+  - `apps/frontend/src/contexts/AuthContext.tsx` - Updated to use authApi.getCurrentUser and authApi.logout
+  - `apps/frontend/.eslintrc.json` - Updated ESLint config to disable no-undef rule (TypeScript handles type checking)
+- **Learnings for future iterations:**
+  - API client pattern: Create centralized API client with typed functions to avoid code duplication and ensure consistency
+  - HeadersInit type: Use Record<string, string> for headers and cast to HeadersInit when passing to fetch to avoid TypeScript errors
+  - 401 error handling: API client accepts optional onUnauthorized callback for custom handling, and automatically redirects to /login if not already there
+  - Token parameter: API functions accept token as parameter (from AuthContext) rather than reading it internally, allowing flexibility
+  - Type safety: Export TypeScript interfaces for all request/response types to ensure type safety across the app
+  - ESLint config: Disable no-undef rule when using TypeScript (TypeScript compiler handles undefined variable checking)
+  - API client functions are organized into namespaces (authApi, espConnectionApi) for better organization
+  - All quality checks (typecheck, lint, build) passed successfully
+---

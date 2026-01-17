@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authApi } from '@/lib/api';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -19,20 +20,7 @@ export default function LoginPage() {
         setSuccess(false);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-            const response = await fetch(`${apiUrl}/auth/send-code`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.message || 'Failed to send verification code');
-            }
-
+            await authApi.sendCode({ email });
             setSuccess(true);
             // Redirect to verify-code page with email in query params
             setTimeout(() => {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { authApi } from '@/lib/api';
 
 interface User {
   id: string;
@@ -79,14 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Optionally call logout endpoint to invalidate session on server
     if (currentToken) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      fetch(`${apiUrl}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-          'Content-Type': 'application/json',
-        },
-      }).catch(() => {
+      authApi.logout(currentToken).catch(() => {
         // Ignore errors on logout
       });
     }
@@ -100,16 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const response = await fetch(`${apiUrl}/auth/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
+      const data = await authApi.getCurrentUser(currentToken, () => {
         // Token is invalid, clear auth state
         setToken(null);
         setUser(null);
@@ -118,10 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         deleteCookie(TOKEN_KEY);
         deleteCookie(USER_KEY);
         setLoading(false);
-        return;
-      }
+      });
 
-      const data = await response.json();
       setUser(data.user);
       // Update stored user data
       const userJson = JSON.stringify(data.user);

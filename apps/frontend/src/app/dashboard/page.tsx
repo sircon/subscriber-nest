@@ -1,15 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface EspConnection {
-  id: string;
-  provider: string;
-  isActive: boolean;
-  createdAt: string;
-}
+import { espConnectionApi, EspConnection } from '@/lib/api';
 
 const providerNames: Record<string, string> = {
   kit: 'Kit',
@@ -18,6 +13,7 @@ const providerNames: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, token } = useAuth();
   const [connections, setConnections] = useState<EspConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,20 +27,10 @@ export default function DashboardPage() {
       }
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/esp-connections`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+        const data = await espConnectionApi.getUserConnections(token, () => {
+          // Handle 401: redirect to login
+          router.push('/login');
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch ESP connections');
-        }
-
-        const data = await response.json();
         setConnections(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -54,7 +40,7 @@ export default function DashboardPage() {
     };
 
     fetchConnections();
-  }, [token]);
+  }, [token, router]);
 
   if (loading) {
     return (
