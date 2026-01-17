@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EmailService } from './email.service';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { VerificationCode } from './entities/verification-code.entity';
 
 @Module({
   imports: [
@@ -18,9 +21,10 @@ import { EmailService } from './email.service';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    TypeOrmModule.forFeature([VerificationCode]),
   ],
-  controllers: [AppController],
-  providers: [AppService, EmailService],
+  controllers: [AppController, AuthController],
+  providers: [AppService, EmailService, AuthService],
   exports: [EmailService],
 })
 export class AppModule {}

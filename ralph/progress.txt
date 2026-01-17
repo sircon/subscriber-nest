@@ -81,3 +81,22 @@ Started: Sat Jan 17 2026
   - Use `{ pretty: true }` option in render() for formatted HTML output
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-17 - US-005
+- Created POST /auth/send-code endpoint that generates and sends verification codes
+- Implemented AuthService with code generation, rate limiting (max 3 codes per email per hour), and email sending
+- Created AuthController with send-code endpoint
+- Endpoint generates random 6-digit numeric code, stores it with 10-minute expiration, and sends via Resend
+- Files changed:
+  - `apps/backend/src/auth.service.ts` - New AuthService with sendVerificationCode method, rate limiting, and code generation
+  - `apps/backend/src/auth.controller.ts` - New AuthController with POST /auth/send-code endpoint
+  - `apps/backend/src/app.module.ts` - Added AuthController, AuthService, and TypeOrmModule.forFeature([VerificationCode])
+- **Learnings for future iterations:**
+  - Use `@InjectRepository()` decorator to inject TypeORM repositories into services
+  - Import `TypeOrmModule.forFeature([Entity])` in module to make repository available for injection
+  - Use `MoreThan()` from TypeORM to query records created after a specific date for rate limiting
+  - BadRequestException from @nestjs/common is appropriate for client errors (rate limiting, invalid email)
+  - Rate limiting checks count of codes created in the last hour using `createdAt: MoreThan(oneHourAgo)`
+  - Code generation uses `Math.floor(100000 + Math.random() * 900000)` to ensure exactly 6 digits
+  - All quality checks (typecheck, lint, build) passed successfully
+---
