@@ -35,6 +35,15 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - TypeScript config includes `"jsx": "react"` to support JSX syntax in email templates
 - React and react-dom are required dependencies for react-email to work in backend
 
+## Authentication
+
+- `src/auth.controller.ts` – AuthController with authentication endpoints
+- `src/auth.service.ts` – AuthService with business logic for auth flows
+- To inject TypeORM repositories into services, use `@InjectRepository(Entity)` decorator
+- Import `TypeOrmModule.forFeature([Entity])` in the module to make repository available for injection
+- Use `MoreThan()` from TypeORM to query records created after a specific date (useful for rate limiting)
+- Use `BadRequestException` from `@nestjs/common` for client errors (rate limiting, validation failures)
+
 ## Scripts
 
 - `dev` – `nest start --watch`  
