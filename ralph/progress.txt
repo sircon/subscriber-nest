@@ -280,4 +280,25 @@ Started: Sat Jan 17 2026
   - Processors should re-throw errors so BullMQ can handle retries according to the queue's retry policy
   - Use `Logger` from `@nestjs/common` for logging in processors
   - Job data is accessed via `job.data` and job metadata via `job.id`, `job.name`, etc.
+
+## 2026-01-18 - US-011
+- Added `POST /api/esp-connections/:id/sync` endpoint to `EspConnectionController` for manual subscriber sync
+- Added `findById()` method to `EspConnectionService` to find connections by ID and validate ownership
+- Endpoint validates ESP connection exists and belongs to requesting user (using placeholder userId until auth is implemented)
+- Endpoint injects `subscriber-sync` queue using `@InjectQueue('subscriber-sync')` decorator
+- Endpoint adds job to queue with job name `'sync-publication'` and data `{ espConnectionId: string }`
+- Returns job ID, status ('queued'), and message immediately without waiting for sync to complete
+- Returns appropriate error responses: `NotFoundException` (404) if connection not found, `ForbiddenException` (403) if user doesn't own connection, `InternalServerErrorException` (500) for other errors
+- Files changed:
+  - `apps/backend/src/services/esp-connection.service.ts` (added `findById()` method)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added sync endpoint and queue injection)
+- **Learnings for future iterations:**
+  - Use `@InjectQueue('queue-name')` decorator from `@nestjs/bullmq` to inject queues in controllers/services
+  - Import `Queue` type from `bullmq` package for type annotations
+  - Use `queue.add(jobName, jobData)` to add jobs to the queue - returns a `Job` object with `id` property
+  - Job name must match what the processor expects (e.g., `'sync-publication'` for the SubscriberSyncProcessor)
+  - Use `HttpStatus.ACCEPTED` (202) for endpoints that queue background jobs (indicates request accepted but not yet processed)
+  - The `findById()` method pattern: check existence first, then validate ownership if userId provided
+  - Convert `BadRequestException` from ownership validation to `ForbiddenException` (403) in controller for proper HTTP semantics
+  - The endpoint returns immediately after queuing the job, allowing the API to respond quickly while sync happens asynchronously
 ---

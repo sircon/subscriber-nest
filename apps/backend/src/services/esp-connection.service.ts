@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EspConnection, EspType, EspConnectionStatus } from '../entities/esp-connection.entity';
@@ -78,5 +78,32 @@ export class EspConnectionService {
     const savedConnection = await this.espConnectionRepository.save(espConnection);
 
     return savedConnection;
+  }
+
+  /**
+   * Finds an ESP connection by ID and optionally validates ownership
+   * @param id - The ID of the ESP connection
+   * @param userId - Optional user ID to validate ownership
+   * @returns The ESP connection if found
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided)
+   */
+  async findById(id: string, userId?: string): Promise<EspConnection> {
+    const connection = await this.espConnectionRepository.findOne({
+      where: { id },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(`ESP connection with ID ${id} not found`);
+    }
+
+    // Validate ownership if userId is provided
+    if (userId && connection.userId !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to access this ESP connection',
+      );
+    }
+
+    return connection;
   }
 }
