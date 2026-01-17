@@ -6,6 +6,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
+import { Subscriber } from './entities/subscriber.entity';
+import { SubscriberService } from './services/subscriber.service';
 
 @Module({
   imports: [
@@ -20,9 +22,10 @@ import { BeehiivConnector } from './connectors/beehiiv.connector';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    TypeOrmModule.forFeature([Subscriber]),
     HttpModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EncryptionService, BeehiivConnector],
+  providers: [AppService, EncryptionService, BeehiivConnector, SubscriberService],
 })
 export class AppModule {}
