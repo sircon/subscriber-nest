@@ -10,6 +10,10 @@ import { AuthGuard } from './guards/auth.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
+import { EspConnection } from './entities/esp-connection.entity';
+import { EspConnectionController } from './esp-connection.controller';
+import { EspConnectionService } from './esp-connection.service';
+import { EncryptionService } from './encryption.service';
 
 @Module({
   imports: [
@@ -24,10 +28,17 @@ import { Session } from './entities/session.entity';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([VerificationCode, User, Session]),
+    TypeOrmModule.forFeature([VerificationCode, User, Session, EspConnection]),
   ],
-  controllers: [AppController, AuthController],
-  providers: [AppService, EmailService, AuthService, AuthGuard],
+  controllers: [AppController, AuthController, EspConnectionController],
+  providers: [
+    AppService,
+    EmailService,
+    AuthService,
+    AuthGuard,
+    EspConnectionService,
+    EncryptionService,
+  ],
   exports: [EmailService],
 })
 export class AppModule {}
