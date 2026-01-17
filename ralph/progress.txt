@@ -175,4 +175,21 @@ Started: Sat Jan 17 2026
   - Handle service exceptions appropriately: re-throw `BadRequestException` (400), wrap other errors in `InternalServerErrorException` (500)
   - Note: Authentication is not yet implemented, so `userId` is currently a placeholder. Future iterations should add authentication guards and extract userId from the authenticated user context
   - The controller delegates business logic to the service layer, keeping controllers thin and focused on HTTP concerns
+
+## 2026-01-18 - US-008
+- Installed `@nestjs/bullmq`, `bullmq`, and `ioredis` packages for queue-based background job processing
+- Configured BullMQ in `AppModule` using `BullModule.forRoot()` with Redis connection settings from environment variables
+- Redis connection configured from environment variables: `REDIS_HOST` (default: 'localhost'), `REDIS_PORT` (default: 6379), `REDIS_PASSWORD` (optional)
+- Created `subscriber-sync` queue using `BullModule.registerQueue()` with queue name 'subscriber-sync'
+- Files changed:
+  - `apps/backend/src/app.module.ts` (updated to include BullModule configuration)
+  - `apps/backend/package.json` (updated with @nestjs/bullmq, bullmq, and ioredis dependencies)
+- **Learnings for future iterations:**
+  - BullMQ is configured at the module level using `BullModule.forRoot()` for global Redis connection configuration
+  - Individual queues are registered using `BullModule.registerQueue()` with a `name` property
+  - Redis connection configuration uses a `connection` object with `host`, `port`, and optional `password` properties
+  - Environment variables should have sensible defaults (localhost:6379) for local development
+  - The `password` field is optional in the connection config (undefined if not set), which works for Redis instances without authentication
+  - Queue processors will be created in future stories (US-009) using `@Processor('subscriber-sync')` decorator
+  - Jobs can be added to the queue using `@InjectQueue('subscriber-sync')` decorator in services/controllers
 ---
