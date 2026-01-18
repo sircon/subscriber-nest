@@ -309,3 +309,26 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn lint` and `yarn build` to verify changes don't break existing code
   - Typecheck passes automatically when there are no TypeScript files to check
 ---
+
+## 2026-01-19 - US-015
+- Created `apps/worker/package.json` with NestJS dependencies including `@nestjs/schedule@^6.1.0` (version 6.x supports NestJS 11)
+- Created `apps/worker/tsconfig.json` with TypeScript configuration including paths to shared package (`@subscriber-nest/shared` and `@subscriber-nest/shared/*`)
+- Created `apps/worker/nest-cli.json` with NestJS CLI configuration
+- Copied `apps/worker/eslint.config.mjs` from API service for linting configuration
+- Created minimal `apps/worker/src/index.ts` placeholder file to allow typecheck to pass
+- Root `package.json` already had `apps/*` in workspaces, so no update needed
+- Files changed:
+  - `apps/worker/package.json` - Created with NestJS dependencies including @nestjs/schedule
+  - `apps/worker/tsconfig.json` - Created with TypeScript config and shared package paths
+  - `apps/worker/nest-cli.json` - Created with NestJS CLI config
+  - `apps/worker/eslint.config.mjs` - Copied from API service
+  - `apps/worker/src/index.ts` - Created minimal placeholder
+- **Learnings for future iterations:**
+  - Use `@nestjs/schedule@^6.1.0` or later for NestJS 11 compatibility (version 4.x only supports NestJS 8-10)
+  - Worker service package.json includes only essential dependencies (no HTTP-related packages like @nestjs/platform-express, @bull-board, axios, etc.)
+  - TypeScript path aliases in tsconfig.json reference shared package using relative paths from tsconfig location
+  - Copy eslint.config.mjs from API service to maintain consistent linting configuration
+  - Root package.json workspaces already includes `apps/*`, so new apps are automatically recognized
+  - Use `yarn install` after creating package.json to install dependencies
+  - Use `turbo run lint --filter=worker`, `turbo run build --filter=worker`, and `yarn workspace worker typecheck` to verify worker service configuration
+---
