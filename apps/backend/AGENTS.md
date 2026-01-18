@@ -21,8 +21,8 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `src/data-source.ts` – DataSource for `migration:generate`, `migration:run`, `migration:revert`.  
 - `src/migrations/` – migration files (built to `dist/migrations/` for `migration:run`).  
 - `src/services/` – Injectable services (e.g., `SubscriberService`, `EncryptionService`).  
-- `src/dto/` – Data Transfer Objects for API requests/responses (e.g., `CreateSubscriberDto`).  
-- `src/entities/` – TypeORM entities (e.g., `Subscriber`, `EspConnection`).  
+- DTOs are in `packages/shared/src/dto/` – Import using `@subscriber-nest/shared/dto` (e.g., `CreateSubscriberDto`, `CreateEspConnectionDto`).  
+- Entities are in `packages/shared/src/entities/` – Import using `@subscriber-nest/shared/entities` (e.g., `Subscriber`, `EspConnection`).  
 - `src/processors/` – BullMQ queue processors (e.g., `SubscriberSyncProcessor`).  
 
 ## Env (see `.env.example` or root README)
