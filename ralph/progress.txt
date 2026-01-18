@@ -489,3 +489,23 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Services can now use `EventEmitter2` (injected via constructor) to publish events and `@OnEvent()` decorator to listen to events
   - Use `yarn workspace api typecheck`, `yarn workspace worker typecheck`, `turbo run lint --filter=api --filter=worker`, and `turbo run build --filter=api --filter=worker` to verify event emitter configuration
 ---
+
+## 2026-01-18 15:54 - US-024
+- Updated `EspConnectionController.triggerSync()` to use event-based communication instead of direct queue job addition
+- Injected `EventEmitter2` from `@nestjs/event-emitter` into controller constructor (replaced `@InjectQueue` and `subscriberSyncQueue`)
+- Published `SyncRequestedEvent` with `espConnectionId` and `userId` when sync is triggered
+- Removed direct queue job addition (`subscriberSyncQueue.add()`) from API controller
+- Removed `jobId` from response type and body (no longer available since we're using events)
+- API service still returns immediate 202 Accepted response with status, message, and connection
+- Files changed:
+  - `apps/api/src/controllers/esp-connection.controller.ts` - Updated imports, constructor, and triggerSync method
+- **Learnings for future iterations:**
+  - API service publishes events using `EventEmitter2.emit()` - events are published synchronously but processed asynchronously by listeners
+  - Event emitter was already configured in API service AppModule from US-023, so no module configuration changes needed
+  - When converting from direct queue jobs to events, remove `@InjectQueue` decorator and queue injection, replace with `EventEmitter2` injection
+  - Event publishing doesn't return a job ID, so response structure may need to be adjusted (removed `jobId` field)
+  - Use `eventEmitter.emit('EventClassName', eventInstance)` to publish events - event class name is used as the event name
+  - Import event classes from `@subscriber-nest/shared/events` to use in controllers
+  - API service now decoupled from queue implementation - worker service will handle queue job creation from events
+  - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify changes
+---
