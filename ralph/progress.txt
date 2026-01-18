@@ -120,3 +120,15 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Run `yarn install` after adding dependencies to shared package
   - Use `yarn workspace @subscriber-nest/shared typecheck` and `yarn exec tsc --noEmit` in backend to verify compilation
 ---
+
+## 2026-01-18 15:27 - US-006
+- Created API service directory structure at `apps/api/src/` with all required subdirectories (controllers, services, guards, decorators)
+- Directory structure matches the backend structure for easy migration
+- Files changed:
+  - Created directory structure: `apps/api/src/{controllers,services,guards,decorators}/`
+- **Learnings for future iterations:**
+  - Empty directories are not tracked by git until files are added (this is expected behavior)
+  - API service directory structure mirrors backend structure to facilitate migration
+  - Use `yarn lint` to verify changes don't break existing code
+  - Typecheck passes automatically when there are no TypeScript files to check
+---
