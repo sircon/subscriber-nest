@@ -100,6 +100,77 @@ export class EspConnectionService {
   }
 
   /**
+   * Creates a new OAuth-based ESP connection after validating the access token
+   * @param userId - The ID of the user creating the connection
+   * @param espType - The type of ESP (e.g., 'kit', 'mailchimp')
+   * @param accessToken - The OAuth access token to validate and store (will be encrypted)
+   * @param refreshToken - The OAuth refresh token to store (will be encrypted)
+   * @param expiresIn - The number of seconds until the access token expires
+   * @returns The created ESP connection
+   * @throws BadRequestException if access token validation fails, ESP type is invalid, or OAuth is not supported
+   */
+  async createOAuthConnection(
+    userId: string,
+    espType: EspType,
+    accessToken: string,
+    refreshToken: string,
+    expiresIn: number
+  ): Promise<EspConnection> {
+    // Get the appropriate connector
+    const connector = this.getConnector(espType);
+
+    // Check if connector supports OAuth
+    if (
+      !connector.validateAccessToken ||
+      !connector.fetchPublicationsWithOAuth
+    ) {
+      throw new BadRequestException(
+        `OAuth is not supported for ESP type: ${espType}`
+      );
+    }
+
+    // Validate access token using the connector
+    const isValid = await connector.validateAccessToken(accessToken);
+    if (!isValid) {
+      throw new BadRequestException('Invalid OAuth access token');
+    }
+
+    // Encrypt tokens before storing
+    const encryptedAccessToken = this.encryptionService.encrypt(accessToken);
+    const encryptedRefreshToken = this.encryptionService.encrypt(refreshToken);
+
+    // Fetch all publications using the access token
+    const publications =
+      await connector.fetchPublicationsWithOAuth(accessToken);
+
+    // Extract publication IDs from publications array
+    const publicationIds = publications.map((pub) => pub.id);
+
+    // Calculate token expiry time
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expiresIn);
+
+    // Create the ESP connection
+    const espConnection = this.espConnectionRepository.create({
+      userId,
+      espType,
+      authMethod: AuthMethod.OAUTH,
+      encryptedAccessToken,
+      encryptedRefreshToken,
+      tokenExpiresAt,
+      publicationIds: publicationIds.length > 0 ? publicationIds : null,
+      status: EspConnectionStatus.ACTIVE,
+      lastValidatedAt: new Date(),
+    });
+
+    // Save to database
+    const savedConnection =
+      await this.espConnectionRepository.save(espConnection);
+
+    return savedConnection;
+  }
+
+  /**
    * Finds all ESP connections for a user
    * @param userId - The ID of the user
    * @returns Array of ESP connections belonging to the user

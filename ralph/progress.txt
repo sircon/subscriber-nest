@@ -250,3 +250,23 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - When updating OAuth connections after token refresh, the database save happens in OAuthTokenRefreshService, so reload the connection in the calling service to get the latest data
   - Error detection for 401 should check both error.message and error.response.status for robustness
 ---
+
+## Sun Jan 19 2026 - US-012
+- Added `createOAuthConnection()` method to EspConnectionService
+- Method encrypts access token and refresh token using EncryptionService before storing
+- Method validates access token using connector's `validateAccessToken()` method
+- Method calls `fetchPublicationsWithOAuth()` to get all publications from the ESP
+- Method stores all publication IDs in `publicationIds` JSONB array
+- Method sets `authMethod: 'oauth'` and calculates `tokenExpiresAt` from `expiresIn` parameter
+- Method sets `status: 'active'` if validation succeeds
+- Existing `createConnection()` already sets `authMethod: 'api_key'` for API key connections (no changes needed)
+- Files changed:
+  - `apps/backend/src/services/esp-connection.service.ts` (updated)
+- **Learnings for future iterations:**
+  - `createOAuthConnection()` checks if connector supports OAuth by verifying `validateAccessToken` and `fetchPublicationsWithOAuth` methods exist before attempting to use them
+  - OAuth connections store all publication IDs in `publicationIds` JSONB array (not just a single `publicationId` like API key connections)
+  - Token expiry is calculated by adding `expiresIn` seconds to current time: `new Date()` then `setSeconds(getSeconds() + expiresIn)`
+  - Always validate OAuth access token before creating connection to ensure it's valid and user has access
+  - The method throws BadRequestException if OAuth is not supported for the ESP type or if access token validation fails
+  - Empty publication arrays are stored as `null` in the database (check `publicationIds.length > 0` before storing)
+---
