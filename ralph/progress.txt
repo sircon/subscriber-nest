@@ -39,3 +39,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - TypeORM ManyToOne relationships require `@JoinColumn` on the side that owns the foreign key (BillingUsage side)
   - Migration generation automatically creates enum types, foreign key constraints, and indexes based on entity decorators
 ---
+
+## 2026-01-19 - US-003
+- Installed `stripe` npm package (v20.2.0) in backend
+- Added `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` environment variables to `.env.example`
+- Created `StripeService` with initialization of Stripe client using ConfigService
+- Service validates both Stripe keys are configured on initialization (fail-fast pattern)
+- Service provides `getClient()` method to access Stripe instance and `getWebhookSecret()` method for webhook verification
+- Registered `StripeService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/package.json` (added stripe dependency)
+  - `apps/backend/.env.example` (added Stripe environment variables)
+  - `apps/backend/src/services/stripe.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Stripe API version must match the version supported by the installed stripe package (currently '2025-12-15.clover')
+  - Services that require environment variables should validate them in constructor using fail-fast pattern (throw error if missing)
+  - Use `ConfigService` from `@nestjs/config` to read environment variables (already configured globally in AppModule)
+  - Stripe client initialization requires secret key, webhook secret is stored separately for webhook signature verification
+---
