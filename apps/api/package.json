@@ -11,7 +11,12 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\"",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "yarn run typeorm -- migration:generate -d src/data-source.ts",
+    "db:migrate": "yarn build && yarn run typeorm -- migration:run -d dist/data-source.run.js",
+    "db:revert": "yarn build && yarn run typeorm -- migration:revert -d dist/data-source.run.js",
+    "db:reset": "yarn build && yarn run typeorm schema:drop -d dist/data-source.run.js && yarn db:migrate"
   },
   "dependencies": {
     "@bull-board/api": "^6.16.2",

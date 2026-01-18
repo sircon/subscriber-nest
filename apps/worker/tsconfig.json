@@ -19,10 +19,19 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
-      "@subscriber-nest/shared": ["../../packages/shared/src"],
-      "@subscriber-nest/shared/*": ["../../packages/shared/src/*"]
+      "@subscriber-nest/shared": [
+        "../../packages/shared/dist"
+      ],
+      "@subscriber-nest/shared/*": [
+        "../../packages/shared/dist/*"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
