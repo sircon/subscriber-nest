@@ -71,3 +71,27 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `turbo run build --filter=backend` and `turbo run build --filter=@subscriber-nest/shared` to verify compilation
   - Use `yarn lint` to verify code style after moving files
 ---
+
+## 2026-01-18 15:23 - US-004
+- Moved all 2 DTO files from `apps/backend/src/dto/` to `packages/shared/src/dto/`:
+  - create-esp-connection.dto.ts
+  - create-subscriber.dto.ts
+- Updated `packages/shared/src/dto/index.ts` to export both DTOs
+- Updated all backend imports (3 files) to use `@subscriber-nest/shared/dto` instead of relative paths:
+  - Controllers: esp-connection
+  - Services: subscriber-mapper, subscriber
+- Fixed imports within shared package DTOs to use relative paths (`../entities`) instead of package name imports (package name imports are for external consumers)
+- Deleted old DTO files from backend
+- Files changed:
+  - Created 2 DTO files in `packages/shared/src/dto/`
+  - Updated `packages/shared/src/dto/index.ts` to export both DTOs
+  - Updated 3 files in `apps/backend/src/` to use shared package imports
+  - Deleted 2 DTO files from `apps/backend/src/dto/`
+- **Learnings for future iterations:**
+  - Within the shared package itself, use relative imports (e.g., `../entities`) instead of package name imports (e.g., `@subscriber-nest/shared/entities`)
+  - Package name imports (`@subscriber-nest/shared/*`) are for external packages that consume the shared package
+  - When moving DTOs, update imports in: controllers and services
+  - Use `@subscriber-nest/shared/dto` import path for all DTO imports after moving to shared package
+  - All DTOs should be exported from `packages/shared/src/dto/index.ts`
+  - Use `turbo run build --filter=backend --filter=@subscriber-nest/shared` to verify compilation
+---
