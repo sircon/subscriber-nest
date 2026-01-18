@@ -12,6 +12,7 @@ import { SubscriberService } from './services/subscriber.service';
 import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
+import { SubscriberController } from './controllers/subscriber.controller';
 import { SubscriberMapperService } from './services/subscriber-mapper.service';
 import { SubscriberSyncService } from './services/subscriber-sync.service';
 import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor';
@@ -65,7 +66,7 @@ import { SyncHistoryService } from './services/sync-history.service';
       },
     }),
   ],
-  controllers: [AppController, AuthController, EspConnectionController],
+  controllers: [AppController, AuthController, EspConnectionController, SubscriberController],
   providers: [
     AppService,
     EncryptionService,
