@@ -8,13 +8,19 @@ import {
   InternalServerErrorException,
   Logger,
   Req,
+  UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import Stripe from 'stripe';
 import { StripeService } from '../services/stripe.service';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
 import { BillingUsageService } from '../services/billing-usage.service';
 import { BillingUsageStatus } from '../entities/billing-usage.entity';
+import { BillingSubscriptionStatus } from '../entities/billing-subscription.entity';
+import { AuthGuard } from '../guards/auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { User } from '../entities/user.entity';
 
 @Controller('billing')
 export class BillingController {
@@ -24,6 +30,7 @@ export class BillingController {
     private readonly stripeService: StripeService,
     private readonly billingSubscriptionService: BillingSubscriptionService,
     private readonly billingUsageService: BillingUsageService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post('webhook')
@@ -300,6 +307,81 @@ export class BillingController {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Create a Stripe Checkout session for subscription
+   * POST /billing/create-checkout-session
+   */
+  @Post('create-checkout-session')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async createCheckoutSession(@CurrentUser() user: User): Promise<{ url: string }> {
+    try {
+      this.logger.log(`Creating checkout session for user: ${user.id}`);
+
+      // Get frontend URL from environment
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+      // Build success and cancel URLs
+      const successUrl = `${frontendUrl}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${frontendUrl}/onboarding/stripe?canceled=true`;
+
+      // Check if user already has a Stripe customer
+      let existingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+      let customerId: string;
+
+      if (existingSubscription && existingSubscription.stripeCustomerId) {
+        // Use existing customer
+        customerId = existingSubscription.stripeCustomerId;
+        this.logger.log(`Using existing Stripe customer: ${customerId}`);
+      } else {
+        // Create new Stripe customer
+        this.logger.log(`Creating new Stripe customer for user: ${user.id}`);
+        const customer = await this.stripeService.createCustomer(user.email, user.id);
+        customerId = customer.id;
+
+        // Create or update billing subscription record with customer ID
+        if (existingSubscription) {
+          await this.billingSubscriptionService.update(existingSubscription.id, {
+            stripeCustomerId: customerId,
+          });
+        } else {
+          await this.billingSubscriptionService.create({
+            userId: user.id,
+            stripeCustomerId: customerId,
+            status: BillingSubscriptionStatus.INCOMPLETE,
+          });
+        }
+      }
+
+      // Create checkout session
+      const session = await this.stripeService.createCheckoutSession(
+        customerId,
+        user.email,
+        successUrl,
+        cancelUrl,
+      );
+
+      this.logger.log(`Created checkout session: ${session.id} for user: ${user.id}`);
+
+      return { url: session.url || '' };
+    } catch (error: any) {
+      this.logger.error(
+        `Error creating checkout session for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Re-throw known exceptions
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to create checkout session: ${error.message}`,
+      );
     }
   }
 }

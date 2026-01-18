@@ -182,3 +182,27 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Use Logger from `@nestjs/common` for structured logging in controllers
   - When updating entities from webhooks, handle cases where entity might not exist yet (create vs update logic)
 ---
+
+## 2026-01-19 - US-010
+- Added `POST /billing/create-checkout-session` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint checks if user already has a Stripe customer (via `BillingSubscription`), creates new customer if needed
+- Created `createCheckoutSession()` method in `StripeService` to create Stripe Checkout sessions
+- Checkout session configured with success URL: `/dashboard/settings?session_id={CHECKOUT_SESSION_ID}` and cancel URL: `/onboarding/stripe?canceled=true`
+- Checkout session includes customer email from authenticated user
+- Added `FRONTEND_URL` environment variable to `.env.example` for configuring redirect URLs
+- Endpoint returns `{ url: string }` with checkout session URL
+- Proper error handling with logging and `InternalServerErrorException` for Stripe API errors
+- Files changed:
+  - `apps/backend/.env.example` (added FRONTEND_URL)
+  - `apps/backend/src/services/stripe.service.ts` (added createCheckoutSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added createCheckoutSession endpoint)
+- **Learnings for future iterations:**
+  - Stripe Checkout sessions require a price ID configured in environment variables (same as subscriptions)
+  - When creating checkout sessions, use `mode: 'subscription'` for subscription-based checkout
+  - Stripe Checkout success URLs can include `{CHECKOUT_SESSION_ID}` placeholder which Stripe will replace with actual session ID
+  - Always check if user already has a Stripe customer before creating a new one to avoid duplicate customers
+  - When creating a new Stripe customer during checkout, also create or update the `BillingSubscription` record with the customer ID
+  - Use `ConfigService` to read frontend URL from environment for constructing redirect URLs
+  - Stripe Checkout sessions return a `url` property that should be returned to the frontend for redirecting the user
+---

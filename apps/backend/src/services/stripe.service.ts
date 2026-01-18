@@ -244,4 +244,66 @@ export class StripeService {
       );
     }
   }
+
+  /**
+   * Create a Stripe Checkout session for subscription
+   * @param customerId - Stripe customer ID
+   * @param customerEmail - Customer email address
+   * @param successUrl - URL to redirect to after successful checkout
+   * @param cancelUrl - URL to redirect to if checkout is canceled
+   * @returns Stripe checkout session object
+   * @throws InternalServerErrorException if Stripe API call fails or price ID is not configured
+   */
+  async createCheckoutSession(
+    customerId: string,
+    customerEmail: string,
+    successUrl: string,
+    cancelUrl: string,
+  ): Promise<Stripe.Checkout.Session> {
+    try {
+      const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
+      if (!priceId) {
+        throw new InternalServerErrorException(
+          'STRIPE_PRICE_ID environment variable is required to create checkout sessions',
+        );
+      }
+
+      const session = await this.stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerEmail,
+        mode: 'subscription',
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        subscription_data: {
+          metadata: {
+            // Store customer ID in subscription metadata for webhook handling
+            customerId,
+          },
+        },
+      });
+
+      return session;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to create Stripe checkout session: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors (including our own InternalServerErrorException)
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error creating Stripe checkout session: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
 }
