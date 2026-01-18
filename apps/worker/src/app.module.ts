@@ -1,0 +1,70 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import {
+  Subscriber,
+  EspConnection,
+  VerificationCode,
+  User,
+  Session,
+  SyncHistory,
+  BillingSubscription,
+  BillingUsage,
+} from "@subscriber-nest/shared/entities";
+import { EncryptionService } from "@subscriber-nest/shared/services";
+import { BeehiivConnector } from "./connectors/beehiiv.connector";
+import { SubscriberSyncProcessor } from "./processors/subscriber-sync.processor";
+import { BillingProcessor } from "./processors/billing.processor";
+import { AccountDeletionProcessor } from "./processors/account-deletion.processor";
+import { SubscriberSyncService } from "./services/subscriber-sync.service";
+import { SubscriberMapperService } from "./services/subscriber-mapper.service";
+import { SyncHistoryService } from "./services/sync-history.service";
+import { SubscriberService } from "./services/subscriber.service";
+import { BillingUsageService } from "./services/billing-usage.service";
+import { BillingSubscriptionService } from "./services/billing-subscription.service";
+import { StripeService } from "./services/stripe.service";
+import { BillingCalculationService } from "./services/billing-calculation.service";
+import { EspConnectionService } from "./services/esp-connection.service";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: "postgres",
+      host: process.env.DATABASE_HOST ?? "localhost",
+      port: parseInt(process.env.DATABASE_PORT ?? "5432", 10),
+      username: process.env.DATABASE_USER ?? "postgres",
+      password: process.env.DATABASE_PASSWORD ?? "postgres",
+      database: process.env.DATABASE_NAME ?? "subscriber_nest",
+      autoLoadEntities: true,
+      synchronize: process.env.NODE_ENV !== "production",
+    }),
+    TypeOrmModule.forFeature([
+      Subscriber,
+      EspConnection,
+      VerificationCode,
+      User,
+      Session,
+      SyncHistory,
+      BillingSubscription,
+      BillingUsage,
+    ]),
+  ],
+  providers: [
+    EncryptionService,
+    BeehiivConnector,
+    SubscriberSyncProcessor,
+    BillingProcessor,
+    AccountDeletionProcessor,
+    SubscriberSyncService,
+    SubscriberMapperService,
+    SyncHistoryService,
+    SubscriberService,
+    BillingUsageService,
+    BillingSubscriptionService,
+    StripeService,
+    BillingCalculationService,
+    EspConnectionService,
+  ],
+})
+export class AppModule {}

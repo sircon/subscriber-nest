@@ -387,3 +387,23 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `turbo run lint --filter=worker`, `turbo run build --filter=worker`, and `yarn workspace worker typecheck` to verify compilation and code style
   - Services use `@InjectRepository` for TypeORM repositories, which will need to be configured in AppModule (US-018)
 ---
+
+## 2026-01-19 - US-018
+- Created `apps/worker/src/app.module.ts` with TypeORM configuration matching API service structure
+- Configured `TypeOrmModule.forRoot()` with database connection settings from environment variables (DATABASE_HOST, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, DATABASE_NAME)
+- Configured `TypeOrmModule.forFeature()` with all 8 entities from shared package (Subscriber, EspConnection, VerificationCode, User, Session, SyncHistory, BillingSubscription, BillingUsage)
+- Registered all 3 processors (SubscriberSyncProcessor, BillingProcessor, AccountDeletionProcessor)
+- Registered all 9 services and dependencies (EncryptionService from shared package, BeehiivConnector, and all worker services)
+- Configured ConfigModule.forRoot() for environment variable access
+- Files changed:
+  - `apps/worker/src/app.module.ts` - Created with TypeORM configuration
+- **Learnings for future iterations:**
+  - TypeORM configuration in worker service matches API service structure exactly (same connection settings, same entities)
+  - All entities are imported from `@subscriber-nest/shared/entities` using named imports
+  - TypeOrmModule.forFeature() must include all entities that will be used with @InjectRepository decorators in processors and services
+  - ConfigModule.forRoot({ isGlobal: true }) allows all services to access environment variables via @nestjs/config
+  - Worker service AppModule registers processors (which extend WorkerHost) as providers, not in imports
+  - All processors and services must be registered in providers array for dependency injection to work
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify TypeORM configuration
+  - TypeORM autoLoadEntities: true automatically discovers entities, but forFeature() is still needed for repository injection
+---
