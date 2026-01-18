@@ -603,3 +603,20 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify service migration
   - Backend service still compiles correctly after removing scheduler service (verified with `turbo run build --filter=backend`)
 ---
+
+## 2026-01-19 - US-030
+- Converted `AccountDeletionSchedulerService` from BullMQ repeatable jobs to NestJS Schedule cron decorator
+- Removed `OnModuleInit` interface and `onModuleInit()` method
+- Removed BullMQ repeatable job scheduling logic (checking for existing jobs, scheduling with repeat pattern)
+- Added `@Cron('0 0 * * *', { timeZone: 'UTC' })` decorator to `runAccountDeletion()` method
+- Method runs daily at 00:00 UTC and directly adds job to account-deletion queue
+- Files changed:
+  - `apps/worker/src/services/account-deletion-scheduler.service.ts` - Converted to use cron decorator instead of OnModuleInit
+- **Learnings for future iterations:**
+  - Use `@Cron()` decorator from `@nestjs/schedule` instead of BullMQ repeatable jobs for simpler cron scheduling
+  - Cron decorator methods should directly add jobs to queues (no need for repeatable job management)
+  - Remove `OnModuleInit` interface when converting from repeatable jobs to cron decorators
+  - Cron pattern `'0 0 * * *'` runs daily at 00:00 UTC (minute 0, hour 0, every day)
+  - Error handling in cron methods should log errors but not crash (similar to SyncSchedulerService and BillingSchedulerService patterns)
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify cron conversion
+---

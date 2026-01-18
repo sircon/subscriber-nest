@@ -1,13 +1,15 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { AccountDeletionJobData } from "../processors/account-deletion.processor";
 
 /**
  * Service to schedule daily account deletion jobs
+ * Job runs daily at 00:00 UTC to check for users with deleteRequestedAt older than 30 days
  */
 @Injectable()
-export class AccountDeletionSchedulerService implements OnModuleInit {
+export class AccountDeletionSchedulerService {
   private readonly logger = new Logger(AccountDeletionSchedulerService.name);
 
   constructor(
@@ -16,47 +18,25 @@ export class AccountDeletionSchedulerService implements OnModuleInit {
   ) {}
 
   /**
-   * Schedule daily account deletion job on module initialization
-   * Job runs daily at 00:00 UTC to check for users with deleteRequestedAt older than 30 days
+   * Runs daily at 00:00 UTC
+   * Checks for users with deleteRequestedAt older than 30 days and processes account deletion
    */
-  async onModuleInit() {
+  @Cron("0 0 * * *", { timeZone: "UTC" })
+  async runAccountDeletion(): Promise<void> {
+    this.logger.log("Starting daily account deletion job");
+
     try {
-      // Check if repeatable job already exists
-      const repeatableJobs =
-        await this.accountDeletionQueue.getRepeatableJobs();
-      const existingJob = repeatableJobs.find(
-        (job) => job.name === "account-deletion",
-      );
+      // Add account deletion job to queue
+      // Empty data - will process all eligible users
+      await this.accountDeletionQueue.add("account-deletion", {});
 
-      if (existingJob) {
-        this.logger.log("Account deletion job already scheduled. Skipping.");
-        return;
-      }
-
-      // Schedule repeatable job: runs daily at 00:00 UTC
-      // Cron pattern: "0 0 * * *" = minute 0, hour 0, every day
-      await this.accountDeletionQueue.add(
-        "account-deletion",
-        {}, // Empty data - will process all eligible users
-        {
-          repeat: {
-            pattern: "0 0 * * *", // Daily at 00:00 UTC
-            tz: "UTC",
-          },
-          jobId: "account-deletion-recurring",
-        },
-      );
-
-      this.logger.log(
-        "Scheduled account deletion job to run daily at 00:00 UTC",
-      );
+      this.logger.log("Successfully queued account deletion job");
     } catch (error: any) {
+      // Handle errors gracefully (logs but doesn't crash)
       this.logger.error(
-        `Failed to schedule account deletion job: ${error.message}`,
+        `Failed to queue account deletion job: ${error.message}`,
         error.stack,
       );
-      // Don't throw - allow app to start even if scheduling fails
-      // The job can be manually scheduled later
     }
   }
 }
