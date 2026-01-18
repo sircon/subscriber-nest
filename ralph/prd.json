@@ -327,8 +327,8 @@
         "Typecheck passes"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Duplicate removed in US-017. Added Redis config to .env.example. All services use same instance."
     },
     {
       "id": "US-022",
