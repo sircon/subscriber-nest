@@ -547,6 +547,172 @@
       "priority": 31,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Add Stripe Meter Configuration",
+      "description": "As a developer, I need to configure the Stripe meter ID for usage-based billing.",
+      "acceptanceCriteria": [
+        "Add `STRIPE_METER_ID` environment variable to backend configuration",
+        "Update `StripeService` to read meter ID from `ConfigService`",
+        "Add validation to ensure meter ID is configured on initialization",
+        "Update `.env.example` file with `STRIPE_METER_ID` variable",
+        "Typecheck passes"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "Create Stripe Meter Usage Reporting Service",
+      "description": "As a developer, I need a service to report subscriber usage to Stripe meters after each sync.",
+      "acceptanceCriteria": [
+        "Add method `reportUsageToMeter(subscriptionItemId: string, quantity: number, timestamp?: Date): Promise<Stripe.UsageRecord>` to `StripeService`",
+        "Method creates Stripe usage record using `stripe.subscriptionItems.createUsageRecord()`",
+        "Method uses meter ID from environment variable",
+        "Quantity is the number of 10k units (already calculated and rounded up)",
+        "Timestamp defaults to current time if not provided",
+        "Handle Stripe API errors appropriately",
+        "Typecheck passes"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "Update Subscription Creation to Use Meter",
+      "description": "As a developer, I need to update subscription creation to use the Stripe meter for metered billing.",
+      "acceptanceCriteria": [
+        "Update `StripeService.createSubscription()` to use meter-based pricing",
+        "Subscription item should reference the meter ID from environment variable",
+        "Subscription uses `usage_type: 'metered'` for the subscription item",
+        "Maintain existing subscription creation flow and error handling",
+        "Typecheck passes"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "Add Subscriber Count Tracking to Sync History",
+      "description": "As a developer, I need to track subscriber count at the time of each sync so we can calculate per-publication maximums.",
+      "acceptanceCriteria": [
+        "Add `subscriberCount` (integer, nullable) field to `SyncHistory` entity",
+        "Update `SubscriberSyncProcessor` to record subscriber count when sync completes successfully",
+        "Count subscribers for the specific ESP connection after sync completes",
+        "Store count in `subscriberCount` field of SyncHistory record",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "Create Per-Publication Usage Calculation Service",
+      "description": "As a developer, I need to calculate the maximum subscriber count per publication during the billing period.",
+      "acceptanceCriteria": [
+        "Create method `calculatePerPublicationMaxUsage(userId: string, billingPeriodStart: Date, billingPeriodEnd: Date): Promise<Map<string, number>>` in new or existing service",
+        "Method queries all ESP connections for the user",
+        "For each ESP connection, queries SyncHistory records within the billing period",
+        "Finds maximum `subscriberCount` from SyncHistory for each ESP connection",
+        "Returns Map with ESP connection ID as key and max subscriber count as value",
+        "If no sync history exists for a connection, uses current subscriber count as fallback",
+        "Only considers successful syncs (status = 'success')",
+        "Typecheck passes"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "Create Usage Calculation Service for Stripe Meter",
+      "description": "As a developer, I need a service to calculate total usage in 10k units (rounded up) from per-publication maximums.",
+      "acceptanceCriteria": [
+        "Create method `calculateMeterUsage(perPublicationMax: Map<string, number>): number` in new or existing service",
+        "Method sums all values from the per-publication max Map",
+        "Converts total subscriber count to units of 10,000 (divides by 10,000)",
+        "Always rounds up using `Math.ceil()` (e.g., 25,000 = 2.5 → 3, 20,000 = 2.0 → 2, 15,000 = 1.5 → 2)",
+        "Returns integer representing number of 10k units",
+        "Handles edge cases (0 subscribers = 0 units, very large numbers)",
+        "Typecheck passes"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "Update Sync Service to Report Usage to Stripe Meter",
+      "description": "As a developer, I need the sync service to report usage to Stripe meter after each successful sync.",
+      "acceptanceCriteria": [
+        "Update `SubscriberSyncService.syncSubscribers()` method",
+        "After successful sync and recording subscriber count in SyncHistory, calculate per-publication max usage for current billing period",
+        "Use per-publication calculation service to get max subscriber count for each ESP connection",
+        "Sum the maximums from all publications",
+        "Convert to 10k units (rounded up) using usage calculation service",
+        "Get user's active subscription and subscription item ID from BillingSubscription",
+        "Call `StripeService.reportUsageToMeter()` with subscription item ID and calculated quantity",
+        "Handle errors gracefully (log but don't fail sync if meter reporting fails)",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "Update BillingSubscription Entity to Store Subscription Item ID",
+      "description": "As a developer, I need to store the Stripe subscription item ID so we can report usage to the correct meter.",
+      "acceptanceCriteria": [
+        "Add `stripeSubscriptionItemId` (string, nullable) field to `BillingSubscription` entity",
+        "Generate and run migration successfully",
+        "Update webhook handlers to store subscription item ID when subscription is created/updated",
+        "Extract subscription item ID from subscription.items.data[0].id when subscription is created",
+        "Typecheck passes"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Update Monthly Billing Job for Metered Billing",
+      "description": "As a developer, I need to update or remove the monthly billing job since metered billing handles invoicing automatically.",
+      "acceptanceCriteria": [
+        "Review `BillingProcessor` monthly billing job",
+        "Since Stripe handles metered billing invoicing automatically, remove or simplify the job",
+        "If keeping job, update to only create new BillingUsage records for current month (no invoice creation)",
+        "Remove invoice creation logic (Stripe handles this automatically with meters)",
+        "Update job to only track usage records for historical purposes",
+        "Update or remove `BillingSchedulerService` if job is no longer needed",
+        "Typecheck passes"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "Update Billing Usage Tracking for Metered Billing",
+      "description": "As a developer, I need to update billing usage tracking to work with per-publication maximums instead of total maximum.",
+      "acceptanceCriteria": [
+        "Update `BillingUsageService.updateUsage()` to calculate per-publication max usage",
+        "Use per-publication calculation service to get max for each ESP connection",
+        "Store total sum of per-publication maximums in `maxSubscriberCount` field",
+        "Calculate total usage in 10k units (rounded up) for display purposes",
+        "Update `calculatedAmount` calculation if needed (or keep for display purposes)",
+        "Maintain backward compatibility with existing fields",
+        "Typecheck passes"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

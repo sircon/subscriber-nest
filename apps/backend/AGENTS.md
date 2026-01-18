@@ -12,6 +12,7 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 | **Sync** (to add) | Compare ESP vs local DB, apply creates/updates/deletes, handle conflicts. |
 | **Subscribers** | CRUD for subscriber entities via `SubscriberService`. Services use `@InjectRepository()` to inject TypeORM repositories. |
 | **Export** (to add) | Export subscriber list (e.g. CSV/JSON), optionally streamed or async. |
+| **Billing** | Usage-based subscription billing with Stripe integration. See [BILLING.md](./BILLING.md) for detailed documentation. |
 
 ## Important paths
 

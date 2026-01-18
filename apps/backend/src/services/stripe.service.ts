@@ -5,12 +5,14 @@ import Stripe from 'stripe';
 @Injectable()
 export class StripeService {
   private readonly stripe: Stripe;
+  private readonly meterId: string;
 
   constructor(private configService: ConfigService) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     const webhookSecret = this.configService.get<string>(
       'STRIPE_WEBHOOK_SECRET'
     );
+    const meterId = this.configService.get<string>('STRIPE_METER_ID');
 
     if (!secretKey) {
       throw new Error('STRIPE_SECRET_KEY environment variable is required');
@@ -20,9 +22,15 @@ export class StripeService {
       throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
     }
 
+    if (!meterId) {
+      throw new Error('STRIPE_METER_ID environment variable is required');
+    }
+
     this.stripe = new Stripe(secretKey, {
       apiVersion: '2025-12-15.clover',
     });
+
+    this.meterId = meterId;
   }
 
   /**
@@ -39,6 +47,14 @@ export class StripeService {
    */
   getWebhookSecret(): string {
     return this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || '';
+  }
+
+  /**
+   * Get the Stripe meter ID
+   * @returns Meter ID string
+   */
+  getMeterId(): string {
+    return this.meterId;
   }
 
   /**
@@ -282,7 +298,6 @@ export class StripeService {
 
       const session = await this.stripe.checkout.sessions.create({
         customer: customerId,
-        customer_email: customerEmail,
         mode: 'subscription',
         line_items: [
           {
