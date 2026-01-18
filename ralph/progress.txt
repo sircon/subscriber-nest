@@ -442,3 +442,40 @@ Started: Sat Jan 17 2026
   - Git merge strategy: preserve both sides initially, then resolve systematically in dedicated stories
   - The merged entity includes User relationship (needed for auth) and all ESP sync fields (needed for sync functionality)
 ---
+
+## 2026-01-18 - US-017
+- Resolved EspConnection entity conflicts from merge
+- Entity already contained all required fields from merge resolution in US-016
+- Verified entity has proper relationships:
+  - `@ManyToOne(() => User)` with `@JoinColumn({ name: 'userId' })` on EspConnection
+  - `@OneToMany(() => EspConnection)` on User entity
+- Verified enums are correct:
+  - `EspType`: beehiiv, kit, mailchimp
+  - `EspConnectionStatus`: active, invalid, error
+- Removed duplicate files from main branch:
+  - `src/esp-connection.controller.ts` (simple version) - kept `src/controllers/esp-connection.controller.ts` (full version)
+  - `src/esp-connection.service.ts` (basic version) - kept `src/services/esp-connection.service.ts` (complete version)
+  - `src/encryption.service.ts` (duplicate) - kept `src/services/encryption.service.ts` (original)
+- Removed conflicting migrations:
+  - Deleted `1737000001000-CreateEspConnectionEntity.ts` (simple version from main)
+  - Deleted `1768693294548-AddLastSyncedAtToEspConnection.ts` (separate migration)
+- Updated main migration `1737129600000-CreateEspConnectionAndSubscriber.ts`:
+  - Added all ESP types to enum: beehiiv, kit, mailchimp (was only beehiiv)
+  - Added `lastSyncedAt` column (was in separate migration)
+  - Added foreign key from esp_connections to users table
+- Files changed:
+  - Deleted: `apps/backend/src/esp-connection.controller.ts`
+  - Deleted: `apps/backend/src/esp-connection.service.ts`
+  - Deleted: `apps/backend/src/encryption.service.ts`
+  - Deleted: `apps/backend/src/migrations/1737000001000-CreateEspConnectionEntity.ts`
+  - Deleted: `apps/backend/src/migrations/1768693294548-AddLastSyncedAtToEspConnection.ts`
+  - Updated: `apps/backend/src/migrations/1737129600000-CreateEspConnectionAndSubscriber.ts`
+- **Learnings for future iterations:**
+  - When merging branches with duplicate files, keep the more complete/production-ready version
+  - The ESP sync branch versions (in services/, controllers/ subdirectories) are more feature-complete than main branch versions (in src/ root)
+  - Consolidate migrations when possible - having one migration create all fields is cleaner than multiple incremental migrations
+  - Update enum types in migrations to include all values from the entity definition
+  - Foreign key relationships must be defined both in entities (TypeORM decorators) and migrations (createForeignKey)
+  - After removing duplicate files, verify all imports in app.module.ts point to the correct remaining files
+  - Typecheck is the best way to verify all conflicts are resolved and imports are correct
+---

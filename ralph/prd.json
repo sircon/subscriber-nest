@@ -258,8 +258,8 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Entity already had all required fields. Removed duplicate files from main. Updated migration to include all ESP types and lastSyncedAt field."
     },
     {
       "id": "US-018",
