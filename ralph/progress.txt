@@ -657,3 +657,27 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - RESEND_FROM_EMAIL has a default value in EmailService, so it's optional in .env.example
   - Use `yarn workspace api typecheck`, `yarn workspace worker typecheck`, `turbo run lint`, and `turbo run build --filter=api --filter=worker` to verify changes
 ---
+
+## 2026-01-19 - US-033
+- Updated root README.md with new service structure (API and Worker services instead of monolithic backend)
+- Documented how to run both services independently using `--filter` flag
+- Added shared package documentation section explaining entities, DTOs, services, and events
+- Updated environment variables section to include API and Worker service configurations
+- Updated project structure section to show new directory layout with packages/shared
+- Updated root AGENTS.md to reference API and Worker services instead of backend
+- Created apps/api/AGENTS.md with API service-specific patterns and documentation
+- Created apps/worker/AGENTS.md with worker service-specific patterns and documentation
+- Files changed:
+  - `README.md` - Updated with new service structure, environment variables, development commands, and shared package documentation
+  - `AGENTS.md` - Updated to reference API and Worker services
+  - `apps/api/AGENTS.md` - Created with API service documentation
+  - `apps/worker/AGENTS.md` - Created with worker service documentation
+- **Learnings for future iterations:**
+  - Documentation should reflect the actual service architecture (API + Worker split)
+  - Environment variables are shared between API and Worker (DATABASE_*, REDIS_*, ENCRYPTION_KEY) but some are service-specific (PORT, STRIPE_*, RESEND_* for API)
+  - Use `--filter` flag with Turborepo commands to run services independently (e.g., `npm run dev --filter=api --filter=worker`)
+  - Shared package documentation should explain how to import from it using `@subscriber-nest/shared/*` path aliases
+  - AGENTS.md files should be created for each service to document service-specific patterns and conventions
+  - API service acts as HTTP API with event publishers, Worker service processes jobs and runs cron jobs
+  - Typecheck passes for all services after documentation updates
+---

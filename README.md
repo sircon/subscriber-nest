@@ -4,8 +4,10 @@ SubscriberNest lets you connect to your Email Service Provider (ESP), keep your 
 
 ## Tech Stack
 
-- **Backend:** NestJS + PostgreSQL (TypeORM)
+- **API Service:** NestJS HTTP API (TypeORM, PostgreSQL)
+- **Worker Service:** NestJS background workers (BullMQ, cron jobs)
 - **Frontend:** Next.js + React
+- **Shared Package:** Common entities, DTOs, and services
 - **Monorepo:** [Turborepo](https://turborepo.dev/)
 
 ## Versions
@@ -33,18 +35,59 @@ npm install
 
 ### 2. Environment variables
 
-**Backend** (`apps/backend`)
+**API Service** (`apps/api`)
 
-Copy `apps/backend/.env.example` to `apps/backend/.env`, or create `.env` with:
+Copy `apps/api/.env.example` to `apps/api/.env`, or create `.env` with:
 
 ```env
 PORT=4000
 
+# Database (shared with worker)
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
 DATABASE_NAME=subscriber_nest
+
+# Redis (shared with worker)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Encryption (shared with worker)
+ENCRYPTION_KEY=your-32-character-encryption-key-here
+
+# Stripe (API-specific)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_METER_ID=mtr_...
+
+# Email (API-specific)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=noreply@example.com
+
+NODE_ENV=development
+```
+
+**Worker Service** (`apps/worker`)
+
+Copy `apps/worker/.env.example` to `apps/worker/.env`, or create `.env` with:
+
+```env
+# Database (shared with API)
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=subscriber_nest
+
+# Redis (shared with API)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Encryption (shared with API)
+ENCRYPTION_KEY=your-32-character-encryption-key-here
 
 NODE_ENV=development
 ```
@@ -69,20 +112,31 @@ Or create it via your PostgreSQL client.
 
 ### 4. Development
 
-Run both apps in dev mode:
+Run all services in dev mode:
 
 ```bash
 npm run dev
 ```
 
-- **Backend:** http://localhost:4000  
+This starts:
+- **API Service:** http://localhost:4000  
+- **Worker Service:** (runs in background, processes jobs)
 - **Frontend:** http://localhost:3000  
 
-Run a single app:
+Run services independently:
 
 ```bash
-npm run dev --filter=backend
+# Run only API service
+npm run dev --filter=api
+
+# Run only worker service
+npm run dev --filter=worker
+
+# Run only frontend
 npm run dev --filter=frontend
+
+# Run API and worker together
+npm run dev --filter=api --filter=worker
 ```
 
 ### 5. Build
@@ -93,10 +147,16 @@ npm run build
 
 ### 6. Production
 
-**Backend:**
+**API Service:**
 
 ```bash
-cd apps/backend && npm run start
+cd apps/api && npm run start
+```
+
+**Worker Service:**
+
+```bash
+cd apps/worker && npm run start
 ```
 
 **Frontend:**
@@ -109,17 +169,37 @@ cd apps/frontend && npm run start
 
 ```
 ├── apps/
-│   ├── backend/     # NestJS API (TypeORM, Postgres)
+│   ├── api/         # NestJS HTTP API (TypeORM, Postgres, BullMQ producers)
+│   ├── worker/      # NestJS background workers (BullMQ processors, cron jobs)
 │   └── frontend/    # Next.js app
+├── packages/
+│   └── shared/      # Shared entities, DTOs, services, events
 ├── turbo.json       # Turborepo config
 ├── package.json
 ├── README.md
 └── AGENTS.md
 ```
 
-## Backend scripts
+## Shared Package
 
-From `apps/backend`:
+The `packages/shared` package contains code shared between API and Worker services:
+
+- **Entities:** TypeORM entities (Subscriber, EspConnection, User, etc.)
+- **DTOs:** Data transfer objects (CreateSubscriberDto, CreateEspConnectionDto)
+- **Services:** Common services (EncryptionService)
+- **Events:** Event classes for inter-service communication (SyncRequestedEvent)
+
+Import from shared package using TypeScript path aliases:
+
+```typescript
+import { Subscriber } from '@subscriber-nest/shared/entities';
+import { CreateSubscriberDto } from '@subscriber-nest/shared/dto';
+import { EncryptionService } from '@subscriber-nest/shared/services';
+```
+
+## API Service scripts
+
+From `apps/api`:
 
 | Script | Description |
 |--------|-------------|
@@ -131,6 +211,16 @@ From `apps/backend`:
 | `npm run migration:revert` | Revert last migration |
 
 Run `nest build` before `migration:run` so `dist/migrations` exists.
+
+## Worker Service scripts
+
+From `apps/worker`:
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start with watch mode (processes jobs and runs cron jobs) |
+| `npm run build` | Build for production |
+| `npm run start` | Run production build |
 
 ## Frontend scripts
 
@@ -153,4 +243,7 @@ From `apps/frontend`:
 
 ## Agents
 
-See [AGENTS.md](./AGENTS.md) for an overview. Each app has its own `AGENTS.md` in `apps/backend` and `apps/frontend`.
+See [AGENTS.md](./AGENTS.md) for an overview. Each app has its own `AGENTS.md`:
+- `apps/api/AGENTS.md` - API service modules and services
+- `apps/worker/AGENTS.md` - Worker service processors and schedulers
+- `apps/frontend/AGENTS.md` - Frontend pages and components
