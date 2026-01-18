@@ -31,6 +31,7 @@ import { BillingSubscription } from './entities/billing-subscription.entity';
 import { BillingUsage } from './entities/billing-usage.entity';
 import { StripeService } from './services/stripe.service';
 import { BillingCalculationService } from './services/billing-calculation.service';
+import { BillingUsageService } from './services/billing-usage.service';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { BillingCalculationService } from './services/billing-calculation.servic
     SyncHistoryService,
     StripeService,
     BillingCalculationService,
+    BillingUsageService,
   ],
   exports: [EmailService],
 })
