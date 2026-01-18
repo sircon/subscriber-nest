@@ -530,3 +530,22 @@ The SubscriberNest dashboard is now fully functional with comprehensive features
   - Conditional className with cn() utility allows clean conditional styling
   - Selected navigation items should look like "selected state" not "button ready to click"
 ---
+
+## 2026-01-18 11:34 - US-019
+- Added Dashboard navigation item at the top of the sidebar (above ESP connections list)
+- Dashboard item uses LayoutDashboard icon from lucide-react
+- Dashboard item navigates to `/dashboard` when clicked
+- Dashboard item is highlighted when pathname === '/dashboard' using same styling pattern as ESP connections
+- Selected state uses left border indicator (border-l-4 border-primary) with primary background (bg-primary/10)
+- Dashboard item styling matches sidebar design system (same hover and active states as ESP connections)
+- Mobile sidebar closes when Dashboard item is clicked (onClick handler calls setMobileOpen(false))
+- Files changed:
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Added Dashboard navigation item at top of sidebar
+- **Learnings for future iterations:**
+  - Dashboard navigation item should be at the very top of sidebar for easy access to overview
+  - Use LayoutDashboard icon for dashboard navigation (more specific than Home icon)
+  - Active state detection: check pathname === '/dashboard' (exact match, not startsWith)
+  - Reuse existing active state styling pattern (border-l-4, bg-primary/10, text-primary) for consistency
+  - Dashboard item should be in its own section with border-b separator for visual hierarchy
+  - When adding navigation items, ensure mobile sidebar closes on click for better UX
+---

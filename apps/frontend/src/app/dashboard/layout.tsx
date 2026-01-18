@@ -75,7 +75,7 @@ export default function DashboardLayout({
 
         {/* Header with Connect ESP button */}
         <div className="p-4 border-b">
-          <Link href="/onboarding">
+          <Link href="/dashboard/esp/new">
             <Button className="w-full" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Connect New ESP
