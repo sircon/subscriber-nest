@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { EspConnection, EspType } from '../entities/esp-connection.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { SubscriberMapperService } from './subscriber-mapper.service';
 import { SubscriberService } from './subscriber.service';
+import { BillingUsageService } from './billing-usage.service';
 
 /**
  * Service for syncing subscribers from ESPs to our database
@@ -16,10 +18,13 @@ export class SubscriberSyncService {
   constructor(
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
+    @InjectRepository(Subscriber)
+    private subscriberRepository: Repository<Subscriber>,
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
     private subscriberMapperService: SubscriberMapperService,
     private subscriberService: SubscriberService,
+    private billingUsageService: BillingUsageService,
   ) {}
 
   /**
@@ -89,6 +94,31 @@ export class SubscriberSyncService {
           // Continue processing other subscribers even if one fails
         }
       }
+
+      // After successful sync, update billing usage for the user
+      // Count total subscribers across all user's ESP connections
+      const userId = espConnection.userId;
+
+      // Get all ESP connection IDs for the user
+      const userConnections = await this.espConnectionRepository.find({
+        where: { userId },
+        select: ['id'],
+      });
+
+      const connectionIds = userConnections.map((conn) => conn.id);
+
+      // Count all subscribers across all user's ESP connections
+      let totalSubscriberCount = 0;
+      if (connectionIds.length > 0) {
+        totalSubscriberCount = await this.subscriberRepository.count({
+          where: {
+            espConnectionId: In(connectionIds),
+          },
+        });
+      }
+
+      // Update billing usage (tracks max subscriber count for current billing period)
+      await this.billingUsageService.updateUsage(userId, totalSubscriberCount);
     } catch (error: any) {
       // Re-throw NotFoundException as-is
       if (error instanceof NotFoundException) {

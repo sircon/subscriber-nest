@@ -286,3 +286,41 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When mapping entity results to response DTOs, convert decimal fields using `Number()` for proper JSON serialization
   - Default parameter values in TypeScript methods (e.g., `limit: number = 12`) provide fallback values if parameter is undefined
 ---
+
+## 2026-01-18 12:44:46 - US-015
+- Created `SubscriptionGuard` that implements `CanActivate` interface
+- Guard checks if user has active subscription using `BillingSubscriptionService.findByUserId()`
+- Guard allows access if subscription status is `ACTIVE` and `cancelAtPeriodEnd` is false
+- Guard allows access if subscription is `CANCELED` but `currentPeriodEnd` is in the future (grace period)
+- Guard throws `ForbiddenException` with message "Active subscription required" if subscription is inactive or doesn't exist
+- Applied guard to `POST /esp-connections/:id/sync` endpoint using `@UseGuards(SubscriptionGuard)` decorator
+- Applied guard to `GET /esp-connections/:id/subscribers/export` endpoint using `@UseGuards(SubscriptionGuard)` decorator
+- Registered `SubscriptionGuard` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/guards/subscription.guard.ts` (new)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added SubscriptionGuard import and applied to sync and export endpoints)
+  - `apps/backend/src/app.module.ts` (registered SubscriptionGuard in providers)
+- **Learnings for future iterations:**
+  - Guards that use dependency injection (like `BillingSubscriptionService`) must be registered in module providers
+  - Guards can be applied at the controller level (affects all routes) or at the method level (affects specific routes)
+  - When applying multiple guards, use `@UseGuards(Guard1, Guard2)` - guards execute in order
+  - Guards access the request object via `context.switchToHttp().getRequest()` to get the authenticated user (set by AuthGuard)
+  - For grace period logic, check if subscription is canceled but `currentPeriodEnd` is in the future (allows access during remaining billing period)
+  - Always check if user exists in guard (even though AuthGuard should have set it) as a safety measure
+  - Use `ForbiddenException` from `@nestjs/common` for authorization failures (403 status)
+---
+
+## 2026-01-18 12:46:19 - US-016
+- Updated `SubscriberSyncService.syncSubscribers()` method to track billing usage after successful sync
+- After processing all subscribers, method counts total subscribers across all user's ESP connections using `In()` from TypeORM
+- Method calls `BillingUsageService.updateUsage(userId, totalSubscriberCount)` to update billing usage
+- Billing usage update happens after all subscribers are processed, even if some individual subscribers fail to process
+- Injected `BillingUsageService` and `Subscriber` repository into `SubscriberSyncService` constructor
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (added billing usage tracking)
+- **Learnings for future iterations:**
+  - When updating billing usage after sync, get userId from espConnection and count subscribers across all user's ESP connections
+  - Use `In()` from TypeORM to efficiently count subscribers across multiple ESP connections: `where: { espConnectionId: In(connectionIds) }`
+  - Billing usage update should happen after all subscribers are processed, not during individual subscriber processing
+  - The `BillingUsageService.updateUsage()` method tracks the maximum subscriber count for the current billing period, so it's safe to call after each sync
+---
