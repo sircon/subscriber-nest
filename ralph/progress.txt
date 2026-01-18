@@ -206,3 +206,27 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Token refresh service should validate authMethod === 'oauth' and check for refresh token existence before attempting refresh
   - Service should validate ESP type supports OAuth (Kit, Mailchimp) before attempting refresh
 ---
+
+## Sun Jan 19 2026 - US-010
+- Created OAuthTokenRefreshSchedulerService that schedules proactive token refresh jobs
+- Scheduler runs every 5 minutes using cron pattern "*/5 * * * *" (every 5 minutes)
+- Created OAuthTokenRefreshProcessor that processes token refresh jobs via BullMQ queue
+- Processor finds all OAuth connections where `tokenExpiresAt` is within 10 minutes using TypeORM `LessThanOrEqual()` query
+- Processor calls `OAuthTokenRefreshService.refreshToken()` for each connection
+- Processor handles errors gracefully - logs failures but continues processing other connections to prevent one failure from blocking all refreshes
+- Registered `oauth-token-refresh` queue in BullModule with retry policy (3 attempts, exponential backoff)
+- Registered processor and scheduler service in app.module.ts providers array
+- Scheduler checks for existing repeatable jobs before scheduling to avoid duplicates
+- Files changed:
+  - `apps/backend/src/processors/oauth-token-refresh.processor.ts` (new)
+  - `apps/backend/src/services/oauth-token-refresh-scheduler.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+  - `apps/backend/AGENTS.md` (updated)
+- **Learnings for future iterations:**
+  - Cron pattern "*/5 * * * *" means "every 5 minutes" (every 5 minutes at any hour, day, month)
+  - Use TypeORM `LessThanOrEqual()` with calculated threshold date to find records expiring within a time window
+  - When processing multiple items in a job, handle errors per item and continue processing others (don't fail entire job on single item failure)
+  - Log success and error counts separately for better observability of job execution
+  - Token refresh jobs should proactively refresh tokens before expiry (10-minute window) to prevent API calls from failing due to expired tokens
+  - Always register new queues in `BullModule.registerQueue()` with appropriate retry policies
+---
