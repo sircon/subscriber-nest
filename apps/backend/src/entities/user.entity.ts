@@ -22,6 +22,12 @@ export class User {
   @Column({ default: false })
   isOnboarded: boolean;
 
+  @Column({ type: 'timestamp', nullable: true })
+  deleteRequestedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
+
   @OneToMany(() => EspConnection, (espConnection) => espConnection.user)
   espConnections: EspConnection[];
 

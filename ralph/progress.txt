@@ -408,3 +408,25 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - All API functions should use the shared `apiRequest()` helper to ensure consistent error handling and authentication
   - TypeScript interfaces for API responses should be defined at the top of the API client file for easy reference
 ---
+
+## 2026-01-19 - US-021
+- Added `deleteRequestedAt` (timestamp, nullable) field to `User` entity
+- Added `deletedAt` (timestamp, nullable) field to `User` entity
+- Generated migration `1768737205620-AddAccountDeletionFields.ts` which adds both fields to users table
+- Fixed existing billing migrations to be idempotent (use `IF NOT EXISTS` for tables, `DO $$ BEGIN ... EXCEPTION` blocks for enums and constraints) to handle cases where migrations were partially run
+- Migration executed successfully
+- Files changed:
+  - `apps/backend/src/entities/user.entity.ts` (added deleteRequestedAt and deletedAt fields)
+  - `apps/backend/src/migrations/1768737205620-AddAccountDeletionFields.ts` (new)
+  - `apps/backend/src/migrations/1768735510135-CreateBillingSubscription.ts` (made idempotent)
+  - `apps/backend/src/migrations/1768735595273-CreateBillingUsage.ts` (made idempotent)
+- **Learnings for future iterations:**
+  - When adding nullable timestamp fields to entities, use `@Column({ type: 'timestamp', nullable: true })` decorator
+  - TypeORM generates `TIMESTAMP` columns in PostgreSQL for timestamp fields (nullable by default when nullable: true is set)
+  - When migrations fail due to existing objects (tables, enums, constraints), make migrations idempotent using:
+    - `CREATE TABLE IF NOT EXISTS` for tables
+    - `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` for enums
+    - `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '...') THEN ... END IF; END $$;` for constraints
+  - `CREATE UNIQUE INDEX IF NOT EXISTS` for indexes
+  - This pattern is useful when database state is out of sync with migration tracking table
+---
