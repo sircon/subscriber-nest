@@ -200,7 +200,7 @@ export default function DashboardPage() {
                               : ''
                           }
                         >
-                          {history.status}
+                          {history.status.charAt(0).toUpperCase() + history.status.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDateTime(history.startedAt)}</TableCell>

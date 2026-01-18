@@ -100,9 +100,10 @@ export default function EspDetailPage() {
       unsubscribed: 'bg-gray-500',
       bounced: 'bg-red-500',
     };
+    const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
     return (
       <Badge className={`${colors[status] || 'bg-gray-500'} text-white`}>
-        {status}
+        {capitalizedStatus}
       </Badge>
     );
   };
@@ -114,9 +115,10 @@ export default function EspDetailPage() {
       synced: 'bg-green-500',
       error: 'bg-red-500',
     };
+    const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
     return (
       <Badge className={`${colors[status] || 'bg-gray-500'} text-white`}>
-        {status}
+        {capitalizedStatus}
       </Badge>
     );
   };
@@ -376,7 +378,7 @@ export default function EspDetailPage() {
                   {formatDate(lastSync.completedAt)}
                 </p>
                 <Badge className={`mt-2 ${lastSync.status === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
-                  {lastSync.status}
+                  {lastSync.status.charAt(0).toUpperCase() + lastSync.status.slice(1)}
                 </Badge>
               </div>
             ) : (
@@ -397,7 +399,7 @@ export default function EspDetailPage() {
               {getSyncStatusBadge(connection.syncStatus)}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {connection.status}
+              {connection.status.charAt(0).toUpperCase() + connection.status.slice(1)}
             </p>
           </CardContent>
         </Card>
