@@ -11,6 +11,7 @@ import {
   SyncHistory,
   SyncHistoryStatus,
 } from '../entities/sync-history.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
 
 export interface SyncPublicationJobData {
@@ -30,6 +31,8 @@ export class SubscriberSyncProcessor extends WorkerHost {
     private espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(SyncHistory)
     private syncHistoryRepository: Repository<SyncHistory>,
+    @InjectRepository(Subscriber)
+    private subscriberRepository: Repository<Subscriber>,
     private subscriberSyncService: SubscriberSyncService
   ) {
     super();
@@ -81,10 +84,15 @@ export class SubscriberSyncProcessor extends WorkerHost {
         { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED }
       );
 
-      // Update sync history with completedAt timestamp
+      // Count subscribers for the specific ESP connection after successful sync
+      const subscriberCount = await this.subscriberRepository.count({
+        where: { espConnectionId },
+      });
+
+      // Update sync history with completedAt timestamp and subscriber count
       await this.syncHistoryRepository.update(
         { id: syncHistory.id },
-        { completedAt: new Date() }
+        { completedAt: new Date(), subscriberCount }
       );
 
       this.logger.log(

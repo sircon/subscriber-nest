@@ -721,3 +721,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Meter ID is configured in environment variable (`STRIPE_METER_ID`) and referenced directly in subscription creation
   - Subscription items with meters automatically track usage and bill based on reported usage records
 ---
+
+## 2026-01-19 - US-035
+- Added `subscriberCount` (integer, nullable) field to `SyncHistory` entity
+- Updated `SubscriberSyncProcessor` to count subscribers for the specific ESP connection after successful sync
+- Processor counts subscribers using `subscriberRepository.count()` with `where: { espConnectionId }` filter
+- Subscriber count is stored in `subscriberCount` field of SyncHistory record when sync completes successfully
+- Generated migration `1768743569622-AddSubscriberCountToSyncHistory.ts` which adds nullable integer column to sync_history table
+- Migration executed successfully
+- Files changed:
+  - `apps/backend/src/entities/sync-history.entity.ts` (added subscriberCount field)
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` (added Subscriber repository injection, added subscriber count logic)
+  - `apps/backend/src/migrations/1768743569622-AddSubscriberCountToSyncHistory.ts` (new)
+- **Learnings for future iterations:**
+  - When counting subscribers for a specific ESP connection, use `subscriberRepository.count({ where: { espConnectionId } })` to get accurate count
+  - Subscriber count should be recorded after successful sync completion, not during sync (to ensure all subscribers are processed)
+  - The Subscriber entity is already registered in AppModule TypeOrmModule.forFeature, so it can be injected into processors
+  - Migration generation requires building the project first to compile TypeScript entities
+  - Nullable integer columns in PostgreSQL are created with `ALTER TABLE "table_name" ADD "column_name" integer` (no NOT NULL constraint)
+---
