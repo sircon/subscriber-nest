@@ -12,7 +12,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subscriber, User } from '@subscriber-nest/shared/entities';
-import { EncryptionService } from '../services/encryption.service';
+import { EncryptionService } from '@subscriber-nest/shared/services';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 

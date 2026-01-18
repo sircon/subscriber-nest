@@ -11,7 +11,7 @@ import {
   EspType,
   Subscriber,
 } from '@subscriber-nest/shared/entities';
-import { EncryptionService } from './encryption.service';
+import { EncryptionService } from '@subscriber-nest/shared/services';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { SubscriberMapperService } from './subscriber-mapper.service';

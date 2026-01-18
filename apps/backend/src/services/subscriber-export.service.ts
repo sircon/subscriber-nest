@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Workbook } from 'exceljs';
 import { Subscriber } from '@subscriber-nest/shared/entities';
-import { EncryptionService } from './encryption.service';
+import { EncryptionService } from '@subscriber-nest/shared/services';
 
 export type ExportFormat = 'csv' | 'json' | 'xlsx';
 

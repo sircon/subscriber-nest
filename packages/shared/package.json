@@ -38,6 +38,10 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@nestjs/common": "^11.1.12",
+    "@nestjs/config": "^4.0.0"
+  },
   "devDependencies": {
     "typescript": "^5.7.2"
   }

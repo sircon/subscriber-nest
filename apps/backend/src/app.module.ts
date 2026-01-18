@@ -5,7 +5,7 @@ import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { EncryptionService } from './services/encryption.service';
+import { EncryptionService } from '@subscriber-nest/shared/services';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
 import { Subscriber } from '@subscriber-nest/shared/entities';
 import { SubscriberService } from './services/subscriber.service';
