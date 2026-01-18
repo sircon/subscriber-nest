@@ -1,8 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
+import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { EncryptionService } from './services/encryption.service';
+import { BeehiivConnector } from './connectors/beehiiv.connector';
+import { Subscriber } from './entities/subscriber.entity';
+import { SubscriberService } from './services/subscriber.service';
+import { EspConnection } from './entities/esp-connection.entity';
+import { EspConnectionService } from './services/esp-connection.service';
+import { EspConnectionController } from './controllers/esp-connection.controller';
+import { SubscriberMapperService } from './services/subscriber-mapper.service';
+import { SubscriberSyncService } from './services/subscriber-sync.service';
+import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor';
 import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -10,10 +22,6 @@ import { AuthGuard } from './guards/auth.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
-import { EspConnection } from './entities/esp-connection.entity';
-import { EspConnectionController } from './esp-connection.controller';
-import { EspConnectionService } from './esp-connection.service';
-import { EncryptionService } from './encryption.service';
 
 @Module({
   imports: [
@@ -28,16 +36,45 @@ import { EncryptionService } from './encryption.service';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([VerificationCode, User, Session, EspConnection]),
+    TypeOrmModule.forFeature([
+      Subscriber,
+      EspConnection,
+      VerificationCode,
+      User,
+      Session,
+    ]),
+    HttpModule,
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST ?? 'localhost',
+        port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+        password: process.env.REDIS_PASSWORD,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'subscriber-sync',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
   ],
   controllers: [AppController, AuthController, EspConnectionController],
   providers: [
     AppService,
+    EncryptionService,
+    BeehiivConnector,
+    SubscriberService,
+    EspConnectionService,
+    SubscriberMapperService,
+    SubscriberSyncService,
+    SubscriberSyncProcessor,
     EmailService,
     AuthService,
     AuthGuard,
-    EspConnectionService,
-    EncryptionService,
   ],
   exports: [EmailService],
 })

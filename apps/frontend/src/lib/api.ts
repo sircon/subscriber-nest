@@ -46,21 +46,34 @@ export interface CompleteOnboardingResponse {
 }
 
 export interface CreateEspConnectionRequest {
-  provider: string;
+  espType: string;
   apiKey: string;
+  publicationId: string;
 }
 
 export interface CreateEspConnectionResponse {
   id: string;
-  provider: string;
-  createdAt: Date;
+  userId: string;
+  espType: string;
+  publicationId: string;
+  status: string;
+  lastValidatedAt: string | null;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface EspConnection {
   id: string;
-  provider: string;
-  isActive: boolean;
-  createdAt: Date;
+  userId: string;
+  espType: string;
+  publicationId: string;
+  status: string;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  lastValidatedAt: string | null;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Error handling callback type
@@ -186,6 +199,11 @@ export const authApi = {
   },
 };
 
+export interface TriggerSyncResponse {
+  connection: EspConnection;
+  jobId: string;
+}
+
 /**
  * ESP Connection API functions
  */
@@ -220,6 +238,24 @@ export const espConnectionApi = {
       '/esp-connections',
       {
         method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Trigger manual sync for ESP connection
+   */
+  triggerSync: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<TriggerSyncResponse> => {
+    return apiRequest<TriggerSyncResponse>(
+      `/esp-connections/${connectionId}/sync`,
+      {
+        method: 'POST',
       },
       token,
       onUnauthorized,

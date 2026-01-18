@@ -1,18 +1,33 @@
 import {
   Entity,
-  Column,
   PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
+  Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Subscriber } from './subscriber.entity';
 import { User } from './user.entity';
 
-export enum EspProvider {
-  KIT = 'kit',
+export enum EspType {
   BEEHIIV = 'beehiiv',
+  KIT = 'kit',
   MAILCHIMP = 'mailchimp',
+}
+
+export enum EspConnectionStatus {
+  ACTIVE = 'active',
+  INVALID = 'invalid',
+  ERROR = 'error',
+}
+
+export enum EspSyncStatus {
+  IDLE = 'idle',
+  SYNCING = 'syncing',
+  SYNCED = 'synced',
+  ERROR = 'error',
 }
 
 @Entity('esp_connections')
@@ -20,7 +35,7 @@ export class EspConnection {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
   @ManyToOne(() => User)
@@ -29,19 +44,42 @@ export class EspConnection {
 
   @Column({
     type: 'enum',
-    enum: EspProvider,
+    enum: EspType,
   })
-  provider: EspProvider;
+  espType: EspType;
 
   @Column({ type: 'text' })
-  apiKey: string;
+  encryptedApiKey: string;
 
-  @Column({ default: true })
-  isActive: boolean;
+  @Column({ type: 'varchar', length: 255 })
+  publicationId: string;
+
+  @Column({
+    type: 'enum',
+    enum: EspConnectionStatus,
+    default: EspConnectionStatus.ACTIVE,
+  })
+  status: EspConnectionStatus;
+
+  @Column({
+    type: 'enum',
+    enum: EspSyncStatus,
+    default: EspSyncStatus.IDLE,
+  })
+  syncStatus: EspSyncStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastValidatedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastSyncedAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Subscriber, (subscriber) => subscriber.espConnection)
+  subscribers: Subscriber[];
 }

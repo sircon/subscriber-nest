@@ -1,15 +1,21 @@
 import { Controller, Post, Body, Get, UseGuards, Headers } from '@nestjs/common';
+import { IsEmail, IsString, Length } from 'class-validator';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from './entities/user.entity';
 
 class SendCodeDto {
+  @IsEmail()
   email: string;
 }
 
 class VerifyCodeDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @Length(6, 6)
   code: string;
 }
 

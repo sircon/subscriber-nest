@@ -424,8 +424,8 @@
         "Typecheck passes"
       ],
       "priority": 27,
-      "passes": true,
-      "notes": "Added EspSyncStatus enum and syncStatus field to entity. Created migration to add column to database."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-028",
@@ -439,8 +439,8 @@
         "Typecheck passes"
       ],
       "priority": 28,
-      "passes": true,
-      "notes": "Added updateSyncStatus method to service. Endpoint now marks connection as syncing before queueing job and returns updated connection in response."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-029",
@@ -454,7 +454,7 @@
         "Typecheck passes"
       ],
       "priority": 29,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -469,7 +469,7 @@
         "Typecheck passes"
       ],
       "priority": 30,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -487,8 +487,8 @@
         "Typecheck passes for frontend"
       ],
       "priority": 31,
-      "passes": true,
-      "notes": "Added sync button to dashboard with optimistic UI updates, error handling, and dynamic button text based on sync status."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-032",
@@ -502,8 +502,8 @@
         "Typecheck passes for frontend"
       ],
       "priority": 32,
-      "passes": true,
-      "notes": "Added automatic sync trigger after onboarding. Errors are handled gracefully without blocking onboarding completion."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
