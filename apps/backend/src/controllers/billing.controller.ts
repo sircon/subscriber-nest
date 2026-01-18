@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
   Query,
+  Body,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
@@ -30,6 +31,7 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { EspConnection } from '../entities/esp-connection.entity';
 import { Subscriber } from '../entities/subscriber.entity';
+import { AuthService } from '../auth.service';
 
 @Controller('billing')
 export class BillingController {
@@ -40,6 +42,7 @@ export class BillingController {
     private readonly billingSubscriptionService: BillingSubscriptionService,
     private readonly billingUsageService: BillingUsageService,
     private readonly configService: ConfigService,
+    private readonly authService: AuthService,
     @InjectRepository(EspConnection)
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(Subscriber)
@@ -634,6 +637,105 @@ export class BillingController {
       // Wrap unknown errors
       throw new InternalServerErrorException(
         `Failed to get billing history: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Verify Stripe Checkout session and create/update subscription
+   * POST /billing/verify-checkout-session
+   */
+  @Post('verify-checkout-session')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async verifyCheckoutSession(
+    @CurrentUser() user: User,
+    @Body() body: { sessionId: string },
+  ): Promise<{ success: true; subscription: BillingSubscription }> {
+    try {
+      this.logger.log(`Verifying checkout session ${body.sessionId} for user: ${user.id}`);
+
+      // Retrieve checkout session from Stripe
+      const session = await this.stripeService.getCheckoutSession(body.sessionId);
+
+      // Verify session is completed and paid
+      if (session.payment_status !== 'paid') {
+        throw new BadRequestException(
+          `Checkout session payment status is ${session.payment_status}, expected 'paid'`,
+        );
+      }
+
+      if (session.status !== 'complete') {
+        throw new BadRequestException(
+          `Checkout session status is ${session.status}, expected 'complete'`,
+        );
+      }
+
+      // Get subscription from session
+      const subscriptionId = session.subscription;
+      if (!subscriptionId || typeof subscriptionId !== 'string') {
+        throw new BadRequestException('Checkout session does not have a subscription');
+      }
+
+      // Retrieve subscription from Stripe
+      const stripeSubscription = await this.stripeService.getSubscription(subscriptionId);
+
+      // Create or update billing subscription
+      let billingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+
+      if (billingSubscription) {
+        // Update existing subscription
+        await this.billingSubscriptionService.syncFromStripe(stripeSubscription, user.id);
+        billingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+        if (!billingSubscription) {
+          throw new InternalServerErrorException('Failed to update billing subscription');
+        }
+      } else {
+        // Create new subscription
+        billingSubscription = await this.billingSubscriptionService.syncFromStripe(
+          stripeSubscription,
+          user.id,
+        );
+      }
+
+      // Complete onboarding if user is not onboarded
+      if (!user.isOnboarded) {
+        try {
+          await this.authService.completeOnboarding(user.id);
+          this.logger.log(`Completed onboarding for user: ${user.id}`);
+        } catch (error: any) {
+          // Log error but don't fail the request - subscription is already created
+          this.logger.warn(
+            `Failed to complete onboarding for user ${user.id}: ${error.message}`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Successfully verified checkout session and created/updated subscription for user: ${user.id}`,
+      );
+
+      return {
+        success: true,
+        subscription: billingSubscription,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Error verifying checkout session for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Re-throw known exceptions
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to verify checkout session: ${error.message}`,
       );
     }
   }

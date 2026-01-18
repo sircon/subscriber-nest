@@ -514,6 +514,30 @@ export interface BillingHistoryItem {
   stripeInvoiceId: string | null;
 }
 
+export interface BillingSubscription {
+  id: string;
+  userId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;
+  status: string;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VerifyCheckoutSessionRequest {
+  sessionId: string;
+}
+
+export interface VerifyCheckoutSessionResponse {
+  success: true;
+  subscription: BillingSubscription;
+}
+
 /**
  * Billing API functions
  */
@@ -599,6 +623,25 @@ export const billingApi = {
       url,
       {
         method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Verify Stripe Checkout session and create/update subscription
+   */
+  verifyCheckoutSession: async (
+    token: string | null,
+    sessionId: string,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<VerifyCheckoutSessionResponse> => {
+    return apiRequest<VerifyCheckoutSessionResponse>(
+      '/billing/verify-checkout-session',
+      {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
       },
       token,
       onUnauthorized,

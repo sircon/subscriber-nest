@@ -338,4 +338,31 @@ export class StripeService {
       );
     }
   }
+
+  /**
+   * Retrieve a Stripe Checkout session by ID
+   * @param sessionId - Stripe checkout session ID
+   * @returns Stripe checkout session object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async getCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['subscription'],
+      });
+
+      return session;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to retrieve Stripe checkout session: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error retrieving Stripe checkout session: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
 }

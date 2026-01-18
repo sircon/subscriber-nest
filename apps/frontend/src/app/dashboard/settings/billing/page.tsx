@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,26 +15,20 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { billingApi, BillingStatusResponse, CurrentUsageResponse, BillingHistoryItem } from '@/lib/api';
 
-export default function BillingSettingsPage() {
+function BillingSettingsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
   const [currentUsage, setCurrentUsage] = useState<CurrentUsageResponse | null>(null);
   const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [verifyingSession, setVerifyingSession] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    loadBillingData();
-  }, [token, router]);
-
-  const loadBillingData = async () => {
+  const loadBillingData = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
@@ -55,7 +49,49 @@ export default function BillingSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, router]);
+
+  const handleCheckoutSuccess = useCallback(async (sessionId: string) => {
+    if (!token) return;
+
+    setVerifyingSession(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // Verify checkout session
+      await billingApi.verifyCheckoutSession(token, sessionId, () => router.push('/login'));
+
+      // Show success message
+      setSuccessMessage('Subscription activated successfully');
+
+      // Remove session_id from URL
+      const newUrl = window.location.pathname;
+      router.replace(newUrl);
+
+      // Reload billing data
+      await loadBillingData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify checkout session');
+    } finally {
+      setVerifyingSession(false);
+    }
+  }, [token, router, loadBillingData]);
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    // Check for session_id query parameter
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      handleCheckoutSuccess(sessionId);
+    } else {
+      loadBillingData();
+    }
+  }, [token, router, searchParams, handleCheckoutSuccess, loadBillingData]);
 
   const handleOpenPortal = async () => {
     if (!token) return;
@@ -147,6 +183,18 @@ export default function BillingSettingsPage() {
       {error && (
         <div className="mb-6 p-4 rounded-md bg-destructive/10 border border-destructive/20 text-destructive">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mb-6 p-4 rounded-md bg-green-50 border border-green-200 text-green-800">
+          {successMessage}
+        </div>
+      )}
+
+      {verifyingSession && (
+        <div className="mb-6 p-4 rounded-md bg-blue-50 border border-blue-200 text-blue-800">
+          Verifying checkout session...
         </div>
       )}
 
@@ -323,5 +371,30 @@ export default function BillingSettingsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function BillingSettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="animate-pulse">
+              <div className="h-6 bg-secondary rounded w-1/3 mb-2"></div>
+              <div className="h-4 bg-secondary rounded w-1/2"></div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="animate-pulse space-y-4">
+              <div className="h-20 bg-secondary rounded"></div>
+              <div className="h-20 bg-secondary rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <BillingSettingsPageContent />
+    </Suspense>
   );
 }
