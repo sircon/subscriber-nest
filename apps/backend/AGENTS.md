@@ -75,6 +75,17 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - When validating subscriber ownership: query with `relations: ['espConnection']` and compare `espConnection.userId` with authenticated user ID
 - Pattern for sensitive operations on subscribers: fetch with relations → validate ownership → perform operation → handle errors
 
+## File Export
+
+- `src/services/subscriber-export.service.ts` – SubscriberExportService for exporting subscribers in CSV, JSON, and Excel formats
+- Use `StreamableFile` from `@nestjs/common` for file downloads
+- Use `@Res({ passthrough: true })` decorator to set response headers while returning StreamableFile
+- Set headers with `response.set({ 'Content-Type': '...', 'Content-Disposition': 'attachment; filename="..."' })`
+- Excel exports use `exceljs` library (Workbook → Worksheet → writeBuffer)
+- CSV exports use manual implementation with proper escaping (quotes, commas, newlines)
+- Always decrypt sensitive data (emails) before exporting
+- Flatten nested metadata fields for export (e.g., `metadata.field` → `metadata_field`)
+
 ## Encryption
 
 - `src/encryption.service.ts` – EncryptionService using Node's built-in crypto module with AES-256-GCM

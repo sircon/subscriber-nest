@@ -129,3 +129,36 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Subscriber entity already registered in TypeOrmModule.forFeature(), so repository injection works
   - Pattern for sensitive operations: fetch with relations, validate ownership, perform operation, handle errors
 ---
+
+## 2026-01-19 01:00 - US-007
+- Added GET /esp-connections/:id/subscribers/export endpoint to EspConnectionController
+- Endpoint accepts query parameter 'format' (csv, json, xlsx) with default 'csv'
+- Installed exceljs package for Excel file generation (v4.4.0)
+- Created SubscriberExportService with export methods for each format
+- Service decrypts all subscriber emails using EncryptionService
+- Service flattens metadata fields with 'metadata_' prefix for export
+- CSV export: Manual implementation with proper escaping for quotes, commas, newlines
+- JSON export: Pretty-printed JSON with 2-space indentation
+- Excel export: Uses exceljs to create workbook with styled headers and formatted data
+- Returns StreamableFile with appropriate Content-Type and Content-Disposition headers
+- Filename format: subscribers-{espType}-{date}.{ext}
+- Follows existing error handling pattern: NotFoundException (404), ForbiddenException (403), BadRequestException (400)
+- Registered SubscriberExportService in AppModule providers
+- Files changed:
+  - `apps/backend/src/services/subscriber-export.service.ts` - New export service
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added export endpoint
+  - `apps/backend/src/app.module.ts` - Registered export service
+  - `apps/backend/package.json` - Added exceljs dependency
+  - `yarn.lock` - Updated with exceljs and dependencies
+- **Learnings for future iterations:**
+  - StreamableFile from @nestjs/common is used for file downloads
+  - Use @Res({ passthrough: true }) to set response headers while returning StreamableFile
+  - Response.set() sets multiple headers at once (Content-Type, Content-Disposition)
+  - Content-Disposition header format: `attachment; filename="name.ext"`
+  - Excel MIME type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  - CSV MIME type: 'text/csv'
+  - exceljs Workbook.xlsx.writeBuffer() returns ArrayBuffer, convert to Buffer with Buffer.from()
+  - For CSV escaping: wrap in quotes if contains comma/quote/newline, escape quotes by doubling them
+  - Metadata fields should be flattened to top-level fields for export (not nested objects)
+  - ExcelJS allows setting column width and styling headers (bold font)
+---
