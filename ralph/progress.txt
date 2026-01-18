@@ -383,3 +383,32 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Header layout: flex with justify-between to position title left and export button right
   - Use flex-col with items-end for stacking button and error message vertically, right-aligned
 ---
+
+## 2026-01-19 08:30 - US-015
+- Created settings page at apps/frontend/src/app/dashboard/settings/page.tsx
+- Settings page accessible via existing Settings button in sidebar (links to /dashboard/settings)
+- Implemented navigation menu structure with three sections: General, Billing, Account
+- Menu items clickable and switch active section using useState hook
+- Active section highlighted with secondary button variant
+- Each section displays placeholder content in Card components:
+  - General: Coming soon message for notification preferences, language settings
+  - Billing: Coming soon message for subscription plans, payment methods, invoices
+  - Account: Coming soon message for profile info, password change, email preferences
+- Layout uses two-column flex design: 256px fixed-width menu sidebar + flexible content area
+- Menu navigation uses Button components with ghost/secondary variants
+- Separator components between menu items for visual clarity
+- Used colored alert boxes (blue/yellow) for "Coming soon" messages
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/page.tsx` - New settings page
+- **Learnings for future iterations:**
+  - Settings pages often use sidebar navigation menu pattern (menu left, content right)
+  - Use flex layout with fixed-width sidebar (w-64 = 256px) and flex-1 for content area
+  - Button variant="secondary" for active menu items, variant="ghost" for inactive
+  - Separator components between navigation items improve visual hierarchy
+  - Use colored alert boxes (bg-blue-50 border-blue-200 etc.) for informational messages
+  - justify-start class on buttons makes text left-aligned (better for navigation menus)
+  - rounded-none on menu buttons creates seamless list appearance
+  - CardDescription component provides subtitle/description for card headers
+  - Client-side navigation state (useState) is sufficient for simple settings menu switching
+  - No need for URL-based routing for settings tabs if content is all on one page
+---
