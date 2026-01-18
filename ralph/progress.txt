@@ -549,3 +549,37 @@ The SubscriberNest dashboard is now fully functional with comprehensive features
   - Dashboard item should be in its own section with border-b separator for visual hierarchy
   - When adding navigation items, ensure mobile sidebar closes on click for better UX
 ---
+
+## 2026-01-19 10:00 - US-020
+- Created new ESP connection flow page at apps/frontend/src/app/dashboard/esp/new/page.tsx
+- Page accessible via "Connect New ESP" button in sidebar (navigates to /dashboard/esp/new)
+- Implemented two-step flow: ESP type selection followed by credentials form
+- ESP type selection displays three cards: beehiiv, Kit, Mailchimp with descriptions
+- After ESP selection, shows form with API Key (password input) and Publication ID (text input)
+- Form includes client-side validation: both fields required with error messages
+- Form submission flow:
+  - Step 1: Creates ESP connection via POST /esp-connections endpoint
+  - Step 2: Automatically triggers sync via POST /esp-connections/:id/sync endpoint
+  - Step 3: Redirects to ESP detail page (/dashboard/esp/[id])
+- Handles loading states: button shows spinner and "Connecting..." text during submission
+- Handles error states: displays error messages in red alert box, allows retry
+- If sync trigger fails, still redirects to detail page (user can manually trigger sync)
+- Updated sidebar to link to /dashboard/esp/new instead of /onboarding
+- Navigation includes "Back" buttons to return to previous step or dashboard
+- Files changed:
+  - `apps/frontend/src/app/dashboard/esp/new/page.tsx` - New ESP connection flow page
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Updated sidebar link to /dashboard/esp/new
+- **Learnings for future iterations:**
+  - Multi-step forms can use conditional rendering based on state (selectedEspType)
+  - Client-side validation should check for empty/whitespace strings using trim()
+  - Display validation errors inline below each field for better UX
+  - Password input type for sensitive fields like API keys
+  - Loading state should disable form inputs and show spinner on submit button
+  - Error handling: catch API errors and display user-friendly messages
+  - Graceful degradation: if sync trigger fails, still complete primary action (connection creation)
+  - Navigation flow: provide "Back" buttons for multi-step processes
+  - Form state management: clear errors when user changes input or navigates back
+  - Use ArrowLeft icon from lucide-react for back navigation buttons
+  - Container with max-w-2xl provides good form width for readability
+  - Card component with CardHeader and CardContent provides consistent form layout
+---
