@@ -31,6 +31,7 @@ import { EspConnectionService } from "./services/esp-connection.service";
 import { SyncEventListenerService } from "./services/sync-event-listener.service";
 import { SyncSchedulerService } from "./services/sync-scheduler.service";
 import { BillingSchedulerService } from "./services/billing-scheduler.service";
+import { AccountDeletionSchedulerService } from "./services/account-deletion-scheduler.service";
 
 @Module({
   imports: [
@@ -113,6 +114,7 @@ import { BillingSchedulerService } from "./services/billing-scheduler.service";
     SyncEventListenerService,
     SyncSchedulerService,
     BillingSchedulerService,
+    AccountDeletionSchedulerService,
   ],
 })
 export class AppModule {}

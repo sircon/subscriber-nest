@@ -38,7 +38,6 @@ import { BillingSubscriptionService } from './services/billing-subscription.serv
 import { BillingController } from './controllers/billing.controller';
 import { AccountController } from './controllers/account.controller';
 import { AccountDeletionProcessor } from './processors/account-deletion.processor';
-import { AccountDeletionSchedulerService } from './services/account-deletion-scheduler.service';
 
 @Module({
   imports: [
@@ -132,7 +131,6 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
     BillingSubscriptionService,
     BillingProcessor,
     AccountDeletionProcessor,
-    AccountDeletionSchedulerService,
   ],
   exports: [EmailService],
 })
