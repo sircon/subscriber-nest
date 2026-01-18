@@ -23,6 +23,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Eye, EyeOff, Loader2, Download, RefreshCw } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function EspDetailPage() {
   const { id } = useParams();
@@ -439,13 +445,12 @@ export default function EspDetailPage() {
                   <TableHead>Last Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Subscribed At</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscribers.data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500">
+                    <TableCell colSpan={5} className="text-center text-gray-500">
                       No subscribers found
                     </TableCell>
                   </TableRow>
@@ -458,46 +463,51 @@ export default function EspDetailPage() {
                     return (
                       <TableRow key={subscriber.id}>
                         <TableCell className="font-mono text-sm">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
                             <span>
                               {isUnmasked ? unmaskedEmails.get(subscriber.id) : subscriber.maskedEmail}
                             </span>
-                            {unmaskError && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleUnmaskToggle(subscriber.id)}
+                                    disabled={isUnmasking}
+                                  >
+                                    {isUnmasking ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : isUnmasked ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {isUnmasking
+                                    ? 'Loading...'
+                                    : isUnmasked
+                                    ? 'Mask email'
+                                    : 'Unmask email'}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          {unmaskError && (
+                            <div className="mt-1">
                               <span className="text-xs text-red-600">
                                 {unmaskError}
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>{subscriber.firstName || '-'}</TableCell>
                         <TableCell>{subscriber.lastName || '-'}</TableCell>
                         <TableCell>{getStatusBadge(subscriber.status)}</TableCell>
                         <TableCell>{formatDate(subscriber.subscribedAt)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUnmaskToggle(subscriber.id)}
-                            disabled={isUnmasking}
-                          >
-                            {isUnmasking ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Loading...
-                              </>
-                            ) : isUnmasked ? (
-                              <>
-                                <EyeOff className="h-3 w-3 mr-1" />
-                                Mask
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-3 w-3 mr-1" />
-                                Unmask
-                              </>
-                            )}
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     );
                   })

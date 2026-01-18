@@ -74,6 +74,7 @@ All subscriber, sync, and export behavior depends on the backend API. Point `NEX
 - **Adding components**: Use `npx shadcn@latest add <component> --yes` to add components (the `--yes` flag skips prompts).
 - **Linting issue**: shadcn CLI generates code with tabs. Always convert tabs to spaces in generated files to avoid linting errors.
 - **Available components**: badge, button, card, dropdown-menu, input, separator, sheet, table, tooltip.
+- **Icon buttons in table cells**: For inline actions in table cells, use icon-only buttons (`variant="ghost"`, `size="sm"`, `className="h-6 w-6 p-0"`) wrapped in Tooltip components for accessibility. Place icon button inline with cell content using `flex items-center gap-2` on the cell container.
 
 ## State management patterns
 
