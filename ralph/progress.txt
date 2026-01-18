@@ -245,3 +245,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - AuthGuard automatically returns 401 Unauthorized if authentication fails, no need to handle it explicitly in the endpoint
   - When checking subscription status, return the full subscription object so frontend can access all subscription details if needed
 ---
+
+## 2026-01-18 12:42:22 - US-013
+- Added `GET /billing/usage` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint returns current month's `BillingUsage` record with: `maxSubscriberCount`, `calculatedAmount`, `billingPeriodStart`, `billingPeriodEnd`
+- If no usage record exists for current month, endpoint counts current subscribers across all user's ESP connections and creates a new usage record using `BillingUsageService.updateUsage()`
+- Added `getCurrentUsage(userId: string)` method to `BillingUsageService` to retrieve current month's billing usage
+- Endpoint uses `In()` from TypeORM to query subscribers across multiple ESP connections efficiently
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getCurrentUsage endpoint, injected EspConnection and Subscriber repositories)
+  - `apps/backend/src/services/billing-usage.service.ts` (added getCurrentUsage method)
+- **Learnings for future iterations:**
+  - Use `In()` from TypeORM to query records where a field matches any value in an array (e.g., `where: { espConnectionId: In(connectionIds) }`)
+  - When counting subscribers across multiple ESP connections, first get all connection IDs for the user, then use `In()` to count subscribers
+  - The `BillingUsageService.updateUsage()` method already handles creating new records if they don't exist, so it can be reused for initialization
+  - When returning decimal values from TypeORM entities, convert to number using `Number()` to ensure proper JSON serialization (TypeORM returns decimals as strings)
+  - Always check if usage record exists before creating, to avoid unnecessary database operations
+---
