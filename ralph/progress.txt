@@ -583,3 +583,28 @@ The SubscriberNest dashboard is now fully functional with comprehensive features
   - Container with max-w-2xl provides good form width for readability
   - Card component with CardHeader and CardContent provides consistent form layout
 ---
+
+## 2026-01-19 10:30 - US-021
+- Added manual sync button next to Export button in ESP detail page header
+- Implemented handleSync function that calls POST /esp-connections/:id/sync endpoint
+- Button is disabled when syncStatus === 'syncing' or during sync trigger (isSyncing state)
+- Button shows "Syncing..." text with spinner icon when sync is active
+- Button shows "Sync" text with RefreshCw icon when not syncing
+- After triggering sync, updates connection state with response from API (includes updated syncStatus)
+- Refreshes sync history after 1 second delay to show new sync record
+- Handles error states: displays error message below button, auto-clears after 5 seconds
+- Updated TriggerSyncResponse interface to match backend response structure (includes status, message fields)
+- Button uses variant="outline" to match dashboard design system
+- Files changed:
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Added sync button and handler
+  - `apps/frontend/src/lib/api.ts` - Updated TriggerSyncResponse interface
+- **Learnings for future iterations:**
+  - Backend sync endpoint returns updated connection immediately after queuing job (syncStatus set to 'syncing')
+  - Use connection from API response to update state instead of making separate getConnection call
+  - Refresh sync history with setTimeout delay to allow backend to create sync history record
+  - Check both isSyncing state and connection.syncStatus === 'syncing' to properly disable button
+  - Use RefreshCw icon from lucide-react for sync/refresh actions
+  - Sync button should be placed next to Export button in header for easy access
+  - Error messages should auto-clear after timeout for better UX (don't persist indefinitely)
+  - API response types should match backend response structure exactly (including all fields)
+---
