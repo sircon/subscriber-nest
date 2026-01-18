@@ -384,4 +384,58 @@ export class BillingController {
       );
     }
   }
+
+  /**
+   * Create a Stripe Customer Portal session
+   * POST /billing/create-portal-session
+   */
+  @Post('create-portal-session')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async createPortalSession(@CurrentUser() user: User): Promise<{ url: string }> {
+    try {
+      this.logger.log(`Creating portal session for user: ${user.id}`);
+
+      // Get frontend URL from environment
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+      // Build return URL
+      const returnUrl = `${frontendUrl}/dashboard/settings`;
+
+      // Check if user has a Stripe customer
+      const existingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+
+      if (!existingSubscription || !existingSubscription.stripeCustomerId) {
+        throw new BadRequestException('User does not have an active Stripe customer');
+      }
+
+      // Create portal session
+      const session = await this.stripeService.createPortalSession(
+        existingSubscription.stripeCustomerId,
+        returnUrl,
+      );
+
+      this.logger.log(`Created portal session: ${session.id} for user: ${user.id}`);
+
+      return { url: session.url || '' };
+    } catch (error: any) {
+      this.logger.error(
+        `Error creating portal session for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Re-throw known exceptions
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to create portal session: ${error.message}`,
+      );
+    }
+  }
 }

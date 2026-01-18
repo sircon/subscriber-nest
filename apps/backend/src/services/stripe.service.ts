@@ -306,4 +306,36 @@ export class StripeService {
       );
     }
   }
+
+  /**
+   * Create a Stripe Customer Portal session
+   * @param customerId - Stripe customer ID
+   * @param returnUrl - URL to redirect to after portal session ends
+   * @returns Stripe billing portal session object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async createPortalSession(
+    customerId: string,
+    returnUrl: string,
+  ): Promise<Stripe.BillingPortal.Session> {
+    try {
+      const session = await this.stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+
+      return session;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to create Stripe portal session: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error creating Stripe portal session: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
 }

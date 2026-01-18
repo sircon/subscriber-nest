@@ -206,3 +206,25 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Use `ConfigService` to read frontend URL from environment for constructing redirect URLs
   - Stripe Checkout sessions return a `url` property that should be returned to the frontend for redirecting the user
 ---
+
+## 2026-01-19 - US-011
+- Added `createPortalSession(customerId: string, returnUrl: string): Promise<Stripe.BillingPortal.Session>` method to `StripeService`
+- Method creates Stripe Customer Portal session using `stripe.billingPortal.sessions.create()` API
+- Added `POST /billing/create-portal-session` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint validates user has active Stripe customer by checking `BillingSubscription` record
+- Endpoint throws `BadRequestException` if user does not have a Stripe customer
+- Portal session return URL configured to `/dashboard/settings` using `FRONTEND_URL` environment variable
+- Endpoint returns `{ url: string }` with portal session URL
+- Proper error handling with logging and appropriate exception types (`BadRequestException`, `InternalServerErrorException`)
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added createPortalSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added createPortalSession endpoint)
+- **Learnings for future iterations:**
+  - Stripe Customer Portal sessions are created using `stripe.billingPortal.sessions.create()` API (not checkout sessions)
+  - Portal sessions require a `customer` ID and `return_url` for redirecting after the user finishes managing their subscription
+  - Always validate that user has a Stripe customer before creating portal session to avoid Stripe API errors
+  - Portal sessions allow users to manage payment methods, view invoices, and cancel subscriptions directly in Stripe's hosted portal
+  - Use `BadRequestException` for client errors (missing customer) and `InternalServerErrorException` for Stripe API errors
+  - Portal session URLs are returned in the same format as checkout session URLs (`{ url: string }`)
+---
