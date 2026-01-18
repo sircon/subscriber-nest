@@ -58,3 +58,38 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Use `ConfigService` from `@nestjs/config` to read environment variables (already configured globally in AppModule)
   - Stripe client initialization requires secret key, webhook secret is stored separately for webhook signature verification
 ---
+
+## 2026-01-18 12:29:01 - US-004
+- Added `createCustomer(email: string, userId: string): Promise<Stripe.Customer>` method to `StripeService`
+- Method creates Stripe customer with email and metadata containing userId
+- Method returns Stripe customer object
+- Implemented error handling: catches Stripe API errors and wraps them in `InternalServerErrorException` with descriptive messages
+- Added import for `InternalServerErrorException` from `@nestjs/common`
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added createCustomer method)
+- **Learnings for future iterations:**
+  - Stripe errors are instances of `Stripe.errors.StripeError` and can be caught and handled appropriately
+  - Use `InternalServerErrorException` from `@nestjs/common` for external API errors (following pattern from other services)
+  - Stripe customer metadata is useful for linking Stripe customers to internal user IDs
+  - Always wrap external API calls in try-catch blocks to handle errors gracefully
+---
+
+## 2026-01-19 - US-005
+- Added `STRIPE_PRICE_ID` environment variable to `.env.example` for metered billing price configuration
+- Implemented `createSubscription(customerId: string): Promise<Stripe.Subscription>` method in `StripeService`
+- Method creates Stripe subscription with monthly billing cycle using price ID from environment
+- Subscription uses metered billing (usage-based pricing) via the configured price ID
+- Implemented `cancelSubscription(subscriptionId: string, cancelAtPeriodEnd: boolean): Promise<Stripe.Subscription>` method
+- Method supports both immediate cancellation and cancellation at period end based on `cancelAtPeriodEnd` parameter
+- Implemented `getSubscription(subscriptionId: string): Promise<Stripe.Subscription>` method to retrieve subscription details
+- All methods include proper error handling with `InternalServerErrorException` for Stripe API errors
+- Files changed:
+  - `apps/backend/.env.example` (added STRIPE_PRICE_ID)
+  - `apps/backend/src/services/stripe.service.ts` (added createSubscription, cancelSubscription, getSubscription methods)
+- **Learnings for future iterations:**
+  - Stripe subscriptions for metered billing require a price ID configured in environment variables
+  - For monthly billing, Stripe automatically handles billing cycles - no need to set `billing_cycle_anchor` explicitly
+  - Stripe subscription cancellation can be immediate (`subscriptions.cancel()`) or at period end (`subscriptions.update()` with `cancel_at_period_end: true`)
+  - When creating subscriptions, the price ID must be configured in Stripe Dashboard with `usage_type: 'metered'` for usage-based pricing
+  - Stripe subscription creation only requires `customer` and `items` with `price` - billing cycle is determined by the price configuration
+---
