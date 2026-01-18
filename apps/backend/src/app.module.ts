@@ -34,6 +34,8 @@ import { BillingCalculationService } from './services/billing-calculation.servic
 import { BillingUsageService } from './services/billing-usage.service';
 import { BillingProcessor } from './processors/billing.processor';
 import { BillingSchedulerService } from './services/billing-scheduler.service';
+import { BillingSubscriptionService } from './services/billing-subscription.service';
+import { BillingController } from './controllers/billing.controller';
 
 @Module({
   imports: [
@@ -87,7 +89,7 @@ import { BillingSchedulerService } from './services/billing-scheduler.service';
       },
     }),
   ],
-  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController],
+  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController],
   providers: [
     AppService,
     EncryptionService,
@@ -105,6 +107,7 @@ import { BillingSchedulerService } from './services/billing-scheduler.service';
     StripeService,
     BillingCalculationService,
     BillingUsageService,
+    BillingSubscriptionService,
     BillingProcessor,
     BillingSchedulerService,
   ],

@@ -3,13 +3,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AppModule } from './app.module';
 import { setupBullBoard } from './bull-board';
+import * as express from 'express';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {
+        rawBody: true,
+    });
     app.enableCors({
         origin: 'http://localhost:3000',
         credentials: true,
     });
+    
+    // Preserve raw body for Stripe webhook endpoint
+    app.use('/billing/webhook', express.raw({ type: 'application/json' }));
+    
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true,

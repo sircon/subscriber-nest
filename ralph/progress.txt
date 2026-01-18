@@ -153,3 +153,32 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Use `BillingUsageService.updateUsage()` to create new billing usage records for current month after processing previous month
   - Check `job.attemptsMade >= maxAttempts` to detect final retry attempt for logging permanent failures
 ---
+
+## 2026-01-19 - US-009
+- Created `BillingSubscriptionService` to handle database operations for `BillingSubscription` entity
+- Service provides methods: `findByUserId()`, `findByStripeCustomerId()`, `findByStripeSubscriptionId()`, `create()`, `update()`, `updateByStripeSubscriptionId()`, `syncFromStripe()`, `hasActiveSubscription()`
+- Created `BillingController` with `POST /billing/webhook` endpoint
+- Endpoint verifies Stripe webhook signature using `STRIPE_WEBHOOK_SECRET` and raw body
+- Configured NestJS app to preserve raw body for `/billing/webhook` route using `express.raw({ type: 'application/json' })`
+- Handles webhook events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
+- For subscription events: syncs subscription data from Stripe to `BillingSubscription` entity (status, period dates, cancellation flags)
+- For invoice events: updates `BillingUsage` records with payment status (`PAID` or `FAILED`)
+- Added methods to `BillingUsageService`: `findByStripeInvoiceId()`, `updateStatus()`, `updateStatusByInvoiceId()`
+- Endpoint returns 200 status for successful processing, handles errors gracefully with logging
+- Registered `BillingController` and `BillingSubscriptionService` in `AppModule`
+- Files changed:
+  - `apps/backend/src/services/billing-subscription.service.ts` (new)
+  - `apps/backend/src/services/billing-usage.service.ts` (added invoice status update methods)
+  - `apps/backend/src/controllers/billing.controller.ts` (new)
+  - `apps/backend/src/main.ts` (configured raw body middleware for webhook endpoint)
+  - `apps/backend/src/app.module.ts` (registered controller and service)
+- **Learnings for future iterations:**
+  - Stripe webhook signature verification requires raw body (Buffer), not parsed JSON
+  - Configure NestJS to preserve raw body for webhook routes using `express.raw({ type: 'application/json' })` middleware before JSON parsing
+  - Stripe subscription properties like `current_period_start` and `current_period_end` are Unix timestamps (seconds), need to multiply by 1000 for JavaScript Date
+  - Stripe TypeScript types may not include all properties - use type assertions `(stripeSubscription as any).property` when accessing properties that exist in API but not in types
+  - When syncing Stripe data, try to find existing subscription by Stripe subscription ID first, then by customer ID, then create new if not found
+  - For webhook handlers, always verify signature first, then process events, and return 200 even for unhandled event types (to acknowledge receipt)
+  - Use Logger from `@nestjs/common` for structured logging in controllers
+  - When updating entities from webhooks, handle cases where entity might not exist yet (create vs update logic)
+---

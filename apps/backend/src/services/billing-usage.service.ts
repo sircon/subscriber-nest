@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BillingUsage, BillingUsageStatus } from '../entities/billing-usage.entity';
@@ -73,5 +73,63 @@ export class BillingUsageService {
 
     // Save the billing usage record
     await this.billingUsageRepository.save(billingUsage);
+  }
+
+  /**
+   * Find billing usage by Stripe invoice ID
+   * @param stripeInvoiceId - The Stripe invoice ID
+   * @returns Billing usage record or null if not found
+   */
+  async findByStripeInvoiceId(stripeInvoiceId: string): Promise<BillingUsage | null> {
+    return this.billingUsageRepository.findOne({
+      where: { stripeInvoiceId },
+    });
+  }
+
+  /**
+   * Update billing usage status and invoice ID
+   * @param id - The billing usage ID
+   * @param status - New status
+   * @param stripeInvoiceId - Stripe invoice ID (optional)
+   * @returns Updated billing usage record
+   */
+  async updateStatus(
+    id: string,
+    status: BillingUsageStatus,
+    stripeInvoiceId?: string | null,
+  ): Promise<BillingUsage> {
+    const usage = await this.billingUsageRepository.findOne({
+      where: { id },
+    });
+
+    if (!usage) {
+      throw new NotFoundException(`Billing usage with ID ${id} not found`);
+    }
+
+    usage.status = status;
+    if (stripeInvoiceId !== undefined) {
+      usage.stripeInvoiceId = stripeInvoiceId;
+    }
+
+    return this.billingUsageRepository.save(usage);
+  }
+
+  /**
+   * Update billing usage by Stripe invoice ID
+   * @param stripeInvoiceId - The Stripe invoice ID
+   * @param status - New status
+   * @returns Updated billing usage record
+   */
+  async updateStatusByInvoiceId(
+    stripeInvoiceId: string,
+    status: BillingUsageStatus,
+  ): Promise<BillingUsage | null> {
+    const usage = await this.findByStripeInvoiceId(stripeInvoiceId);
+    if (!usage) {
+      return null;
+    }
+
+    usage.status = status;
+    return this.billingUsageRepository.save(usage);
   }
 }
