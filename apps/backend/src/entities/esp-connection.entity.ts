@@ -23,6 +23,13 @@ export enum EspConnectionStatus {
   ERROR = 'error',
 }
 
+export enum EspSyncStatus {
+  IDLE = 'idle',
+  SYNCING = 'syncing',
+  SYNCED = 'synced',
+  ERROR = 'error',
+}
+
 @Entity('esp_connections')
 export class EspConnection {
   @PrimaryGeneratedColumn('uuid')
@@ -53,6 +60,13 @@ export class EspConnection {
     default: EspConnectionStatus.ACTIVE,
   })
   status: EspConnectionStatus;
+
+  @Column({
+    type: 'enum',
+    enum: EspSyncStatus,
+    default: EspSyncStatus.IDLE,
+  })
+  syncStatus: EspSyncStatus;
 
   @Column({ type: 'timestamp', nullable: true })
   lastValidatedAt: Date | null;
