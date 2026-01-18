@@ -4,7 +4,9 @@ import { Queue } from 'bullmq';
 import { MonthlyBillingJobData } from '../processors/billing.processor';
 
 /**
- * Service to schedule monthly billing jobs
+ * Service to schedule monthly billing usage tracking jobs
+ * Note: With metered billing, Stripe handles invoicing automatically.
+ * This job only creates usage records for historical tracking purposes.
  */
 @Injectable()
 export class BillingSchedulerService implements OnModuleInit {
@@ -16,8 +18,10 @@ export class BillingSchedulerService implements OnModuleInit {
   ) {}
 
   /**
-   * Schedule monthly billing job on module initialization
+   * Schedule monthly billing usage tracking job on module initialization
    * Job runs on the 1st day of each month at 00:00 UTC
+   * Creates BillingUsage records for current month for historical tracking
+   * Stripe automatically handles invoicing based on usage records reported via meter
    */
   async onModuleInit() {
     try {
@@ -28,16 +32,18 @@ export class BillingSchedulerService implements OnModuleInit {
       );
 
       if (existingJob) {
-        this.logger.log('Monthly billing job already scheduled. Skipping.');
+        this.logger.log(
+          'Monthly billing usage tracking job already scheduled. Skipping.'
+        );
         return;
       }
 
       // Schedule repeatable job: runs on 1st day of month at 00:00 UTC
       // Cron pattern: "0 0 1 * *" = minute 0, hour 0, day 1, every month
-      // Billing period dates will be calculated dynamically when the job runs
+      // Creates usage records for current month for historical tracking
       await this.billingQueue.add(
         'monthly-billing',
-        {}, // Empty data - billing period will be calculated in processor
+        {}, // Empty data - current month will be calculated in processor
         {
           repeat: {
             pattern: '0 0 1 * *', // 1st day of month at 00:00 UTC
@@ -48,11 +54,11 @@ export class BillingSchedulerService implements OnModuleInit {
       );
 
       this.logger.log(
-        'Scheduled monthly billing job to run on 1st day of each month at 00:00 UTC'
+        'Scheduled monthly billing usage tracking job to run on 1st day of each month at 00:00 UTC'
       );
     } catch (error: any) {
       this.logger.error(
-        `Failed to schedule monthly billing job: ${error.message}`,
+        `Failed to schedule monthly billing usage tracking job: ${error.message}`,
         error.stack
       );
       // Don't throw - allow app to start even if scheduling fails
