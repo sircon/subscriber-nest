@@ -238,3 +238,22 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `turbo run build --filter=api` and `turbo run lint --filter=api` to verify compilation and code style
   - Guards use `@InjectRepository` for TypeORM repositories, which will need to be configured in AppModule (US-011)
 ---
+
+## 2026-01-18 15:36 - US-011
+- Created `apps/api/src/app.module.ts` with TypeORM configuration matching backend structure
+- Configured `TypeOrmModule.forRoot()` with database connection settings from environment variables (DATABASE_HOST, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, DATABASE_NAME)
+- Configured `TypeOrmModule.forFeature()` with all 8 entities from shared package (Subscriber, EspConnection, VerificationCode, User, Session, SyncHistory, BillingSubscription, BillingUsage)
+- Registered all controllers (AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController, AccountController)
+- Registered all services and dependencies (AppService, EncryptionService, BeehiivConnector, and all API services)
+- Registered guards (AuthGuard, SubscriptionGuard)
+- Configured ConfigModule.forRoot() and HttpModule for API service needs
+- Files changed:
+  - `apps/api/src/app.module.ts` - Created with TypeORM configuration
+- **Learnings for future iterations:**
+  - TypeORM configuration in API service matches backend structure exactly (same connection settings, same entities)
+  - All entities are imported from `@subscriber-nest/shared/entities` using named imports
+  - TypeOrmModule.forFeature() must include all entities that will be used with @InjectRepository decorators
+  - ConfigModule.forRoot({ isGlobal: true }) allows all services to access environment variables via @nestjs/config
+  - Use `yarn workspace api typecheck` and `turbo run build --filter=api` to verify TypeORM configuration
+  - TypeORM autoLoadEntities: true automatically discovers entities, but forFeature() is still needed for repository injection
+---
