@@ -264,3 +264,25 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When returning decimal values from TypeORM entities, convert to number using `Number()` to ensure proper JSON serialization (TypeORM returns decimals as strings)
   - Always check if usage record exists before creating, to avoid unnecessary database operations
 ---
+
+## 2026-01-18 12:43:31 - US-014
+- Added `GET /billing/history` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint accepts optional query parameter `limit` (default: 12) using `@Query('limit')` decorator
+- Endpoint validates limit is a positive number, throws `BadRequestException` if invalid
+- Added `getBillingHistory(userId: string, limit: number = 12)` method to `BillingUsageService` to retrieve past billing usage records
+- Service method queries `BillingUsage` records ordered by `billingPeriodStart` DESC with limit
+- Endpoint returns array of past `BillingUsage` records with: `billingPeriodStart`, `billingPeriodEnd`, `maxSubscriberCount`, `calculatedAmount`, `status`, `stripeInvoiceId`
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getBillingHistory endpoint, added Query import)
+  - `apps/backend/src/services/billing-usage.service.ts` (added getBillingHistory method)
+- **Learnings for future iterations:**
+  - Use `@Query('paramName')` decorator to access query parameters in NestJS controllers
+  - Query parameters are strings by default, need to parse to numbers using `parseInt(value, 10)`
+  - Always validate query parameters (check for NaN, negative values, etc.) before using them
+  - Use `order: { field: 'DESC' }` in TypeORM queries to order results descending
+  - Use `take: limit` in TypeORM queries to limit the number of results returned
+  - When mapping entity results to response DTOs, convert decimal fields using `Number()` for proper JSON serialization
+  - Default parameter values in TypeScript methods (e.g., `limit: number = 12`) provide fallback values if parameter is undefined
+---
