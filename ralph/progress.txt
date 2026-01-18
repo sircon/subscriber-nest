@@ -800,3 +800,20 @@ Started: Sat Jan 17 2026
   - The syncStatus field enables real-time UI updates showing sync progress
   - All quality checks passed (typecheck, lint, build)
 ---
+
+## 2026-01-18 - US-028
+- Updated sync endpoint to mark connection as 'syncing' immediately when job is queued
+- Added updateSyncStatus method to EspConnectionService to update sync status atomically
+- Updated triggerSync endpoint to call updateSyncStatus before adding job to queue
+- Modified response to include the updated connection with syncStatus field
+- Files changed:
+  - `apps/backend/src/services/esp-connection.service.ts` - Added updateSyncStatus method, imported EspSyncStatus enum
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Updated triggerSync to set syncStatus before queueing, return connection in response
+- **Learnings for future iterations:**
+  - Setting syncStatus before queueing ensures UI can show sync state immediately, not waiting for processor
+  - The updateSyncStatus method is reusable for other status changes (will be used in US-030)
+  - Response now includes full connection object so frontend can update UI without additional API call
+  - TypeORM save() method returns the updated entity, making it easy to chain operations
+  - Atomicity: status update happens in same database transaction as the save operation
+  - All quality checks passed (typecheck, lint, build)
+---

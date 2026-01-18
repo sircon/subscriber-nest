@@ -439,8 +439,8 @@
         "Typecheck passes"
       ],
       "priority": 28,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added updateSyncStatus method to service. Endpoint now marks connection as syncing before queueing job and returns updated connection in response."
     },
     {
       "id": "US-029",
