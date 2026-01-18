@@ -577,3 +577,40 @@ Started: Sat Jan 17 2026
   - Redis configuration was missing from .env.example - needed for BullMQ queue processing
   - The pattern: one service implementation → registered in module → injected where needed → all consumers use same instance
 ---
+
+## 2026-01-18 - US-022
+- Reviewed and verified all migrations are properly sequenced and conflict-free
+- Migration order verified:
+  1. `1737000000000-CreateUserAndSessionEntities.ts` - Creates User, Session, VerificationCode tables
+  2. `1737129600000-CreateEspConnectionAndSubscriber.ts` - Creates EspConnection and Subscriber tables
+- Proper sequence maintained: User/Session/VerificationCode created first, then EspConnection (which has FK to User), then Subscriber (which has FK to EspConnection)
+- EspConnection migration updated in US-017 with:
+  - All ESP types in enum (beehiiv, kit, mailchimp)
+  - `lastSyncedAt` column
+  - Foreign key from `esp_connections.userId` to `users.id`
+- All enum types use safe creation pattern:
+  ```sql
+  DO $$ BEGIN
+    CREATE TYPE "enum_name" AS ENUM (...);
+  EXCEPTION
+    WHEN duplicate_object THEN null;
+  END $$;
+  ```
+- This pattern allows migrations to be re-run without errors if enum types already exist
+- Foreign key relationships verified:
+  - `sessions.userId` → `users.id` (CASCADE delete)
+  - `esp_connections.userId` → `users.id` (CASCADE delete)
+  - `subscribers.espConnectionId` → `esp_connections.id` (CASCADE delete)
+- Unique constraints verified:
+  - `users.email` - Unique index
+  - `sessions.token` - Unique index
+  - `subscribers.(espConnectionId, externalId)` - Unique composite index (for upsert)
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Migration timestamps determine execution order (lower numbers run first)
+  - Always create parent tables (User) before child tables (EspConnection) that reference them
+  - Use DO $$ BEGIN ... EXCEPTION WHEN duplicate_object pattern for PostgreSQL enum types
+  - This allows migrations to be idempotent and re-runnable
+  - Foreign key relationships should cascade deletes to maintain referential integrity
+  - The composite unique index on `(espConnectionId, externalId)` is crucial for the upsert pattern in subscriber syncing
+---

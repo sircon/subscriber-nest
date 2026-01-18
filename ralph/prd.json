@@ -344,8 +344,8 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Migrations properly sequenced and updated in US-017. Enum types use safe DO $$ BEGIN pattern."
     },
     {
       "id": "US-023",
