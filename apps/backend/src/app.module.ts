@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
+import { KitConnector } from './connectors/kit.connector';
 import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
 import { SubscriberExportService } from './services/subscriber-export.service';
@@ -132,6 +133,7 @@ import { OAuthConfigService } from './services/oauth-config.service';
     AppService,
     EncryptionService,
     BeehiivConnector,
+    KitConnector,
     SubscriberService,
     SubscriberExportService,
     EspConnectionService,

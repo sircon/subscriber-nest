@@ -15,6 +15,7 @@ import {
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
+import { KitConnector } from '../connectors/kit.connector';
 
 @Injectable()
 export class EspConnectionService {
@@ -22,7 +23,8 @@ export class EspConnectionService {
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
-    private beehiivConnector: BeehiivConnector
+    private beehiivConnector: BeehiivConnector,
+    private kitConnector: KitConnector
   ) {}
 
   /**
@@ -35,6 +37,8 @@ export class EspConnectionService {
     switch (espType) {
       case EspType.BEEHIIV:
         return this.beehiivConnector;
+      case EspType.KIT:
+        return this.kitConnector;
       default:
         throw new BadRequestException(`Unsupported ESP type: ${espType}`);
     }

@@ -160,3 +160,27 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - When implementing OAuth connectors (Kit, Mailchimp), they will implement the optional OAuth methods
   - The interface design allows connectors to support either API key auth, OAuth auth, or both
 ---
+
+## Sun Jan 19 2026 - US-008
+- Created KitConnector class implementing IEspConnector interface with OAuth methods
+- Implemented OAuth methods: `validateAccessToken`, `fetchPublicationsWithOAuth`, `fetchSubscribersWithOAuth`, `getSubscriberCountWithOAuth`
+- Used Bearer token authentication in all API requests: `Authorization: Bearer {accessToken}`
+- Base URL: `https://api.kit.com/v1` as specified in PRD
+- Handles API errors appropriately: 401/403 (invalid token), 429 (rate limit), 500+ (server errors)
+- Returns 401 errors to trigger token refresh (errors are thrown with descriptive messages)
+- API key methods return empty/false values since Kit only supports OAuth (required by interface for backward compatibility)
+- Registered KitConnector in app.module.ts providers array
+- Updated EspConnectionService.getConnector() to return KitConnector for EspType.KIT
+- Files changed:
+  - `apps/backend/src/connectors/kit.connector.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+  - `apps/backend/src/services/esp-connection.service.ts` (updated)
+- **Learnings for future iterations:**
+  - Connectors must implement all IEspConnector methods, even if not used (API key methods return empty/false for OAuth-only connectors)
+  - OAuth connectors use `fetchPublicationsWithOAuth`, `fetchSubscribersWithOAuth`, `getSubscriberCountWithOAuth` method names (not overloads)
+  - Handle flexible API response structures (data, publications, subscribers arrays may be nested differently)
+  - Pagination handling should check both explicit pagination metadata and implicit pagination (page size vs results returned)
+  - Status mapping functions help normalize ESP-specific status values to standard format
+  - Always register new connectors in app.module.ts providers and inject into EspConnectionService
+  - Update getConnector() switch statement to include new connector types
+---
