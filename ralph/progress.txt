@@ -639,3 +639,21 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Shared package (`@subscriber-nest/shared`) is automatically included in builds when it's a dependency
   - Use `yarn workspace <package-name> typecheck` to verify TypeScript compilation for individual packages
 ---
+
+## 2026-01-18 16:05 - US-032
+- Created `apps/api/.env.example` with API-specific environment variables (PORT, Stripe, Resend Email) and shared variables (DATABASE_*, REDIS_*, ENCRYPTION_KEY, NODE_ENV)
+- Created `apps/worker/.env.example` with worker-specific environment variables (only shared variables, no service-specific ones)
+- Documented which environment variables are shared between services (DATABASE_*, REDIS_*, ENCRYPTION_KEY, NODE_ENV) vs API-specific (PORT, STRIPE_*, RESEND_*)
+- Both .env.example files include comments explaining which variables are shared vs service-specific
+- Files changed:
+  - `apps/api/.env.example` - Created with all API service environment variables
+  - `apps/worker/.env.example` - Created with all worker service environment variables
+- **Learnings for future iterations:**
+  - API service requires additional environment variables for Stripe (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_METER_ID) and Resend email (RESEND_API_KEY, RESEND_FROM_EMAIL)
+  - Worker service only needs shared environment variables (database, Redis, encryption, node env) - no service-specific variables
+  - Both services share the same database and Redis connection settings
+  - ENCRYPTION_KEY is required by EncryptionService (used by both services) and must be at least 32 characters
+  - REDIS_PASSWORD is optional (can be empty string)
+  - RESEND_FROM_EMAIL has a default value in EmailService, so it's optional in .env.example
+  - Use `yarn workspace api typecheck`, `yarn workspace worker typecheck`, `turbo run lint`, and `turbo run build --filter=api --filter=worker` to verify changes
+---
