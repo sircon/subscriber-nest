@@ -286,3 +286,47 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - shadcn CLI generates code with tabs, which causes linting errors - convert to spaces
   - Loading state should match final layout structure (3 cards + table) for better UX
 ---
+
+## 2026-01-19 06:00 - US-012
+- Created ESP detail page at apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+- Added API client functions for ESP detail page functionality:
+  - espConnectionApi.getConnection(connectionId) - GET /esp-connections/:id
+  - espConnectionApi.getSubscribers(connectionId, page, limit, status) - GET /esp-connections/:id/subscribers
+- Added TypeScript interfaces: Subscriber, PaginatedSubscribers
+- Page displays 4 info cards showing ESP connection metrics:
+  - Card 1: List Size (total subscriber count)
+  - Card 2: Last Sync (timestamp and status badge)
+  - Card 3: Connection Status (syncStatus and status)
+  - Card 4: Subscriber Breakdown (active vs unsubscribed count)
+- Implemented paginated subscriber table with columns:
+  - Email (masked, font-mono styling)
+  - First Name (with fallback to '-')
+  - Last Name (with fallback to '-')
+  - Status (badge component with color coding)
+  - Subscribed At (formatted date)
+  - Actions (Unmask button - disabled placeholder for US-013)
+- Pagination controls at bottom with Previous/Next buttons
+- Uses URL search params for pagination state (?page=1&limit=50)
+- Page fetches connection, sync history (limit 1), and subscribers in parallel using Promise.all
+- Implemented loading state with skeleton animation (matches layout structure)
+- Implemented error state with error message display
+- Responsive grid layout for info cards (1/2/4 columns on mobile/tablet/desktop)
+- Files changed:
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx - New ESP detail page
+  - apps/frontend/src/lib/api.ts - Added getConnection and getSubscribers API functions
+- **Learnings for future iterations:**
+  - When creating dynamic routes in Next.js App Router, use [param] syntax in directory name
+  - useParams() returns route parameters, useSearchParams() returns URL query parameters
+  - Parallel data fetching pattern: Promise.all([connection, syncHistory, subscribers])
+  - Fetch only latest sync (limit: 1) for "Last Sync" card to minimize data transfer
+  - URLSearchParams.toString() returns empty string if no params, so check before adding '?'
+  - router.push() with new search params preserves other params using searchParams.toString()
+  - Calculate active/unsubscribed counts from current page data (subscribers.data.filter)
+  - Show '-' for null/undefined values in table cells instead of empty cells
+  - Pagination info format: "Showing X to Y of Z subscribers" with calculated ranges
+  - Disable pagination buttons at edges (currentPage === 1, currentPage === totalPages)
+  - Use font-mono class for masked email display to ensure consistent character width
+  - Badge colors: green for success/active, red for failed/bounced, gray for unsubscribed
+  - Loading skeleton should match final layout structure for better perceived performance
+  - Unmask button is disabled in US-012, will be implemented in US-013
+---
