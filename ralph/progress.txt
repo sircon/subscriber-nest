@@ -438,3 +438,19 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace worker typecheck` and `turbo run lint --filter=worker` to verify schedule module configuration
   - Schedule module enables `@Cron()` decorator for scheduling tasks in services
 ---
+
+## 2026-01-19 - US-021
+- Created `apps/worker/src/main.ts` that bootstraps NestJS application without HTTP server
+- Worker service bootstraps the application and begins processing jobs from queues (subscriber-sync, billing, account-deletion)
+- No `app.listen()` call - worker service doesn't need HTTP server, only processes jobs and runs cron jobs
+- Added console logs to indicate worker service started successfully
+- Files changed:
+  - `apps/worker/src/main.ts` - Created with NestJS bootstrap configuration (no HTTP server)
+- **Learnings for future iterations:**
+  - Worker service main.ts is simpler than API service - no CORS, no raw body middleware, no validation pipes, no Bull Board
+  - Worker service only needs `NestFactory.create(AppModule)` to bootstrap - no `app.listen()` call
+  - Once bootstrapped, the worker service automatically starts processing jobs from registered queues and running cron jobs
+  - Worker service doesn't need HTTP-related middleware or configuration
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify main.ts configuration
+  - Worker service can start successfully once database and Redis connections are configured
+---
