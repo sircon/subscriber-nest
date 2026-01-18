@@ -70,6 +70,22 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - API keys are encrypted before storing in database using EncryptionService
 - API keys are never returned in API responses (only id, provider, createdAt, isActive)
 
+## OAuth Integration
+
+- `src/services/oauth-state.service.ts` – OAuthStateService for managing OAuth state tokens (CSRF protection)
+- `src/services/oauth-config.service.ts` – OAuthConfigService for reading OAuth configuration from environment variables
+- `src/entities/oauth-state.entity.ts` – OAuthState entity for storing OAuth state parameters
+- OAuth initiate endpoints (`GET /esp-connections/oauth/initiate/:provider`) require authentication via `@UseGuards(AuthGuard)`
+- OAuth callback endpoints (`GET /esp-connections/oauth/callback/:provider`) should NOT require authentication (called by external OAuth providers)
+- Use `@Query()` decorator to get query parameters (`code`, `state`) from OAuth callback URLs
+- OAuth state tokens expire after 10 minutes and should be deleted after successful use to prevent replay attacks
+- Token exchange uses HttpService from `@nestjs/axios` with `firstValueFrom()` from rxjs to convert Observable to Promise
+- Token exchange requests use `application/x-www-form-urlencoded` content type with URLSearchParams
+- OAuth token responses may not always include `refresh_token` or `expires_in` - handle with defaults (e.g., 3600 seconds for expires_in)
+- Calculate token expiry by adding `expires_in` seconds to current time: `new Date(Date.now() + expiresIn * 1000)`
+- Always encrypt OAuth tokens (access_token, refresh_token) using EncryptionService before storing in database
+- Redirect to frontend with connection ID and success parameter: `{FRONTEND_URL}/esp-connections/{connectionId}?oauth=success`
+
 ## Subscribers
 
 - `src/subscriber.controller.ts` – SubscriberController with subscriber-specific endpoints (e.g., unmask email)
