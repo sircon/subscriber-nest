@@ -324,3 +324,25 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Billing usage update should happen after all subscribers are processed, not during individual subscriber processing
   - The `BillingUsageService.updateUsage()` method tracks the maximum subscriber count for the current billing period, so it's safe to call after each sync
 ---
+
+## 2026-01-18 12:47:48 - US-017
+- Created Stripe onboarding page at `src/app/onboarding/stripe/page.tsx`
+- Page displays heading "Connect your payment method" with description explaining usage-based billing model ($5 for first 10,000 subscribers, then $1 per each additional 10,000 subscribers per month)
+- Added "Connect Stripe" button that calls `POST /billing/create-checkout-session` endpoint
+- On success, redirects user to Stripe Checkout URL using `window.location.href`
+- Handles canceled checkout case: checks for `canceled=true` query parameter and displays message allowing retry
+- Page handles loading and error states with appropriate UI feedback
+- Uses shadcn components (Button, Card with CardHeader, CardTitle, CardDescription, CardContent)
+- Wrapped form component in Suspense boundary to handle `useSearchParams()` requirement
+- Added billing API functions to `src/lib/api.ts`: `createCheckoutSession()`, `createPortalSession()`, `getBillingStatus()`, `getCurrentUsage()`, `getBillingHistory()` with proper TypeScript types
+- Files changed:
+  - `apps/frontend/src/app/onboarding/stripe/page.tsx` (new)
+  - `apps/frontend/src/lib/api.ts` (added billingApi namespace with all billing functions)
+- **Learnings for future iterations:**
+  - When using `useSearchParams()` in client components, wrap the component in a Suspense boundary to avoid build errors
+  - Stripe Checkout redirects are handled by setting `window.location.href` to the checkout URL (full page navigation)
+  - Cancel URLs from Stripe Checkout include query parameters that can be checked with `useSearchParams()`
+  - Billing API functions follow the same pattern as other API namespaces (authApi, espConnectionApi) with token and onUnauthorized callback
+  - When creating API client functions, define TypeScript interfaces for all request/response types at the top of the file
+  - Suspense fallback should match the structure of the actual component for better UX during loading
+---

@@ -469,3 +469,138 @@ export const subscriberApi = {
     );
   },
 };
+
+export interface CreateCheckoutSessionResponse {
+  url: string;
+}
+
+export interface CreatePortalSessionResponse {
+  url: string;
+}
+
+export interface BillingStatusResponse {
+  hasActiveSubscription: boolean;
+  subscription: {
+    id: string;
+    userId: string;
+    stripeCustomerId: string;
+    stripeSubscriptionId: string | null;
+    stripePriceId: string | null;
+    status: string;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    canceledAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  currentPeriodEnd: string | null;
+}
+
+export interface CurrentUsageResponse {
+  maxSubscriberCount: number;
+  calculatedAmount: number;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+}
+
+export interface BillingHistoryItem {
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  maxSubscriberCount: number;
+  calculatedAmount: number;
+  status: string;
+  stripeInvoiceId: string | null;
+}
+
+/**
+ * Billing API functions
+ */
+export const billingApi = {
+  /**
+   * Create a Stripe Checkout session for subscription
+   */
+  createCheckoutSession: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<CreateCheckoutSessionResponse> => {
+    return apiRequest<CreateCheckoutSessionResponse>(
+      '/billing/create-checkout-session',
+      {
+        method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Create a Stripe Customer Portal session
+   */
+  createPortalSession: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<CreatePortalSessionResponse> => {
+    return apiRequest<CreatePortalSessionResponse>(
+      '/billing/create-portal-session',
+      {
+        method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get billing status for the authenticated user
+   */
+  getBillingStatus: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<BillingStatusResponse> => {
+    return apiRequest<BillingStatusResponse>(
+      '/billing/status',
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get current month's usage for the authenticated user
+   */
+  getCurrentUsage: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<CurrentUsageResponse> => {
+    return apiRequest<CurrentUsageResponse>(
+      '/billing/usage',
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get billing history for the authenticated user
+   */
+  getBillingHistory: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    limit?: number,
+  ): Promise<BillingHistoryItem[]> => {
+    const url = `/billing/history${limit ? `?limit=${limit}` : ''}`;
+    return apiRequest<BillingHistoryItem[]>(
+      url,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+};
