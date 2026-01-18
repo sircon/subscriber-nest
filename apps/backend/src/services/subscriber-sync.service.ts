@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -13,12 +14,16 @@ import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { SubscriberMapperService } from './subscriber-mapper.service';
 import { SubscriberService } from './subscriber.service';
 import { BillingUsageService } from './billing-usage.service';
+import { BillingSubscriptionService } from './billing-subscription.service';
+import { StripeService } from './stripe.service';
 
 /**
  * Service for syncing subscribers from ESPs to our database
  */
 @Injectable()
 export class SubscriberSyncService {
+  private readonly logger = new Logger(SubscriberSyncService.name);
+
   constructor(
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
@@ -28,7 +33,9 @@ export class SubscriberSyncService {
     private beehiivConnector: BeehiivConnector,
     private subscriberMapperService: SubscriberMapperService,
     private subscriberService: SubscriberService,
-    private billingUsageService: BillingUsageService
+    private billingUsageService: BillingUsageService,
+    private billingSubscriptionService: BillingSubscriptionService,
+    private stripeService: StripeService
   ) {}
 
   /**
@@ -133,6 +140,70 @@ export class SubscriberSyncService {
 
       // Update billing usage (tracks max subscriber count for current billing period)
       await this.billingUsageService.updateUsage(userId, totalSubscriberCount);
+
+      // After successful sync and recording subscriber count in SyncHistory (done by processor),
+      // calculate per-publication max usage and report to Stripe meter
+      try {
+        // Get current billing period dates
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const billingPeriodStart = new Date(year, month, 1, 0, 0, 0, 0);
+        const billingPeriodEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+        // Calculate per-publication max usage for current billing period
+        const perPublicationMax =
+          await this.billingUsageService.calculatePerPublicationMaxUsage(
+            userId,
+            billingPeriodStart,
+            billingPeriodEnd
+          );
+
+        // Sum the maximums from all publications and convert to 10k units (rounded up)
+        const meterUsageUnits =
+          this.billingUsageService.calculateMeterUsage(perPublicationMax);
+
+        // Get user's active subscription and subscription item ID
+        const subscription =
+          await this.billingSubscriptionService.findByUserId(userId);
+
+        if (
+          subscription &&
+          subscription.stripeSubscriptionItemId &&
+          meterUsageUnits > 0
+        ) {
+          // Report usage to Stripe meter
+          await this.stripeService.reportUsageToMeter(
+            subscription.stripeSubscriptionItemId,
+            meterUsageUnits
+          );
+
+          this.logger.log(
+            `Reported ${meterUsageUnits} units to Stripe meter for user ${userId}`
+          );
+        } else {
+          if (!subscription) {
+            this.logger.debug(
+              `No subscription found for user ${userId}, skipping meter reporting`
+            );
+          } else if (!subscription.stripeSubscriptionItemId) {
+            this.logger.debug(
+              `No subscription item ID for user ${userId}, skipping meter reporting`
+            );
+          } else if (meterUsageUnits === 0) {
+            this.logger.debug(
+              `Meter usage is 0 for user ${userId}, skipping meter reporting`
+            );
+          }
+        }
+      } catch (meterError: any) {
+        // Log error but don't fail sync if meter reporting fails
+        this.logger.error(
+          `Failed to report usage to Stripe meter for user ${userId}: ${meterError.message}`,
+          meterError.stack
+        );
+        // Continue - sync should not fail if meter reporting fails
+      }
     } catch (error: any) {
       // Re-throw NotFoundException as-is
       if (error instanceof NotFoundException) {

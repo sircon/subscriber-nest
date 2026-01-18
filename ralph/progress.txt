@@ -801,3 +801,24 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - The `syncFromStripe()` method is used by both webhook handlers and checkout verification, so updating it ensures all subscription creation/update paths store the subscription item ID
   - Subscription item ID is extracted from the first item in the subscription's items array, which is the standard pattern for single-item subscriptions
 ---
+
+## 2026-01-19 - US-038
+- Updated `SubscriberSyncService.syncSubscribers()` method to report usage to Stripe meter after successful sync
+- After billing usage update, calculates per-publication max usage for current billing period using `BillingUsageService.calculatePerPublicationMaxUsage()`
+- Sums the maximums from all publications and converts to 10k units (rounded up) using `BillingUsageService.calculateMeterUsage()`
+- Gets user's active subscription and subscription item ID from `BillingSubscriptionService.findByUserId()`
+- Calls `StripeService.reportUsageToMeter()` with subscription item ID and calculated quantity
+- Handles errors gracefully: logs errors but doesn't fail sync if meter reporting fails (wrapped in try-catch)
+- Only reports usage if subscription exists, has subscription item ID, and meter usage units > 0
+- Injected `BillingSubscriptionService` and `StripeService` into `SubscriberSyncService` constructor
+- Added Logger for structured logging of meter reporting operations
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (added meter reporting logic, injected services)
+- **Learnings for future iterations:**
+  - When reporting usage to Stripe meters, always check if subscription and subscription item ID exist before reporting
+  - Meter reporting should not fail the sync operation - wrap in try-catch and log errors gracefully
+  - Calculate billing period dates dynamically in the sync service (using current month) to match the period used for per-publication calculations
+  - Use Logger.debug() for informational messages (like skipping meter reporting) and Logger.error() for actual errors
+  - The per-publication max usage calculation uses SyncHistory records, so it works correctly even if called immediately after sync (processor records subscriber count after sync completes)
+  - Only report usage if meterUsageUnits > 0 to avoid unnecessary API calls to Stripe
+---
