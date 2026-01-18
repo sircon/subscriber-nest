@@ -162,3 +162,25 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Metadata fields should be flattened to top-level fields for export (not nested objects)
   - ExcelJS allows setting column width and styling headers (bold font)
 ---
+
+## 2026-01-19 01:30 - US-008
+- Created new DashboardController with GET /dashboard/stats endpoint
+- Endpoint returns dashboard statistics: totalEspConnections, totalSubscribers, lastSyncTime
+- Counts all ESP connections for authenticated user using espConnectionRepository.count()
+- Fetches user's connection IDs first, then queries subscribers and sync history based on those IDs
+- totalSubscribers counts across all user's connections using IN query pattern
+- lastSyncTime finds most recent completedAt from sync history ordered DESC
+- Returns null for lastSyncTime if no syncs completed yet
+- Protected with AuthGuard to ensure authentication (returns 401 if not authenticated)
+- Registered DashboardController in AppModule controllers array
+- Files changed:
+  - `apps/backend/src/controllers/dashboard.controller.ts` - New dashboard controller
+  - `apps/backend/src/app.module.ts` - Added DashboardController registration
+- **Learnings for future iterations:**
+  - When querying across multiple related entities, first fetch primary IDs then use IN queries
+  - TypeORM count() with where clause: use array of objects for OR conditions (IN equivalent)
+  - TypeORM findOne() with order: use { field: 'DESC' } to get most recent record
+  - Return null for optional timestamps when no data exists (not undefined)
+  - Dashboard stats endpoints typically aggregate data across multiple tables
+  - Direct repository injection in controllers is acceptable for simple aggregation queries
+---
