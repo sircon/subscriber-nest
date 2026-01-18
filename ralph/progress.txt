@@ -781,3 +781,23 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Edge case handling (0 subscribers = 0 units) prevents division by zero issues and ensures correct billing
   - Synchronous methods that don't require database access are more efficient for calculation purposes
 ---
+
+## 2026-01-19 14:44:42 - US-039
+- Added `stripeSubscriptionItemId` (string, nullable) field to `BillingSubscription` entity
+- Generated migration `1768743851825-AddStripeSubscriptionItemId.ts` which adds nullable varchar(255) column to billing_subscriptions table
+- Made migration idempotent using `DO $$ BEGIN IF NOT EXISTS ... END IF; END $$;` pattern to check if column exists before adding
+- Updated `BillingSubscriptionService.syncFromStripe()` method to extract subscription item ID from `stripeSubscription.items.data[0]?.id`
+- Updated `create()` method signature to accept `stripeSubscriptionItemId` parameter
+- Webhook handlers automatically store subscription item ID since they use `syncFromStripe()` method
+- Files changed:
+  - `apps/backend/src/entities/billing-subscription.entity.ts` (added stripeSubscriptionItemId field)
+  - `apps/backend/src/services/billing-subscription.service.ts` (updated syncFromStripe and create methods)
+  - `apps/backend/src/migrations/1768743851825-AddStripeSubscriptionItemId.ts` (new)
+- **Learnings for future iterations:**
+  - Stripe subscription items are accessed via `subscription.items.data[0]` array (subscriptions can have multiple items, but we use the first one)
+  - Subscription item ID is needed to report usage to Stripe meters via `subscriptionItems.createUsageRecord()` API
+  - When adding nullable fields to existing entities, make migrations idempotent to handle cases where migrations were partially run
+  - Use `information_schema.columns` to check if a column exists before adding it in migrations: `SELECT 1 FROM information_schema.columns WHERE table_name = 'table_name' AND column_name = 'column_name'`
+  - The `syncFromStripe()` method is used by both webhook handlers and checkout verification, so updating it ensures all subscription creation/update paths store the subscription item ID
+  - Subscription item ID is extracted from the first item in the subscription's items array, which is the standard pattern for single-item subscriptions
+---
