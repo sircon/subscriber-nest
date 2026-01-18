@@ -3,19 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
-    "dev": "nest start --watch",
-    "start": "node dist/main.js",
-    "start:debug": "nest start --debug --watch",
-    "lint": "eslint \"src/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\"",
+    "build": "nest build api && nest build worker",
+    "dev": "concurrently \"nest start api --watch\" \"nest start worker --watch\"",
+    "start": "concurrently \"node dist/api/apps/api/src/main.js\" \"node dist/worker/apps/worker/src/main.js\"",
+    "start:api": "node dist/api/apps/api/src/main.js",
+    "start:worker": "node dist/worker/apps/worker/src/main.js",
+    "start:debug": "nest start api --debug --watch",
+    "lint": "eslint \"apps/**/*.ts\" \"libs/**/*.ts\" --fix",
+    "format": "prettier --write \"apps/**/*.{ts,js,tsx,json,md}\" \"libs/**/*.{ts,js,tsx,json,md}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,js,tsx,json,md}\" \"libs/**/*.{ts,js,tsx,json,md}\"",
     "clean": "rm -rf dist",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "yarn run typeorm -- migration:generate -d src/data-source.ts",
-    "db:migrate": "yarn run typeorm -- migration:run -d src/data-source.ts",
-    "db:revert": "yarn run typeorm -- migration:revert -d src/data-source.ts",
-    "db:reset": "yarn run typeorm schema:drop -d src/data-source.ts && yarn db:migrate"
+    "migration:generate": "yarn run typeorm -- migration:generate -d apps/api/src/data-source.ts",
+    "db:migrate": "yarn run typeorm -- migration:run -d apps/api/src/data-source.ts",
+    "db:revert": "yarn run typeorm -- migration:revert -d apps/api/src/data-source.ts",
+    "db:reset": "yarn run typeorm schema:drop -d apps/api/src/data-source.ts && yarn db:migrate"
   },
   "dependencies": {
     "@bull-board/api": "^6.16.2",
@@ -61,6 +63,7 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "concurrently": "^9.1.2"
   }
 }
