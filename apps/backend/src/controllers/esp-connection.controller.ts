@@ -10,14 +10,19 @@ import {
   InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EspConnectionService } from '../services/esp-connection.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import { EspConnection } from '../entities/esp-connection.entity';
+import { AuthGuard } from '../guards/auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { User } from '../entities/user.entity';
 
 @Controller('api/esp-connections')
+@UseGuards(AuthGuard)
 export class EspConnectionController {
   constructor(
     private readonly espConnectionService: EspConnectionService,
@@ -28,14 +33,11 @@ export class EspConnectionController {
   @Get(':id')
   async getConnection(
     @Param('id') id: string,
+    @CurrentUser() user: User,
   ): Promise<Omit<EspConnection, 'encryptedApiKey'>> {
     try {
-      // TODO: Get userId from authentication context (currently using placeholder)
-      // For now, we'll use a placeholder userId. In production, this should come from the authenticated user.
-      const userId = 'placeholder-user-id';
-
       // Find connection and validate ownership
-      const connection = await this.espConnectionService.findById(id, userId);
+      const connection = await this.espConnectionService.findById(id, user.id);
 
       // Return connection without encrypted API key
       const { encryptedApiKey, ...connectionResponse } = connection;
@@ -64,14 +66,11 @@ export class EspConnectionController {
   @HttpCode(HttpStatus.CREATED)
   async createConnection(
     @Body() createEspConnectionDto: CreateEspConnectionDto,
+    @CurrentUser() user: User,
   ): Promise<Omit<EspConnection, 'encryptedApiKey'>> {
     try {
-      // TODO: Get userId from authentication context (currently using placeholder)
-      // For now, we'll use a placeholder userId. In production, this should come from the authenticated user.
-      const userId = 'placeholder-user-id';
-
       const connection = await this.espConnectionService.createConnection(
-        userId,
+        user.id,
         createEspConnectionDto.espType,
         createEspConnectionDto.apiKey,
         createEspConnectionDto.publicationId,
@@ -95,18 +94,17 @@ export class EspConnectionController {
 
   @Post(':id/sync')
   @HttpCode(HttpStatus.ACCEPTED)
-  async triggerSync(@Param('id') id: string): Promise<{
+  async triggerSync(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ): Promise<{
     jobId: string;
     status: string;
     message: string;
   }> {
     try {
-      // TODO: Get userId from authentication context (currently using placeholder)
-      // For now, we'll use a placeholder userId. In production, this should come from the authenticated user.
-      const userId = 'placeholder-user-id';
-
       // Validate ESP connection exists and belongs to user
-      await this.espConnectionService.findById(id, userId);
+      await this.espConnectionService.findById(id, user.id);
 
       // Add job to queue
       const job = await this.subscriberSyncQueue.add('sync-publication', {
