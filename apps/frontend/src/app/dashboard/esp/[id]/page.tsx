@@ -21,7 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Download } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Download } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function EspDetailPage() {
   const { id } = useParams();
@@ -443,38 +444,13 @@ export default function EspDetailPage() {
           </div>
 
           {/* Pagination Controls */}
-          {subscribers.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-600">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
-                {Math.min(currentPage * itemsPerPage, subscribers.total)} of{' '}
-                {subscribers.total} subscribers
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {subscribers.totalPages}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === subscribers.totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={subscribers.totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={subscribers.total}
+          />
         </CardContent>
       </Card>
     </div>
