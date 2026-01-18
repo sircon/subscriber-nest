@@ -822,3 +822,23 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - The per-publication max usage calculation uses SyncHistory records, so it works correctly even if called immediately after sync (processor records subscriber count after sync completes)
   - Only report usage if meterUsageUnits > 0 to avoid unnecessary API calls to Stripe
 ---
+
+## 2026-01-19 - US-040
+- Simplified `BillingProcessor` to remove invoice creation logic since Stripe handles metered billing invoicing automatically
+- Removed all invoice creation code: `createInvoiceItem()`, `createAndFinalizeInvoice()` calls, and invoice status updates
+- Updated processor to only create new `BillingUsage` records for current month for historical tracking purposes
+- Removed unused dependencies: `User` repository, `BillingUsage` repository, and `StripeService` from processor constructor
+- Simplified `processUserBillingUsage()` method to only count subscribers and create usage records
+- Updated `BillingSchedulerService` comments to reflect that job only tracks usage records (not invoicing)
+- Kept the scheduler service since we still need to create usage records for historical purposes
+- Files changed:
+  - `apps/backend/src/processors/billing.processor.ts` (simplified, removed invoice logic)
+  - `apps/backend/src/services/billing-scheduler.service.ts` (updated comments)
+- **Learnings for future iterations:**
+  - With Stripe metered billing, invoicing is handled automatically by Stripe based on usage records reported via `reportUsageToMeter()`
+  - Monthly billing jobs should only track usage records for historical purposes, not create invoices
+  - Stripe webhook handlers (from US-009) already update `BillingUsage` records with invoice IDs when invoices are paid
+  - When simplifying processors, remove unused repository injections and service dependencies to keep code clean
+  - Keep scheduler services even if job logic is simplified - they're still needed to schedule the simplified job
+  - Metered billing eliminates the need for manual invoice creation - Stripe handles everything automatically at the end of each billing period
+---

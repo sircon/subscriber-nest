@@ -46,8 +46,9 @@ export class BillingUsageService {
 
   /**
    * Update billing usage for a user by tracking the maximum subscriber count during the current billing period
+   * Uses per-publication maximums (sum of max subscriber count per ESP connection) instead of total maximum
    * @param userId - The ID of the user
-   * @param currentSubscriberCount - The current subscriber count for the user
+   * @param currentSubscriberCount - The current subscriber count for the user (kept for backward compatibility, not used)
    * @returns Promise that resolves when usage is updated
    */
   async updateUsage(
@@ -55,6 +56,19 @@ export class BillingUsageService {
     currentSubscriberCount: number
   ): Promise<void> {
     const { start, end } = this.getCurrentBillingPeriod();
+
+    // Calculate per-publication max usage for current billing period
+    const perPublicationMax = await this.calculatePerPublicationMaxUsage(
+      userId,
+      start,
+      end
+    );
+
+    // Sum all per-publication maximums to get total subscriber count
+    let totalSubscriberCount = 0;
+    for (const count of perPublicationMax.values()) {
+      totalSubscriberCount += count;
+    }
 
     // Find existing billing usage record for current period
     let billingUsage = await this.billingUsageRepository.findOne({
@@ -70,17 +84,18 @@ export class BillingUsageService {
         userId,
         billingPeriodStart: start,
         billingPeriodEnd: end,
-        maxSubscriberCount: currentSubscriberCount,
+        maxSubscriberCount: totalSubscriberCount,
         status: BillingUsageStatus.PENDING,
       });
     } else {
-      // Update maxSubscriberCount if current count is higher than stored max
-      if (currentSubscriberCount > billingUsage.maxSubscriberCount) {
-        billingUsage.maxSubscriberCount = currentSubscriberCount;
+      // Update maxSubscriberCount if calculated total is higher than stored max
+      // This ensures we track the maximum sum of per-publication maximums during the billing period
+      if (totalSubscriberCount > billingUsage.maxSubscriberCount) {
+        billingUsage.maxSubscriberCount = totalSubscriberCount;
       }
     }
 
-    // Calculate billing amount using BillingCalculationService
+    // Calculate billing amount using BillingCalculationService based on max subscriber count
     const calculatedAmount = this.billingCalculationService.calculateAmount(
       billingUsage.maxSubscriberCount
     );
