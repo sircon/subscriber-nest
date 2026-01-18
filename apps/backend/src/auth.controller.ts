@@ -31,7 +31,7 @@ export class AuthController {
   @Post('verify-code')
   async verifyCode(
     @Body() body: VerifyCodeDto,
-  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean } }> {
+  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
     return this.authService.verifyCode(body.email, body.code);
   }
 
@@ -39,12 +39,13 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async getCurrentUser(
     @CurrentUser() user: User,
-  ): Promise<{ user: { id: string; email: string; isOnboarded: boolean } }> {
+  ): Promise<{ user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
     return {
       user: {
         id: user.id,
         email: user.email,
         isOnboarded: user.isOnboarded,
+        deleteRequestedAt: user.deleteRequestedAt,
       },
     };
   }
@@ -65,7 +66,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async completeOnboarding(
     @CurrentUser() user: User,
-  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean } }> {
+  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
     return this.authService.completeOnboarding(user.id);
   }
 }

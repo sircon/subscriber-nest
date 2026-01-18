@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const userCookie = request.cookies.get('user')?.value;
   
-  let user: { id: string; email: string; isOnboarded: boolean } | null = null;
+  let user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt?: Date | string | null } | null = null;
   if (userCookie) {
     try {
       user = JSON.parse(userCookie);
@@ -62,6 +62,18 @@ export function middleware(request: NextRequest) {
   if (isAuthenticated && isOnboarded && isOnboardingRoute) {
     const dashboardUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(dashboardUrl);
+  }
+
+  // If authenticated and account deletion has been requested, redirect to deletion notice page
+  // (except if already on deletion page or trying to access export endpoints)
+  if (isAuthenticated && user?.deleteRequestedAt) {
+    const isDeletionPage = pathname.startsWith('/account-deletion');
+    const isExportEndpoint = pathname.includes('/subscribers/export');
+    
+    if (!isDeletionPage && !isExportEndpoint) {
+      const deletionUrl = new URL('/account-deletion', request.url);
+      return NextResponse.redirect(deletionUrl);
+    }
   }
 
   // Allow access

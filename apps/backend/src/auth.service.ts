@@ -100,7 +100,7 @@ export class AuthService {
   async verifyCode(
     email: string,
     code: string,
-  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean } }> {
+  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
     // Find verification code
     const verificationCode = await this.verificationCodeRepository.findOne({
       where: { email, code },
@@ -152,6 +152,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         isOnboarded: user.isOnboarded,
+        deleteRequestedAt: user.deleteRequestedAt,
       },
     };
   }
@@ -177,7 +178,7 @@ export class AuthService {
    */
   async completeOnboarding(
     userId: string,
-  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean } }> {
+  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -199,6 +200,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         isOnboarded: user.isOnboarded,
+        deleteRequestedAt: user.deleteRequestedAt,
       },
     };
   }

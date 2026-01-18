@@ -486,3 +486,28 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Success messages should clearly explain what happens next (30-day grace period, subscription cancellation, data export availability)
   - Confirmation dialogs for destructive actions should include detailed explanations of consequences
 ---
+
+## 2026-01-19 - US-024
+- Updated `AuthGuard` to check if user has `deleteRequestedAt` set and throw `ForbiddenException` with message "Account deletion in progress. You can export your data for 30 days." if set
+- Guard allows access to export endpoints (URLs containing `/subscribers/export`) during grace period
+- Updated backend auth endpoints (`/auth/me`, `/auth/verify-code`, `/auth/complete-onboarding`) to include `deleteRequestedAt` in user response
+- Updated frontend `User` interface in both `AuthContext.tsx` and `api.ts` to include `deleteRequestedAt: Date | string | null` (string for JSON serialization)
+- Created account deletion notice page at `apps/frontend/src/app/account-deletion/page.tsx`
+- Deletion page displays deletion date, deadline (30 days from request), remaining days, and allows exporting subscriber data in CSV, JSON, or Excel formats
+- Updated middleware to redirect deleted accounts (users with `deleteRequestedAt` set) to `/account-deletion` page, except when already on deletion page or accessing export endpoints
+- Files changed:
+  - `apps/backend/src/guards/auth.guard.ts` (added deleteRequestedAt check with export endpoint exception)
+  - `apps/backend/src/auth.controller.ts` (added deleteRequestedAt to user responses)
+  - `apps/backend/src/auth.service.ts` (added deleteRequestedAt to user responses)
+  - `apps/frontend/src/contexts/AuthContext.tsx` (updated User interface)
+  - `apps/frontend/src/lib/api.ts` (updated User interface)
+  - `apps/frontend/src/middleware.ts` (added redirect logic for deleted accounts)
+  - `apps/frontend/src/app/account-deletion/page.tsx` (new)
+- **Learnings for future iterations:**
+  - When checking for account deletion in guards, allow access to export endpoints by checking if request URL contains the export path pattern
+  - User objects from API responses serialize dates as strings, so User interfaces should accept `Date | string | null` for date fields
+  - Middleware can check user cookie for `deleteRequestedAt` to redirect deleted accounts, but the cookie needs to be updated when user data changes (via AuthContext)
+  - Deletion notice pages should provide clear information about deletion timeline and allow data export during grace period
+  - When updating user response types, update all endpoints that return user objects (`/auth/me`, `/auth/verify-code`, `/auth/complete-onboarding`) to maintain consistency
+  - Export endpoints should remain accessible during account deletion grace period to allow users to export their data
+---

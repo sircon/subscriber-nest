@@ -12,6 +12,7 @@ export interface User {
   id: string;
   email: string;
   isOnboarded: boolean;
+  deleteRequestedAt: Date | string | null;
 }
 
 export interface SendCodeRequest {

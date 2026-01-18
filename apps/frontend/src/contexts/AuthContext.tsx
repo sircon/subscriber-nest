@@ -7,6 +7,7 @@ interface User {
   id: string;
   email: string;
   isOnboarded: boolean;
+  deleteRequestedAt: Date | string | null;
 }
 
 // eslint-disable-next-line no-unused-vars
