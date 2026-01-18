@@ -30,6 +30,7 @@ import { SyncHistory } from './entities/sync-history.entity';
 import { SyncHistoryService } from './services/sync-history.service';
 import { BillingSubscription } from './entities/billing-subscription.entity';
 import { BillingUsage } from './entities/billing-usage.entity';
+import { OAuthState } from './entities/oauth-state.entity';
 import { StripeService } from './services/stripe.service';
 import { BillingCalculationService } from './services/billing-calculation.service';
 import { BillingUsageService } from './services/billing-usage.service';
@@ -63,6 +64,7 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
       SyncHistory,
       BillingSubscription,
       BillingUsage,
+      OAuthState,
     ]),
     HttpModule,
     BullModule.forRoot({
