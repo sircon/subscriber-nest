@@ -50,3 +50,23 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Optimistic approach: Create sync history with 'success' status, update to 'failed' only if needed
   - Always wrap database updates in try-catch to prevent processor failures from cascading
 ---
+
+## 2026-01-18 15:30 - US-003
+- Created SyncHistoryService with findByEspConnection method
+- Method queries sync history records for a specific ESP connection
+- Returns records ordered by startedAt DESC (most recent first)
+- Optional limit parameter defaults to 50 if not provided
+- Includes ESP connection relationship in query using relations: ['espConnection']
+- Registered SyncHistory entity in TypeOrmModule.forFeature()
+- Registered SyncHistoryService in AppModule providers
+- Files changed:
+  - `apps/backend/src/services/sync-history.service.ts` - New service file
+  - `apps/backend/src/app.module.ts` - Added SyncHistory entity and SyncHistoryService registration
+- **Learnings for future iterations:**
+  - Services follow standard NestJS pattern: @Injectable() decorator, constructor injection
+  - Repository injection uses @InjectRepository(Entity) pattern
+  - TypeORM find() options: where (filters), relations (eager load), order (sorting), take (limit)
+  - Default parameter values in TypeScript: `limit: number = 50` syntax
+  - Services must be registered in AppModule providers array to be injectable
+  - Entities must be in TypeOrmModule.forFeature() array to inject their repositories
+---
