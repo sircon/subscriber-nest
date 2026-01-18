@@ -33,6 +33,7 @@ import {
 } from '../services/subscriber-export.service';
 import { OAuthStateService } from '../services/oauth-state.service';
 import { OAuthConfigService } from '../services/oauth-config.service';
+import { OAuthTokenRefreshService } from '../services/oauth-token-refresh.service';
 import { EncryptionService } from '../services/encryption.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import {
@@ -59,6 +60,7 @@ export class EspConnectionController {
     private readonly subscriberExportService: SubscriberExportService,
     private readonly oauthStateService: OAuthStateService,
     private readonly oauthConfigService: OAuthConfigService,
+    private readonly oauthTokenRefreshService: OAuthTokenRefreshService,
     private readonly encryptionService: EncryptionService,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
@@ -452,6 +454,70 @@ export class EspConnectionController {
 
       // Handle other errors as 500
       throw new InternalServerErrorException('Failed to create ESP connection');
+    }
+  }
+
+  @Post(':id/refresh-token')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<
+    Omit<
+      EspConnection,
+      'encryptedApiKey' | 'encryptedAccessToken' | 'encryptedRefreshToken'
+    >
+  > {
+    try {
+      // Validate ESP connection exists and belongs to user
+      const connection = await this.espConnectionService.findById(id, user.id);
+
+      // Refresh the OAuth token
+      await this.oauthTokenRefreshService.refreshToken(connection);
+
+      // Reload the connection from database to get updated token info
+      const updatedConnection = await this.espConnectionService.findById(
+        id,
+        user.id
+      );
+
+      // Return connection without encrypted fields
+      const {
+        encryptedApiKey,
+        encryptedAccessToken,
+        encryptedRefreshToken,
+        ...connectionResponse
+      } = updatedConnection;
+      return connectionResponse;
+    } catch (error) {
+      // Handle NotFoundException from service (404 - connection not found)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (400 - not OAuth connection, missing refresh token, invalid/expired refresh token)
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      // Note: This is caught by the findById call above, but we check for it here for completeness
+      if (
+        error instanceof BadRequestException &&
+        error.message.includes('permission')
+      ) {
+        throw new ForbiddenException(
+          'You do not have permission to refresh this ESP connection'
+        );
+      }
+
+      // Handle InternalServerErrorException (500 - missing config, decryption failure, API errors)
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException('Failed to refresh OAuth token');
     }
   }
 
