@@ -69,6 +69,12 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - API keys are encrypted before storing in database using EncryptionService
 - API keys are never returned in API responses (only id, provider, createdAt, isActive)
 
+## Subscribers
+
+- `src/subscriber.controller.ts` – SubscriberController with subscriber-specific endpoints (e.g., unmask email)
+- When validating subscriber ownership: query with `relations: ['espConnection']` and compare `espConnection.userId` with authenticated user ID
+- Pattern for sensitive operations on subscribers: fetch with relations → validate ownership → perform operation → handle errors
+
 ## Encryption
 
 - `src/encryption.service.ts` – EncryptionService using Node's built-in crypto module with AES-256-GCM

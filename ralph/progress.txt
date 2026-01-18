@@ -70,3 +70,62 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Services must be registered in AppModule providers array to be injectable
   - Entities must be in TypeOrmModule.forFeature() array to inject their repositories
 ---
+
+## 2026-01-18 18:00 - US-004
+- Added GET /esp-connections/:id/sync-history endpoint to EspConnectionController
+- Endpoint accepts optional query parameter 'limit' (default: 50)
+- Validates ESP connection exists and belongs to requesting user via espConnectionService.findById()
+- Returns array of sync history records without espConnection relation to avoid exposing sensitive data
+- Follows existing error handling pattern: NotFoundException (404), BadRequestException → ForbiddenException (403)
+- Uses Omit<SyncHistory, 'espConnection'>[] return type to properly type the response
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added sync history endpoint
+- **Learnings for future iterations:**
+  - Controllers must import Query decorator for query parameters
+  - Query parameters in NestJS can be optional by using `@Query('param') param?: type`
+  - Required parameters decorated with @CurrentUser or @Param must come before optional @Query parameters
+  - When removing fields from returned objects, use Omit<Type, 'field'>[] for proper typing
+  - Controller error handling pattern: validate ownership first, then return appropriate 403/404 errors
+  - SyncHistoryService was already registered in AppModule, so no module changes needed
+---
+
+## 2026-01-18 21:30 - US-005
+- Added GET /esp-connections/:id/subscribers endpoint to EspConnectionController
+- Created findByEspConnectionPaginated method in SubscriberService
+- Endpoint accepts query parameters: page (default: 1), limit (default: 50), status (optional filter)
+- Returns paginated response with data, total, page, limit, and totalPages
+- Subscribers returned with maskedEmail (encryptedEmail excluded for security)
+- Validates ESP connection exists and belongs to requesting user
+- Follows existing error handling pattern: NotFoundException (404), BadRequestException → ForbiddenException (403)
+- Files changed:
+  - `apps/backend/src/services/subscriber.service.ts` - Added paginated query method
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added subscribers endpoint and injected SubscriberService
+- **Learnings for future iterations:**
+  - Paginated responses follow pattern: `{ data: T[], total, page, limit, totalPages }`
+  - Use TypeORM skip/take for pagination: `skip: (page - 1) * limit, take: limit`
+  - Calculate totalPages: `Math.ceil(total / limit)`
+  - When filtering is optional, build where clause conditionally: `if (status) where.status = status`
+  - Remove sensitive fields from responses by destructuring: `const { encryptedEmail, ...data } = subscriber`
+  - Service injection in controllers: add to constructor parameters and import service class
+  - SubscriberService was already registered in AppModule, so no module changes needed
+---
+
+## 2026-01-18 23:45 - US-006
+- Created new SubscriberController with POST /subscribers/:id/unmask endpoint
+- Endpoint validates subscriber exists and belongs to a connection owned by requesting user
+- Fetches subscriber with espConnection relation to validate ownership via userId comparison
+- Uses EncryptionService.decrypt() to decrypt the encryptedEmail field
+- Returns { email: string } with decrypted email
+- Follows existing error handling pattern: NotFoundException (404), ForbiddenException (403)
+- Registered SubscriberController in AppModule controllers array
+- Files changed:
+  - `apps/backend/src/controllers/subscriber.controller.ts` - New controller file
+  - `apps/backend/src/app.module.ts` - Added SubscriberController registration
+- **Learnings for future iterations:**
+  - When validating ownership through a relationship, use relations: ['espConnection'] in query
+  - Compare espConnection.userId with current user.id for ownership validation
+  - EncryptionService.decrypt() throws errors that should be caught and returned as 500
+  - New controllers must be both imported and added to controllers array in AppModule
+  - Subscriber entity already registered in TypeOrmModule.forFeature(), so repository injection works
+  - Pattern for sensitive operations: fetch with relations, validate ownership, perform operation, handle errors
+---
