@@ -26,4 +26,31 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - The `esp_type_enum` already exists from previous migrations, so we can reuse it for OAuthState entity
   - Indexes can use `CREATE INDEX IF NOT EXISTS` directly in SQL
   - Always use `CREATE TABLE IF NOT EXISTS` to handle cases where table might already exist (e.g., from synchronize mode in development)
+  - When making existing columns nullable, use `ALTER COLUMN ... DROP NOT NULL` in migrations
+  - When adding new enum types, use `DO $$ BEGIN CREATE TYPE ... EXCEPTION WHEN duplicate_object THEN null; END $$;` pattern
+  - For ALTER TABLE operations, can use `ADD COLUMN IF NOT EXISTS` for idempotency
+  - When updating entities to support new auth methods, add null checks in services that use the old fields to prevent runtime errors
+---
+
+## Sun Jan 18 22:15:00 CET 2026 - US-002
+- Updated EspConnection entity to support OAuth authentication method
+- Added `authMethod` enum field (api_key, oauth) with default 'api_key'
+- Made `encryptedApiKey` nullable (required only for API key auth)
+- Added `encryptedAccessToken`, `encryptedRefreshToken`, `tokenExpiresAt` fields for OAuth tokens
+- Added `publicationIds` JSONB field to store array of publication IDs for OAuth connections
+- Made `publicationId` nullable (OAuth connections use `publicationIds` array)
+- Created migration `1768744100000-UpdateEspConnectionForOAuth.ts` with all schema changes
+- Updated `EspConnectionService.createConnection()` to set `authMethod: 'api_key'` for API key connections
+- Added null checks in `EspConnectionService.getSubscriberCount()` and `SubscriberSyncService.syncSubscribers()` to handle nullable fields
+- Migration executed successfully, all columns added correctly
+- Files changed:
+  - `apps/backend/src/entities/esp-connection.entity.ts` (updated)
+  - `apps/backend/src/migrations/1768744100000-UpdateEspConnectionForOAuth.ts` (new)
+  - `apps/backend/src/services/esp-connection.service.ts` (updated)
+  - `apps/backend/src/services/subscriber-sync.service.ts` (updated)
+- **Learnings for future iterations:**
+  - When making existing columns nullable, existing code that uses those fields needs null checks
+  - Services that use API key fields should validate `authMethod === 'api_key'` before accessing those fields
+  - The migration pattern for adding enum columns uses TypeORM's `getTable()` to check existence, then raw SQL `ADD COLUMN IF NOT EXISTS`
+  - TypeORM's synchronize mode in development can create tables, so migrations should be idempotent
 ---

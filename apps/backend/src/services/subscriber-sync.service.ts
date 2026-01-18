@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { EspConnection, EspType } from '../entities/esp-connection.entity';
+import {
+  EspConnection,
+  EspType,
+  AuthMethod,
+} from '../entities/esp-connection.entity';
 import { Subscriber } from '../entities/subscriber.entity';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
@@ -80,6 +84,19 @@ export class SubscriberSyncService {
     }
 
     try {
+      // Validate this is an API key connection (OAuth support will be added in later stories)
+      if (espConnection.authMethod !== AuthMethod.API_KEY) {
+        throw new InternalServerErrorException(
+          'OAuth connections are not yet supported in sync service'
+        );
+      }
+
+      if (!espConnection.encryptedApiKey || !espConnection.publicationId) {
+        throw new InternalServerErrorException(
+          'API key or publication ID is missing for this connection'
+        );
+      }
+
       // Decrypt the API key
       const apiKey = this.encryptionService.decrypt(
         espConnection.encryptedApiKey

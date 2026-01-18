@@ -10,6 +10,7 @@ import {
   EspType,
   EspConnectionStatus,
   EspSyncStatus,
+  AuthMethod,
 } from '../entities/esp-connection.entity';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
@@ -77,6 +78,7 @@ export class EspConnectionService {
     const espConnection = this.espConnectionRepository.create({
       userId,
       espType: espTypeEnum,
+      authMethod: AuthMethod.API_KEY,
       encryptedApiKey,
       publicationId,
       status: EspConnectionStatus.ACTIVE,
@@ -163,6 +165,19 @@ export class EspConnectionService {
    */
   async getSubscriberCount(id: string, userId?: string): Promise<number> {
     const connection = await this.findById(id, userId);
+
+    // Validate this is an API key connection
+    if (connection.authMethod !== AuthMethod.API_KEY) {
+      throw new BadRequestException(
+        'This method only supports API key connections'
+      );
+    }
+
+    if (!connection.encryptedApiKey || !connection.publicationId) {
+      throw new BadRequestException(
+        'API key or publication ID is missing for this connection'
+      );
+    }
 
     // Decrypt the API key
     const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);

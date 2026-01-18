@@ -31,6 +31,11 @@ export enum EspSyncStatus {
   ERROR = 'error',
 }
 
+export enum AuthMethod {
+  API_KEY = 'api_key',
+  OAUTH = 'oauth',
+}
+
 @Entity('esp_connections')
 export class EspConnection {
   @PrimaryGeneratedColumn('uuid')
@@ -49,11 +54,30 @@ export class EspConnection {
   })
   espType: EspType;
 
-  @Column({ type: 'text' })
-  encryptedApiKey: string;
+  @Column({
+    type: 'enum',
+    enum: AuthMethod,
+    default: AuthMethod.API_KEY,
+  })
+  authMethod: AuthMethod;
 
-  @Column({ type: 'varchar', length: 255 })
-  publicationId: string;
+  @Column({ type: 'text', nullable: true })
+  encryptedApiKey: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  encryptedAccessToken: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  encryptedRefreshToken: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  tokenExpiresAt: Date | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  publicationId: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  publicationIds: string[] | null;
 
   @Column({
     type: 'enum',
