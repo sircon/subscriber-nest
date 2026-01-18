@@ -356,3 +356,30 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Session-based persistence is simple: just store in component state, cleared on page refresh
   - Update Map/Set state immutably: create new Map/Set from old one, then modify
 ---
+
+## 2026-01-19 08:00 - US-014
+- Implemented export functionality in ESP detail page
+- Added exportSubscribers() function to espConnectionApi in API client
+- Function makes GET request to /esp-connections/:id/subscribers/export with format parameter
+- Returns blob and filename extracted from Content-Disposition header
+- Added Export dropdown button in ESP detail page header (top-right)
+- Dropdown menu shows three options: Export as CSV, JSON, Excel
+- Clicking option triggers handleExport() which downloads file via Blob URL
+- Implemented loading state: button disabled with spinner during export
+- Implemented error handling: inline error message below button, auto-clears after 5 seconds
+- Download mechanism: creates Blob URL, temporary anchor element, triggers click, then cleanup
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` - Added exportSubscribers function
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Added export UI and download logic
+- **Learnings for future iterations:**
+  - For file downloads from API, fetch returns Blob via response.blob()
+  - Extract filename from Content-Disposition header: match /filename="(.+)"/
+  - Trigger browser download: create Blob URL with URL.createObjectURL(), create temp <a> element, set href and download attributes, click it programmatically
+  - Always cleanup Blob URLs with URL.revokeObjectURL() and remove temp elements to prevent memory leaks
+  - Auto-clear error messages after timeout for better UX (don't persist errors indefinitely)
+  - For export endpoints that return files, bypass the standard apiRequest wrapper to handle Blob response
+  - DropdownMenu component requires DropdownMenuTrigger, DropdownMenuContent, and DropdownMenuItem sub-components
+  - Use align="end" on DropdownMenuContent to right-align dropdown below button
+  - Header layout: flex with justify-between to position title left and export button right
+  - Use flex-col with items-end for stacking button and error message vertically, right-aligned
+---
