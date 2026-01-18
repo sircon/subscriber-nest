@@ -37,6 +37,9 @@ import { BillingProcessor } from './processors/billing.processor';
 import { BillingSchedulerService } from './services/billing-scheduler.service';
 import { BillingSubscriptionService } from './services/billing-subscription.service';
 import { BillingController } from './controllers/billing.controller';
+import { AccountController } from './controllers/account.controller';
+import { AccountDeletionProcessor } from './processors/account-deletion.processor';
+import { AccountDeletionSchedulerService } from './services/account-deletion-scheduler.service';
 
 @Module({
   imports: [
@@ -89,8 +92,18 @@ import { BillingController } from './controllers/billing.controller';
         },
       },
     }),
+    BullModule.registerQueue({
+      name: 'account-deletion',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
   ],
-  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController],
+  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController, AccountController],
   providers: [
     AppService,
     EncryptionService,
@@ -112,6 +125,8 @@ import { BillingController } from './controllers/billing.controller';
     BillingSubscriptionService,
     BillingProcessor,
     BillingSchedulerService,
+    AccountDeletionProcessor,
+    AccountDeletionSchedulerService,
   ],
   exports: [EmailService],
 })
