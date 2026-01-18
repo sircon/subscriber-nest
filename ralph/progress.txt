@@ -459,3 +459,30 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Processors can support both scheduled runs (process all eligible records) and manual runs (process specific record via job data)
   - When deleting cascading data, delete in order: child records first (subscribers, sync history), then parent records (ESP connections), then user-level records (billing, sessions), finally user
 ---
+
+## 2026-01-19 - US-023
+- Created account settings page at `apps/frontend/src/app/dashboard/settings/account/page.tsx`
+- Page displays user email (read-only) in Account Information card
+- Page displays account deletion section with warning message explaining 30-day grace period, data export availability, and immediate subscription cancellation
+- Created "Delete Account" button with confirmation dialog
+- Confirmation dialog explains: account will be deleted after 30 days, data can be exported during grace period, subscription will be canceled immediately
+- On confirmation, calls `POST /account/delete` endpoint via `accountApi.deleteAccount()`
+- After deletion request, shows success message: "Account deletion requested. You have 30 days to export your data. Your subscription has been canceled."
+- Page handles loading and error states with appropriate UI feedback
+- Created shadcn Dialog component (`apps/frontend/src/components/ui/dialog.tsx`) for confirmation dialogs
+- Created shadcn Alert component (`apps/frontend/src/components/ui/alert.tsx`) for warning messages
+- Added `accountApi.deleteAccount()` function to API client (`apps/frontend/src/lib/api.ts`)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/account/page.tsx` (new)
+  - `apps/frontend/src/components/ui/dialog.tsx` (new)
+  - `apps/frontend/src/components/ui/alert.tsx` (new)
+  - `apps/frontend/src/lib/api.ts` (added accountApi namespace with deleteAccount function)
+- **Learnings for future iterations:**
+  - When creating Dialog components, use `document.body.style.overflow = 'hidden'` to prevent background scrolling when dialog is open
+  - Dialog components should handle click-outside-to-close by checking if click target is the backdrop element
+  - Alert components can use variant props (default, destructive, warning) for different visual styles
+  - When ESLint complains about unused parameter names in function type definitions, prefix with underscore or use eslint-disable comment
+  - Account deletion flow: user requests deletion → backend sets `deleteRequestedAt` → scheduled job deletes after 30 days
+  - Success messages should clearly explain what happens next (30-day grace period, subscription cancellation, data export availability)
+  - Confirmation dialogs for destructive actions should include detailed explanations of consequences
+---
