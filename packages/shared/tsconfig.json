@@ -18,10 +18,13 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
-    "jsx": "react",
-    "paths": {
-      "@subscriber-nest/shared": ["../../packages/shared/src"],
-      "@subscriber-nest/shared/*": ["../../packages/shared/src/*"]
-    }
-  }
+    "jsx": "react"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
