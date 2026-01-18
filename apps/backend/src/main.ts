@@ -27,7 +27,13 @@ async function bootstrap() {
 
   // Setup Bull Board dashboard
   const subscriberSyncQueue = app.get(getQueueToken('subscriber-sync'));
-  const bullBoardRouter = setupBullBoard([subscriberSyncQueue]);
+  const billingQueue = app.get(getQueueToken('billing'));
+  const accountDeletionQueue = app.get(getQueueToken('account-deletion'));
+  const bullBoardRouter = setupBullBoard([
+    subscriberSyncQueue,
+    billingQueue,
+    accountDeletionQueue,
+  ]);
   app.use('/admin/queues', bullBoardRouter);
 
   const port = process.env.PORT ?? 4000;
