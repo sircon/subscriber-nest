@@ -422,3 +422,19 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Redis connection uses environment variables with defaults (localhost:6379, no password)
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify BullMQ configuration
 ---
+
+## 2026-01-19 - US-020
+- Installed and configured NestJS Schedule module in worker service
+- Added `ScheduleModule.forRoot()` import to `apps/worker/src/app.module.ts`
+- Verified `@nestjs/schedule@^6.1.0` was already installed in `apps/worker/package.json` (from US-015)
+- Schedule module is now properly initialized and ready for cron job decorators
+- Files changed:
+  - `apps/worker/src/app.module.ts` - Added ScheduleModule import and configuration
+- **Learnings for future iterations:**
+  - `@nestjs/schedule@^6.1.0` is already installed in worker service (installed in US-015)
+  - `ScheduleModule.forRoot()` must be imported in AppModule imports array to enable cron decorators
+  - Schedule module initialization is simple - just add `ScheduleModule.forRoot()` to imports
+  - No additional configuration needed for basic cron job functionality
+  - Use `yarn workspace worker typecheck` and `turbo run lint --filter=worker` to verify schedule module configuration
+  - Schedule module enables `@Cron()` decorator for scheduling tasks in services
+---
