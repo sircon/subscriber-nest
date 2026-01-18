@@ -46,6 +46,7 @@ import { OAuthStateService } from './services/oauth-state.service';
 import { OAuthStateCleanupProcessor } from './processors/oauth-state-cleanup.processor';
 import { OAuthStateSchedulerService } from './services/oauth-state-scheduler.service';
 import { OAuthConfigService } from './services/oauth-config.service';
+import { OAuthTokenRefreshService } from './services/oauth-token-refresh.service';
 
 @Module({
   imports: [
@@ -157,6 +158,7 @@ import { OAuthConfigService } from './services/oauth-config.service';
     OAuthStateCleanupProcessor,
     OAuthStateSchedulerService,
     OAuthConfigService,
+    OAuthTokenRefreshService,
   ],
   exports: [EmailService],
 })

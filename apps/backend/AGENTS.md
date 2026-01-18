@@ -74,6 +74,7 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 
 - `src/services/oauth-state.service.ts` – OAuthStateService for managing OAuth state tokens (CSRF protection)
 - `src/services/oauth-config.service.ts` – OAuthConfigService for reading OAuth configuration from environment variables
+- `src/services/oauth-token-refresh.service.ts` – OAuthTokenRefreshService for refreshing expired OAuth access tokens using refresh tokens
 - `src/entities/oauth-state.entity.ts` – OAuthState entity for storing OAuth state parameters
 - OAuth initiate endpoints (`GET /esp-connections/oauth/initiate/:provider`) require authentication via `@UseGuards(AuthGuard)`
 - OAuth callback endpoints (`GET /esp-connections/oauth/callback/:provider`) should NOT require authentication (called by external OAuth providers)
@@ -85,6 +86,10 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - Calculate token expiry by adding `expires_in` seconds to current time: `new Date(Date.now() + expiresIn * 1000)`
 - Always encrypt OAuth tokens (access_token, refresh_token) using EncryptionService before storing in database
 - Redirect to frontend with connection ID and success parameter: `{FRONTEND_URL}/esp-connections/{connectionId}?oauth=success`
+- Token refresh uses `grant_type=refresh_token` with refresh_token, client_id, and client_secret in the request body
+- Token refresh may return a new refresh_token - if provided, update it; otherwise keep the existing refresh token
+- Handle token refresh errors: 400 (invalid refresh token), 401 (expired/revoked refresh token) - throw BadRequestException with user-friendly messages
+- After successful token refresh, update `encryptedAccessToken`, `encryptedRefreshToken` (if new one provided), `tokenExpiresAt`, and `lastValidatedAt` in the database
 
 ## Subscribers
 
