@@ -11,6 +11,8 @@ Started: Sun Jan 18 09:32:48 CET 2026
 - Use `columnExists` check pattern to make migrations idempotent: `table?.columns.find((col) => col.name === 'columnName')`
 - Always run `turbo run build --filter=backend` before running migrations
 - Migration command: `cd apps/backend && yarn db:migrate`
+- shadcn CLI generates code with tabs - always convert to spaces to avoid linting errors
+- When fetching data for dashboard/overview pages, use Promise.all to fetch multiple endpoints in parallel
 
 ---
 
@@ -242,4 +244,45 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Extract shared sidebar content into separate component to DRY between desktop/mobile
   - useEffect with token dependency to refetch connections when auth state changes
   - Close mobile sidebar on navigation by calling setMobileOpen(false) in onClick handlers
+---
+
+## 2026-01-19 04:00 - US-011
+- Created dashboard overview page at apps/frontend/src/app/dashboard/page.tsx
+- Replaced existing dashboard page with new overview design
+- Implemented three stats cards displaying:
+  - Total ESPs count from dashboard stats endpoint
+  - Total Subscribers count from dashboard stats endpoint
+  - Last Sync time with relative time formatting ("X mins ago", "Never", etc.)
+- Added sync history table below stats cards with columns:
+  - ESP Name (includes ESP type and publication ID)
+  - Status (badge component: green for success, red for failed)
+  - Started At (formatted date/time)
+  - Completed At (formatted date/time)
+  - Error (only shown when status is 'failed', truncated with title tooltip)
+- Fetches sync history for all ESP connections in parallel and merges them
+- Sorts merged sync history by startedAt DESC and limits to 50 records
+- Implemented loading state with skeleton animation
+- Implemented error state with error message display
+- Added Badge component using shadcn CLI
+- Added API client functions:
+  - dashboardApi.getStats() - GET /dashboard/stats
+  - espConnectionApi.getSyncHistory() - GET /esp-connections/:id/sync-history
+- Added TypeScript interfaces: DashboardStats, SyncHistory, SyncHistoryWithEsp
+- Fixed linting issues in tailwind.config.ts (converted tabs to spaces from shadcn)
+- Files changed:
+  - apps/frontend/src/app/dashboard/page.tsx - New dashboard overview implementation
+  - apps/frontend/src/lib/api.ts - Added dashboard and sync history API functions
+  - apps/frontend/src/components/ui/badge.tsx - New badge component
+  - apps/frontend/tailwind.config.ts - Fixed mixed spaces/tabs linting errors
+- **Learnings for future iterations:**
+  - Dashboard fetches data from multiple endpoints: fetch stats and connections in parallel with Promise.all
+  - When aggregating data across multiple connections, map over connections and fetch data in parallel
+  - Use .flat() to flatten array of arrays, then sort and slice for final result
+  - Silent error handling for individual connection sync history (return empty array) prevents one failing connection from breaking entire dashboard
+  - Relative time formatting improves UX: "X mins ago" > full timestamp for recent syncs
+  - Badge component with custom className can override default colors (e.g., bg-green-500 for success)
+  - Error messages in table cells should be truncated with title attribute for hover tooltip
+  - Use max-w-xs and truncate classes for long text in table cells
+  - shadcn CLI generates code with tabs, which causes linting errors - convert to spaces
+  - Loading state should match final layout structure (3 cards + table) for better UX
 ---

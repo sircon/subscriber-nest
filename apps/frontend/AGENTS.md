@@ -47,3 +47,24 @@ All subscriber, sync, and export behavior depends on the backend API. Point `NEX
 - **useSearchParams() requires Suspense**: When using `useSearchParams()` in a client component, wrap it in a Suspense boundary to avoid build errors. Split the component: create a form component that uses `useSearchParams()`, and a page component that wraps it in `<Suspense>`.
 - **Client-side navigation**: Use `useRouter()` from `next/navigation` for client-side navigation in App Router (not `next/router`).
 - **Environment variables**: Client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time).
+
+## Dashboard patterns
+
+- **Parallel data fetching**: Use `Promise.all([fetch1(), fetch2()])` to fetch multiple endpoints in parallel for faster page loads.
+- **Aggregating data across connections**: When showing data from multiple ESP connections, fetch each connection's data in parallel, then merge and sort the results.
+- **Loading states**: Match the skeleton loading state to the final layout structure (e.g., 3 cards + table) for better UX.
+- **Relative time formatting**: For "last sync" timestamps, use relative time ("5 mins ago") for recent events and fall back to full date/time for older events.
+- **Error handling**: Use silent error handling (return empty array) for individual items in aggregated lists to prevent one failure from breaking the entire dashboard.
+
+## API client patterns
+
+- **API structure**: API client is organized into namespaces (`authApi`, `espConnectionApi`, `dashboardApi`) in `src/lib/api.ts`.
+- **Adding new endpoints**: Create interface for response type, then add function to appropriate namespace following existing patterns.
+- **Error handling**: All API functions support `onUnauthorized` callback for 401 error handling (typically redirects to login).
+- **TypeScript types**: Always define TypeScript interfaces for request/response types at the top of the file.
+
+## shadcn UI components
+
+- **Adding components**: Use `npx shadcn@latest add <component> --yes` to add components (the `--yes` flag skips prompts).
+- **Linting issue**: shadcn CLI generates code with tabs. Always convert tabs to spaces in generated files to avoid linting errors.
+- **Available components**: badge, button, card, dropdown-menu, input, separator, sheet, table, tooltip.
