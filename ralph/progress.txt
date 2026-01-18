@@ -330,3 +330,29 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Loading skeleton should match final layout structure for better perceived performance
   - Unmask button is disabled in US-012, will be implemented in US-013
 ---
+
+## 2026-01-19 07:30 - US-013
+- Implemented email unmasking functionality in ESP detail page subscriber table
+- Added subscriberApi.unmaskEmail() function to API client (POST /subscribers/:id/unmask)
+- Added UnmaskEmailResponse interface for type safety
+- Implemented state management for unmasked emails using Map<subscriberId, email>
+- Implemented loading state using Set<subscriberId> for individual unmask operations
+- Implemented error state using Map<subscriberId, errorMessage> for inline error display
+- Added toggle functionality: unmask reveals email, mask hides it again
+- Unmasked emails persist in component state until page refresh
+- Button shows Eye icon for "Unmask", EyeOff icon for "Mask", Loader2 with spinner during loading
+- Error messages displayed inline below email in red text
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` - Added subscriberApi with unmaskEmail function
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Implemented unmask functionality with state management
+- **Learnings for future iterations:**
+  - Use Map for storing keyed data (subscriberId -> email) instead of objects for better performance
+  - Use Set for storing loading states of multiple items (allows easy add/delete operations)
+  - When toggling state, check if item exists in Map first before making API call (for re-masking)
+  - Display errors inline where they occurred (in table cell) rather than global error messages
+  - Lucide-react icons: Eye for unmask, EyeOff for mask, Loader2 with animate-spin for loading
+  - Disabled state on button should only apply during loading, not when unmasked (allow re-masking)
+  - Clear errors when re-masking or attempting to unmask again (provide fresh feedback)
+  - Session-based persistence is simple: just store in component state, cleared on page refresh
+  - Update Map/Set state immutably: create new Map/Set from old one, then modify
+---

@@ -73,3 +73,11 @@ All subscriber, sync, and export behavior depends on the backend API. Point `NEX
 - **Adding components**: Use `npx shadcn@latest add <component> --yes` to add components (the `--yes` flag skips prompts).
 - **Linting issue**: shadcn CLI generates code with tabs. Always convert tabs to spaces in generated files to avoid linting errors.
 - **Available components**: badge, button, card, dropdown-menu, input, separator, sheet, table, tooltip.
+
+## State management patterns
+
+- **Multiple item states**: Use `Map<itemId, value>` for storing keyed data (e.g., unmasked emails by subscriber ID). Maps offer better performance than objects for frequent lookups and updates.
+- **Loading states**: Use `Set<itemId>` for tracking loading state of multiple items simultaneously (e.g., which items are currently being processed).
+- **Inline errors**: Use `Map<itemId, errorMessage>` to store errors per item. Display errors inline next to the item rather than global error messages for better UX.
+- **Immutable state updates**: When updating Map or Set state, create new instance: `setMap(new Map(oldMap))` then modify. React needs new reference to trigger re-render.
+- **Toggling state**: Check if item exists in Map before making API call to determine action (e.g., mask vs unmask).
