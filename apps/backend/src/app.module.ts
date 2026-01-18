@@ -22,6 +22,8 @@ import { AuthGuard } from './guards/auth.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
+import { SyncHistory } from './entities/sync-history.entity';
+import { SyncHistoryService } from './services/sync-history.service';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { Session } from './entities/session.entity';
       VerificationCode,
       User,
       Session,
+      SyncHistory,
     ]),
     HttpModule,
     BullModule.forRoot({
@@ -75,6 +78,7 @@ import { Session } from './entities/session.entity';
     EmailService,
     AuthService,
     AuthGuard,
+    SyncHistoryService,
   ],
   exports: [EmailService],
 })
