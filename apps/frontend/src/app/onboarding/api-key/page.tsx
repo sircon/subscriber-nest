@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { authApi, espConnectionApi } from '@/lib/api';
+import { espConnectionApi } from '@/lib/api';
 
 type Provider = 'kit' | 'beehiiv' | 'mailchimp';
 
@@ -19,7 +19,7 @@ const providerNames: Record<Provider, string> = {
 function ApiKeyForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { token, login } = useAuth();
+    const { token } = useAuth();
     const [apiKey, setApiKey] = useState('');
     const [publicationId, setPublicationId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -64,30 +64,21 @@ function ApiKeyForm() {
                 },
             );
 
-            // Step 2: Complete onboarding
-            const onboardingData = await authApi.completeOnboarding(token, () => {
-                // Handle 401: redirect to login
-                router.push('/login');
-            });
-
-            // Step 3: Update user in auth context
-            login(token, onboardingData.user);
-
-            // Step 4: Auto-trigger sync (don't block on errors)
+            // Step 2: Auto-trigger sync (don't block on errors)
             if (connection?.id) {
                 try {
                     await espConnectionApi.triggerSync(connection.id, token, () => {
-                        // Handle 401: already redirecting to dashboard, ignore
+                        // Handle 401: already redirecting, ignore
                     });
                 } catch (syncErr) {
-                    // Log sync error but don't block onboarding completion
+                    // Log sync error but don't block onboarding flow
                     console.error('Failed to trigger initial sync:', syncErr);
                     // User can manually trigger sync from dashboard
                 }
             }
 
-            // Step 5: Redirect to dashboard (with sync in progress if successful)
-            router.push('/dashboard');
+            // Step 3: Redirect to Stripe onboarding step
+            router.push('/onboarding/stripe');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {

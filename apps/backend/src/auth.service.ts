@@ -5,6 +5,7 @@ import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
 import { EmailService } from './email.service';
+import { BillingSubscriptionService } from './services/billing-subscription.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AuthService {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     private emailService: EmailService,
+    private billingSubscriptionService: BillingSubscriptionService,
   ) {}
 
   /**
@@ -171,7 +173,7 @@ export class AuthService {
   }
 
   /**
-   * Mark user as onboarded
+   * Mark user as onboarded (requires active subscription)
    */
   async completeOnboarding(
     userId: string,
@@ -180,6 +182,12 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    // Check if user has active subscription
+    const hasActiveSubscription = await this.billingSubscriptionService.hasActiveSubscription(userId);
+    if (!hasActiveSubscription) {
+      throw new BadRequestException('Active subscription required to complete onboarding');
     }
 
     user.isOnboarded = true;
