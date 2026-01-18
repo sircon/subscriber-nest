@@ -365,6 +365,58 @@ export const espConnectionApi = {
       onUnauthorized,
     );
   },
+
+  /**
+   * Export subscribers in specified format (CSV, JSON, or Excel)
+   * Returns a Blob that can be used to trigger browser download
+   */
+  exportSubscribers: async (
+    connectionId: string,
+    format: 'csv' | 'json' | 'xlsx',
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const headers: Record<string, string> = {};
+    
+    // Add auth token if provided
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/esp-connections/${connectionId}/subscribers/export?format=${format}`, {
+      method: 'GET',
+      headers: headers as HeadersInit,
+    });
+
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Export failed: ${response.statusText}`);
+    }
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `subscribers.${format}`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    return { blob, filename };
+  },
 };
 
 /**

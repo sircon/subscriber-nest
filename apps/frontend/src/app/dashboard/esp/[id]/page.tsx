@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Download } from 'lucide-react';
 
 export default function EspDetailPage() {
   const { id } = useParams();
@@ -33,6 +39,10 @@ export default function EspDetailPage() {
   const [unmaskedEmails, setUnmaskedEmails] = useState<Map<string, string>>(new Map());
   const [unmaskingIds, setUnmaskingIds] = useState<Set<string>>(new Set());
   const [unmaskErrors, setUnmaskErrors] = useState<Map<string, string>>(new Map());
+
+  // Export state management
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -156,6 +166,42 @@ export default function EspDetailPage() {
     }
   };
 
+  const handleExport = async (format: 'csv' | 'json' | 'xlsx') => {
+    if (!token || !id) return;
+
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const { blob, filename } = await espConnectionApi.exportSubscribers(
+        id as string,
+        format,
+        token,
+      );
+
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting subscribers:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to export subscribers';
+      setExportError(errorMessage);
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setExportError(null), 5000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -200,9 +246,44 @@ export default function EspDetailPage() {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">{connection.espType}</h1>
-        <p className="text-gray-600">{connection.publicationId}</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{connection.espType}</h1>
+          <p className="text-gray-600">{connection.publicationId}</p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={isExporting}>
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('csv')}>
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('json')}>
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                Export as Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {exportError && (
+            <p className="text-sm text-red-600">{exportError}</p>
+          )}
+        </div>
       </div>
 
       {/* Info Cards */}
