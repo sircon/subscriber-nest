@@ -752,3 +752,23 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Scheduler services inject queues using `@InjectQueue('queue-name')` to add jobs when cron jobs run
   - Use `yarn workspace worker typecheck`, `turbo run build --filter=worker`, and `turbo run lint --filter=worker` to verify cron job configuration
 ---
+
+## 2026-01-19 - US-037
+- Removed `apps/backend` directory after successful migration to API and Worker services
+- Updated `ralph/prompt.md` to reference API and Worker services instead of monolithic backend
+- Updated `packages/shared/src/interfaces/index.ts` comment to remove reference to old backend path
+- Verified no CI/CD pipeline files reference old backend (no .github or .gitlab-ci.yml found)
+- Verified no remaining code references to `apps/backend` (only historical references in progress.txt and archive files, which are acceptable)
+- All quality checks pass: typecheck, lint, and build for API, Worker, and shared packages
+- Files changed:
+  - Deleted `apps/backend/` directory (entire directory removed)
+  - `ralph/prompt.md` - Updated repository structure, tech stack, commands, and important paths to reflect API/Worker split
+  - `packages/shared/src/interfaces/index.ts` - Updated comment to remove backend reference
+- **Learnings for future iterations:**
+  - When removing a major directory, update all documentation files that reference it (prompt.md, README.md, AGENTS.md)
+  - Historical references in progress.txt and archive files are acceptable - they document the migration process
+  - Use `yarn workspace <package> typecheck` to verify TypeScript compilation for individual packages
+  - Use `turbo run build --filter=<package>` to verify builds work after major structural changes
+  - Verify no CI/CD pipeline files reference removed paths before committing
+  - The old monolithic backend has been completely removed - all functionality is now in API and Worker services
+---

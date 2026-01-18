@@ -9,10 +9,15 @@ This is a **Turborepo monorepo** with the following structure:
 ```
 subscriber-nest/
 ├── apps/
-│   ├── backend/          # NestJS application (TypeORM + PostgreSQL)
-│   │   └── src/         # Backend source code
+│   ├── api/              # NestJS API service (HTTP endpoints)
+│   │   └── src/         # API source code
+│   ├── worker/          # NestJS worker service (queue processors, cron jobs)
+│   │   └── src/         # Worker source code
 │   └── frontend/         # Next.js application (App Router)
 │       └── src/         # Frontend source code
+├── packages/
+│   └── shared/          # Shared package (entities, DTOs, services, events)
+│       └── src/         # Shared source code
 ├── ralph/                # Ralph agent files (PRD, progress, skills)
 │   ├── prd.json         # Product Requirements Document
 │   ├── progress.txt     # Progress log with patterns
@@ -23,26 +28,30 @@ subscriber-nest/
 
 **Tech Stack:**
 - **Monorepo**: Turborepo workspace
-- **Backend**: NestJS with TypeORM and PostgreSQL
+- **API Service**: NestJS HTTP API (TypeORM + PostgreSQL)
+- **Worker Service**: NestJS background workers (BullMQ, cron jobs)
 - **Frontend**: Next.js (App Router) with React
+- **Shared Package**: Common entities, DTOs, and services
 - **Package Manager**: Yarn
 - **Database**: PostgreSQL
 
 **Key Commands:**
-- `yarn dev` - Start both apps in development mode
+- `yarn dev` - Start all apps in development mode
 - `yarn build` - Build all apps
 - `yarn lint` - Run linter for all apps
 - `yarn start` - Start all apps in production mode
-- `turbo run dev --filter=backend` - Start only backend dev server
+- `turbo run dev --filter=api` - Start only API dev server
+- `turbo run dev --filter=worker` - Start only worker dev server
 - `turbo run dev --filter=frontend` - Start only frontend dev server
-- `turbo run build --filter=backend` - Build only backend
+- `turbo run build --filter=api` - Build only API service
+- `turbo run build --filter=worker` - Build only worker service
 - `turbo run build --filter=frontend` - Build only frontend
 
 **Important Paths:**
-- Backend code: `apps/backend/src/`
+- API code: `apps/api/src/`
+- Worker code: `apps/worker/src/`
 - Frontend code: `apps/frontend/src/`
-- Database config: `apps/backend/src/data-source.ts`
-- Migrations: `apps/backend/src/migrations/` (compiled to `dist/migrations/`)
+- Shared package: `packages/shared/src/`
 
 ## Your Task
 
@@ -149,6 +158,7 @@ If there are still stories with `passes: false`, end your response normally (ano
 - Keep CI green
 - Read the Codebase Patterns section in ralph/progress.txt before starting
 - Use Turborepo commands (`turbo run dev`, `turbo run build`, `turbo run lint`) for running tasks
-- Backend code goes in `apps/backend/src/`, frontend code in `apps/frontend/src/`
-- Check app-specific `AGENTS.md` files (`apps/backend/AGENTS.md`, `apps/frontend/AGENTS.md`) for detailed patterns
-- Use `--filter` flag to run commands for specific apps (e.g., `turbo run dev --filter=backend`)
+- API code goes in `apps/api/src/`, worker code in `apps/worker/src/`, frontend code in `apps/frontend/src/`
+- Shared code goes in `packages/shared/src/`
+- Check app-specific `AGENTS.md` files (`apps/api/AGENTS.md`, `apps/worker/AGENTS.md`, `apps/frontend/AGENTS.md`) for detailed patterns
+- Use `--filter` flag to run commands for specific apps (e.g., `turbo run dev --filter=api --filter=worker`)
