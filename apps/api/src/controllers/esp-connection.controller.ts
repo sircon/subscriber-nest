@@ -17,8 +17,7 @@ import {
   StreamableFile,
 } from "@nestjs/common";
 import { Response } from "express";
-import { InjectQueue } from "@nestjs/bullmq";
-import { Queue } from "bullmq";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { EspConnectionService } from "../services/esp-connection.service";
 import { SyncHistoryService } from "../services/sync-history.service";
 import { SubscriberService } from "../services/subscriber.service";
@@ -34,6 +33,7 @@ import {
   Subscriber,
   User,
 } from "@subscriber-nest/shared/entities";
+import { SyncRequestedEvent } from "@subscriber-nest/shared/events";
 import { AuthGuard } from "../guards/auth.guard";
 import { SubscriptionGuard } from "../guards/subscription.guard";
 import { CurrentUser } from "../decorators/current-user.decorator";
@@ -46,8 +46,7 @@ export class EspConnectionController {
     private readonly syncHistoryService: SyncHistoryService,
     private readonly subscriberService: SubscriberService,
     private readonly subscriberExportService: SubscriberExportService,
-    @InjectQueue("subscriber-sync")
-    private readonly subscriberSyncQueue: Queue,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Get()
@@ -127,7 +126,6 @@ export class EspConnectionController {
     @Param("id") id: string,
     @CurrentUser() user: User,
   ): Promise<{
-    jobId: string;
     status: string;
     message: string;
     connection: Omit<EspConnection, "encryptedApiKey">;
@@ -143,22 +141,20 @@ export class EspConnectionController {
         );
       }
 
-      // Mark connection as syncing before adding to queue
+      // Mark connection as syncing before publishing event
       const updatedConnection =
         await this.espConnectionService.updateSyncStatus(
           id,
           EspSyncStatus.SYNCING,
         );
 
-      // Add job to queue
-      const job = await this.subscriberSyncQueue.add("sync-publication", {
-        espConnectionId: id,
-      });
+      // Publish sync event for worker service to process
+      const event = new SyncRequestedEvent(id, user.id);
+      this.eventEmitter.emit("SyncRequestedEvent", event);
 
       // Return response with updated connection (without encrypted API key)
       const { encryptedApiKey, ...connectionResponse } = updatedConnection;
       return {
-        jobId: job.id!,
         status: "queued",
         message: "Sync job has been queued successfully",
         connection: connectionResponse,
