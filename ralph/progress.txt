@@ -561,3 +561,26 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Success messages should be displayed prominently and removed from URL after processing to avoid re-processing on page refresh
   - Always reload data after successful checkout verification to show updated subscription status to user
 ---
+
+## 2026-01-19 - US-027
+- Created `SubscriptionWarningBanner` component that checks subscription status and displays warning banner for inactive subscriptions
+- Component fetches billing status using `billingApi.getBillingStatus()` on mount
+- Banner displays at top of dashboard with message: "Your subscription is inactive. Please update your payment method to continue syncing and exporting."
+- Banner includes "Manage Subscription" button that navigates to `/dashboard/settings/billing`
+- Banner is dismissible: stores dismissal timestamp in localStorage with key `subscription-warning-dismissed`
+- Banner reappears after 24 hours if subscription is still inactive (checks dismissal timestamp on mount)
+- Integrated banner into dashboard layout (`apps/frontend/src/app/dashboard/layout.tsx`) at top of main content area
+- Uses shadcn Alert component with `variant="warning"` for visual styling
+- Banner only displays when subscription is inactive and not dismissed (or dismissal expired)
+- Files changed:
+  - `apps/frontend/src/components/subscription-warning-banner.tsx` (new)
+  - `apps/frontend/src/app/dashboard/layout.tsx` (added banner import and integration)
+- **Learnings for future iterations:**
+  - When implementing dismissible banners with time-based reappearance, store dismissal timestamp in localStorage and check on component mount
+  - Use separate useEffect hooks: one for checking dismissal status, one for fetching data (prevents unnecessary API calls if dismissed)
+  - localStorage keys should be descriptive and namespaced to avoid conflicts (e.g., `subscription-warning-dismissed`)
+  - When calculating time differences, use `Date.now()` for current timestamp and compare with stored timestamp
+  - Banner components in layouts should be placed at the top of the main content area, before page-specific content
+  - Always check if user is authenticated and has token before making API calls in banner components
+  - Dismissal logic should clear localStorage when expiration period has passed to prevent stale data
+---
