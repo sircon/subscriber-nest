@@ -511,3 +511,29 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When updating user response types, update all endpoints that return user objects (`/auth/me`, `/auth/verify-code`, `/auth/complete-onboarding`) to maintain consistency
   - Export endpoints should remain accessible during account deletion grace period to allow users to export their data
 ---
+
+## 2026-01-19 - US-025
+- Created shadcn Tabs component at `apps/frontend/src/components/ui/tabs.tsx` using `@radix-ui/react-tabs`
+- Created settings layout at `apps/frontend/src/app/dashboard/settings/layout.tsx` with navigation tabs
+- Layout includes "Billing" and "Account" tabs that navigate to `/dashboard/settings/billing` and `/dashboard/settings/account` respectively
+- Active tab is highlighted based on current pathname using `usePathname()` hook
+- Navigation uses `useRouter()` to programmatically navigate when tabs change
+- Updated billing and account pages to remove duplicate headers (header now provided by layout)
+- Updated main settings page to redirect to `/dashboard/settings/billing` by default
+- Installed `@radix-ui/react-tabs` package dependency
+- Files changed:
+  - `apps/frontend/package.json` (added @radix-ui/react-tabs dependency)
+  - `apps/frontend/src/components/ui/tabs.tsx` (new)
+  - `apps/frontend/src/app/dashboard/settings/layout.tsx` (new)
+  - `apps/frontend/src/app/dashboard/settings/page.tsx` (updated to redirect to billing)
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (removed duplicate header)
+  - `apps/frontend/src/app/dashboard/settings/account/page.tsx` (removed duplicate header)
+- **Learnings for future iterations:**
+  - Next.js App Router layouts wrap all child routes in the same directory
+  - Use `usePathname()` hook to determine active tab based on current route
+  - Use `useRouter().push()` for programmatic navigation when tabs change
+  - Tabs component from Radix UI requires controlled value and `onValueChange` handler for navigation
+  - When creating layouts, remove duplicate headers from child pages to avoid redundancy
+  - Base route pages can redirect to default child route using `useEffect` and `router.replace()`
+  - shadcn Tabs component follows the same pattern as other UI components (Button, Card, etc.) using Radix UI primitives
+---

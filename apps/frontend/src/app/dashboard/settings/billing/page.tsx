@@ -123,39 +123,27 @@ export default function BillingSettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Billing Settings</h1>
-          <p className="text-gray-600">Manage your subscription and payment methods</p>
-        </div>
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="animate-pulse">
-                <div className="h-6 bg-secondary rounded w-1/3 mb-2"></div>
-                <div className="h-4 bg-secondary rounded w-1/2"></div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="animate-pulse space-y-4">
-                <div className="h-20 bg-secondary rounded"></div>
-                <div className="h-20 bg-secondary rounded"></div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="animate-pulse">
+              <div className="h-6 bg-secondary rounded w-1/3 mb-2"></div>
+              <div className="h-4 bg-secondary rounded w-1/2"></div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="animate-pulse space-y-4">
+              <div className="h-20 bg-secondary rounded"></div>
+              <div className="h-20 bg-secondary rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Billing Settings</h1>
-        <p className="text-gray-600">Manage your subscription and payment methods</p>
-      </div>
-
+    <div>
       {error && (
         <div className="mb-6 p-4 rounded-md bg-destructive/10 border border-destructive/20 text-destructive">
           {error}

@@ -53,34 +53,22 @@ export default function AccountSettingsPage() {
 
   if (!user) {
     return (
-      <div className="p-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Account Settings</h1>
-          <p className="text-gray-600">Manage your account information</p>
-        </div>
-        <div className="animate-pulse">
-          <Card>
-            <CardHeader>
-              <div className="h-6 bg-secondary rounded w-1/3 mb-2"></div>
-              <div className="h-4 bg-secondary rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-20 bg-secondary rounded"></div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="animate-pulse">
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-secondary rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-secondary rounded w-1/2"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-20 bg-secondary rounded"></div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Account Settings</h1>
-        <p className="text-gray-600">Manage your account information and preferences</p>
-      </div>
-
+    <div>
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertDescription>{error}</AlertDescription>
