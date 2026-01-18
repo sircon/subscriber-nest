@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { EspConnection } from './esp-connection.entity';
+import { BillingSubscription } from './billing-subscription.entity';
 
 @Entity('users')
 export class User {
@@ -21,6 +23,9 @@ export class User {
 
   @OneToMany(() => EspConnection, (espConnection) => espConnection.user)
   espConnections: EspConnection[];
+
+  @OneToOne(() => BillingSubscription, (billingSubscription) => billingSubscription.user)
+  billingSubscription: BillingSubscription;
 
   @CreateDateColumn()
   createdAt: Date;
