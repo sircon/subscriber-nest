@@ -483,3 +483,30 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Backend OAuth endpoints handle both 'kit' and 'mailchimp' providers using the same code path
   - Typecheck and lint both pass for Mailchimp OAuth implementation
 ---
+
+## Sun Jan 18 22:23:11 CET 2026 - US-022
+- Updated SubscriberSyncService to handle multiple publications from OAuth connections
+- Added `publicationId` field to SyncHistory entity to track which publication each sync history record is for
+- Created migration `1768744300000-AddPublicationIdToSyncHistory.ts` to add `publicationId` column to `sync_history` table
+- Updated SubscriberMapperService to accept optional `publicationId` parameter and store it in subscriber metadata for OAuth connections
+- Updated SubscriberSyncService to create separate sync history records for each publication when syncing OAuth connections
+- Each publication sync creates its own sync history record with `publicationId` set, tracks success/failure per publication, and counts subscribers per publication
+- Updated subscriber records to include `publicationId` in metadata for OAuth connections (allows tracking which publication each subscriber belongs to)
+- Error handling per publication: continues syncing other publications if one fails, tracks success/failure per publication
+- Updated processor to handle overall connection sync status: for OAuth connections, checks if any publication succeeded to determine overall status (SYNCED if at least one succeeded, ERROR if all failed)
+- For API key connections, processor still creates single sync history record (no publicationId)
+- Files changed:
+  - `apps/backend/src/entities/sync-history.entity.ts` (added publicationId field)
+  - `apps/backend/src/migrations/1768744300000-AddPublicationIdToSyncHistory.ts` (new)
+  - `apps/backend/src/services/subscriber-mapper.service.ts` (updated to accept and store publicationId in metadata)
+  - `apps/backend/src/services/subscriber-sync.service.ts` (updated to create sync history per publication, track results, pass publicationId to mapper)
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` (updated to handle OAuth vs API key sync history creation, determine overall sync status)
+- **Learnings for future iterations:**
+  - For OAuth connections with multiple publications, create separate sync history records per publication to track individual publication sync status
+  - Store publicationId in subscriber metadata to track which publication each subscriber belongs to (useful for OAuth connections with multiple publications)
+  - Sync history records for OAuth connections should have `publicationId` set, while API key connections have `publicationId: null`
+  - Overall connection sync status should be determined by checking if any publication succeeded (partial success is still considered SYNCED)
+  - When syncing multiple publications, handle errors per publication and continue syncing others - don't fail entire sync if one publication fails
+  - The processor creates sync history for API key connections, while the service creates sync history per publication for OAuth connections
+  - After syncing OAuth publications, check recent sync history records (within last 5 minutes) to determine overall sync status
+---

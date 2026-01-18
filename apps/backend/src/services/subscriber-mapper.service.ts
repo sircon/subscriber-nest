@@ -19,14 +19,17 @@ export class SubscriberMapperService {
    * - Maps status to our SubscriberStatus enum
    * - Maps date fields (handles both Date objects and ISO strings)
    * - Stores all other ESP-specific fields in metadata
+   * - Stores publicationId in metadata for OAuth connections with multiple publications
    *
    * @param subscriberData - Raw subscriber data from ESP API
    * @param espConnectionId - The ID of the ESP connection
+   * @param publicationId - Optional publication ID (for OAuth connections with multiple publications)
    * @returns CreateSubscriberDto ready for database storage
    */
   mapToCreateSubscriberDto(
     subscriberData: SubscriberData,
-    espConnectionId: string
+    espConnectionId: string,
+    publicationId?: string | null
   ): CreateSubscriberDto {
     // Extract known fields that we map to specific columns
     const {
@@ -84,6 +87,11 @@ export class SubscriberMapperService {
         }
       }
     });
+
+    // Add publicationId to metadata if provided (for OAuth connections with multiple publications)
+    if (publicationId) {
+      metadata.publicationId = publicationId;
+    }
 
     return {
       espConnectionId,

@@ -6,6 +6,7 @@ import { Job } from 'bullmq';
 import {
   EspConnection,
   EspSyncStatus,
+  AuthMethod,
 } from '../entities/esp-connection.entity';
 import {
   SyncHistory,
@@ -94,18 +95,25 @@ export class SubscriberSyncProcessor extends WorkerHost {
       );
     }
 
-    // Create sync history record at start with optimistic 'success' status
-    const syncHistory = this.syncHistoryRepository.create({
-      espConnectionId,
-      status: SyncHistoryStatus.SUCCESS,
-      startedAt: new Date(),
-      completedAt: null,
-      errorMessage: null,
-    });
-    await this.syncHistoryRepository.save(syncHistory);
+    // For OAuth connections, sync history is created per publication in the service
+    // For API key connections, create sync history here
+    let syncHistory: SyncHistory | null = null;
+    if (espConnection.authMethod === AuthMethod.API_KEY) {
+      // Create sync history record at start with optimistic 'success' status
+      syncHistory = this.syncHistoryRepository.create({
+        espConnectionId,
+        publicationId: null, // API key connections have single publication
+        status: SyncHistoryStatus.SUCCESS,
+        startedAt: new Date(),
+        completedAt: null,
+        errorMessage: null,
+      });
+      await this.syncHistoryRepository.save(syncHistory);
+    }
 
     try {
       // Sync subscribers using the sync service
+      // For OAuth connections, this creates sync history records per publication
       await this.subscriberSyncService.syncSubscribers(espConnectionId);
 
       // Update lastSyncedAt timestamp and syncStatus to 'synced' on success
@@ -114,16 +122,19 @@ export class SubscriberSyncProcessor extends WorkerHost {
         { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED }
       );
 
-      // Count subscribers for the specific ESP connection after successful sync
-      const subscriberCount = await this.subscriberRepository.count({
-        where: { espConnectionId },
-      });
+      // For API key connections, update the sync history record
+      if (syncHistory) {
+        // Count subscribers for the specific ESP connection after successful sync
+        const subscriberCount = await this.subscriberRepository.count({
+          where: { espConnectionId },
+        });
 
-      // Update sync history with completedAt timestamp and subscriber count
-      await this.syncHistoryRepository.update(
-        { id: syncHistory.id },
-        { completedAt: new Date(), subscriberCount }
-      );
+        // Update sync history with completedAt timestamp and subscriber count
+        await this.syncHistoryRepository.update(
+          { id: syncHistory.id },
+          { completedAt: new Date(), subscriberCount }
+        );
+      }
 
       this.logger.log(
         `Successfully synced subscribers for ESP connection ${espConnectionId}`
@@ -134,37 +145,67 @@ export class SubscriberSyncProcessor extends WorkerHost {
         error.stack
       );
 
-      // Update syncStatus to 'error' on failure
+      // Determine overall sync status
+      // For OAuth connections, check if any publication sync history records succeeded
+      let overallStatus = EspSyncStatus.ERROR;
+      if (espConnection.authMethod === AuthMethod.OAUTH) {
+        // Get all sync histories for this connection created in the last 5 minutes
+        // (to catch the syncs that just happened)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const recentSyncs = await this.syncHistoryRepository.find({
+          where: {
+            espConnectionId,
+          },
+          order: { startedAt: 'DESC' },
+        });
+        // Filter to recent syncs (within last 5 minutes)
+        const recentPublicationSyncs = recentSyncs.filter(
+          (sh) => sh.startedAt >= fiveMinutesAgo && sh.publicationId !== null
+        );
+        // If at least one publication succeeded, mark as synced (partial success)
+        // If all failed, mark as error
+        const hasSuccessfulSync = recentPublicationSyncs.some(
+          (sh) => sh.status === SyncHistoryStatus.SUCCESS && sh.completedAt
+        );
+        overallStatus = hasSuccessfulSync
+          ? EspSyncStatus.SYNCED
+          : EspSyncStatus.ERROR;
+      }
+
+      // Update syncStatus based on overall result
       try {
         await this.espConnectionRepository.update(
           { id: espConnectionId },
-          { syncStatus: EspSyncStatus.ERROR }
+          { syncStatus: overallStatus }
         );
       } catch (updateError: any) {
         this.logger.error(
-          `Failed to update syncStatus to 'error' for ESP connection ${espConnectionId}: ${updateError.message}`
+          `Failed to update syncStatus for ESP connection ${espConnectionId}: ${updateError.message}`
         );
       }
 
-      // Check if this is the final attempt (after all retries)
-      const maxAttempts = job.opts.attempts || 1;
-      const isFinalAttempt = job.attemptsMade >= maxAttempts;
+      // For API key connections, update sync history on final failure
+      if (syncHistory) {
+        // Check if this is the final attempt (after all retries)
+        const maxAttempts = job.opts.attempts || 1;
+        const isFinalAttempt = job.attemptsMade >= maxAttempts;
 
-      if (isFinalAttempt) {
-        // Update sync history with failed status and error message
-        try {
-          await this.syncHistoryRepository.update(
-            { id: syncHistory.id },
-            {
-              status: SyncHistoryStatus.FAILED,
-              completedAt: new Date(),
-              errorMessage: error.message,
-            }
-          );
-        } catch (updateError: any) {
-          this.logger.error(
-            `Failed to update sync history to 'failed' for ESP connection ${espConnectionId}: ${updateError.message}`
-          );
+        if (isFinalAttempt) {
+          // Update sync history with failed status and error message
+          try {
+            await this.syncHistoryRepository.update(
+              { id: syncHistory.id },
+              {
+                status: SyncHistoryStatus.FAILED,
+                completedAt: new Date(),
+                errorMessage: error.message,
+              }
+            );
+          } catch (updateError: any) {
+            this.logger.error(
+              `Failed to update sync history to 'failed' for ESP connection ${espConnectionId}: ${updateError.message}`
+            );
+          }
         }
       }
 
