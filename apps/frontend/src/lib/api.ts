@@ -452,6 +452,67 @@ export const espConnectionApi = {
     const blob = await response.blob();
     return { blob, filename };
   },
+
+  /**
+   * Initiate OAuth flow for ESP connection
+   * Redirects user to OAuth provider's authorization page
+   */
+  initiateOAuth: async (
+    provider: 'kit' | 'mailchimp',
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<void> => {
+    if (!token) {
+      throw new Error('Authentication token is required');
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await fetch(
+      `${API_URL}/esp-connections/oauth/initiate/${provider}`,
+      {
+        method: 'GET',
+        headers: headers as HeadersInit,
+        redirect: 'manual', // Don't follow redirect automatically, we'll handle it
+      }
+    );
+
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.startsWith('/login')
+      ) {
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
+
+    // Handle redirect response (302, 301, etc.)
+    if (response.status >= 300 && response.status < 400) {
+      const redirectUrl = response.headers.get('Location');
+      if (redirectUrl && typeof window !== 'undefined') {
+        window.location.href = redirectUrl;
+        return;
+      }
+    }
+
+    // Handle errors
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `OAuth initiation failed: ${response.statusText}`
+      );
+    }
+
+    // If we get here, something unexpected happened
+    throw new Error('OAuth initiation did not redirect as expected');
+  },
 };
 
 /**

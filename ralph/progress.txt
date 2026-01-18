@@ -312,3 +312,22 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Use Logger instead of console.error for better logging consistency in NestJS services
   - The sync service now supports both auth methods seamlessly - API key flow unchanged, OAuth flow added alongside it
 ---
+
+## Sun Jan 19 2026 - US-015
+- Added `initiateOAuth()` function to `espConnectionApi` namespace in frontend API client
+- Function accepts `provider: 'kit' | 'mailchimp'` parameter and authentication token
+- Function calls `GET /esp-connections/oauth/initiate/:provider` endpoint with Bearer token authentication
+- Function handles redirect response (302/301) by reading `Location` header and navigating browser to OAuth provider
+- Uses `redirect: 'manual'` in fetch options to prevent automatic redirect, then manually handles redirect by setting `window.location.href`
+- Handles 401 errors appropriately with `onUnauthorized` callback and redirects to login
+- Handles other errors with descriptive error messages
+- All acceptance criteria met: proper TypeScript types, error handling, redirect handling, typecheck passes
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` (updated)
+- **Learnings for future iterations:**
+  - OAuth initiation endpoints return redirect responses (302/301) that need to be handled manually
+  - Use `redirect: 'manual'` in fetch options to prevent automatic redirect, then read `Location` header and navigate browser using `window.location.href`
+  - OAuth flows require browser navigation (not just API calls) since user needs to authorize on OAuth provider's website
+  - Always validate token is present before making OAuth initiation request (throw error if missing)
+  - The function returns `Promise<void>` since it redirects the browser and doesn't return data
+---

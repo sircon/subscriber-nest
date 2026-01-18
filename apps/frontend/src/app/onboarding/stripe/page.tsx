@@ -42,9 +42,12 @@ function StripeOnboardingForm() {
 
     try {
       // Get all connections
-      const connections = await espConnectionApi.getUserConnections(token, () => {
-        router.push('/login');
-      });
+      const connections = await espConnectionApi.getUserConnections(
+        token,
+        () => {
+          router.push('/login');
+        }
+      );
 
       if (connections.length === 0) {
         setLoadingCount(false);
@@ -110,9 +113,8 @@ function StripeOnboardingForm() {
     }
   };
 
-  const estimatedCost = subscriberCount !== null
-    ? calculateEstimatedCost(subscriberCount)
-    : null;
+  const estimatedCost =
+    subscriberCount !== null ? calculateEstimatedCost(subscriberCount) : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12">
