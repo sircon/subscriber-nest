@@ -649,3 +649,19 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Always remove unused imports after refactoring to keep code clean
   - Prettier formatting issues in other files (like `tailwind.config.ts`) should be fixed to pass lint checks
 ---
+
+## 2026-01-19 - US-031
+- Updated `BillingUsageService.getBillingHistory()` method to filter out future billing periods
+- Added `LessThanOrEqual` import from TypeORM to filter records where `billingPeriodStart <= current date`
+- Method now only returns billing usage records for past billing periods (billingPeriodStart <= current date)
+- Maintained existing ordering (DESC by billingPeriodStart) and limit functionality
+- Backend endpoint already uses the service method, so it automatically filters out future periods
+- Frontend billing history table will not display future periods since backend only returns past invoices
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added date filter to getBillingHistory method)
+- **Learnings for future iterations:**
+  - Use TypeORM's `LessThanOrEqual()` operator to filter records by date in queries
+  - When filtering billing history, always exclude future periods to show only past invoices
+  - Date filtering in TypeORM queries uses comparison operators like `LessThanOrEqual(date)` in the where clause
+  - The frontend automatically benefits from backend filtering - no frontend changes needed when backend filters correctly
+---
