@@ -630,3 +630,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Always run prettier to fix formatting issues before committing
   - Custom styled components should maintain the same functionality as the original (dismissible, localStorage, etc.)
 ---
+
+## 2026-01-19 - US-030
+- Updated billing settings page "Set Up Subscription" button to call `createCheckoutSession` API endpoint directly instead of linking to `/onboarding/stripe`
+- Added `handleCreateCheckout` function that calls `billingApi.createCheckoutSession()` and redirects to Stripe Checkout URL on success
+- Added loading state (`checkoutLoading`) and error handling for checkout button
+- Button now works for both onboarding flow (not onboarded) and existing users (onboarded)
+- Updated middleware to allow `/onboarding/stripe` access for onboarded users (exception added to redirect logic)
+- After successful checkout, Stripe redirects to `/dashboard/settings/billing?session_id=...` which is handled by existing `handleCheckoutSuccess` logic
+- Removed unused `Link` import from billing settings page
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (updated button to call API, added loading state)
+  - `apps/frontend/src/middleware.ts` (allowed onboarded users to access `/onboarding/stripe`)
+- **Learnings for future iterations:**
+  - When updating buttons to call APIs instead of navigating, add loading states and error handling for better UX
+  - Middleware redirect logic can be updated with exceptions for specific routes (e.g., allow `/onboarding/stripe` for onboarded users)
+  - Existing checkout success handling logic (via `session_id` query parameter) works seamlessly when button calls API directly
+  - Always remove unused imports after refactoring to keep code clean
+  - Prettier formatting issues in other files (like `tailwind.config.ts`) should be fixed to pass lint checks
+---
