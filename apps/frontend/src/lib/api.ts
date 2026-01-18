@@ -239,8 +239,10 @@ export const authApi = {
 };
 
 export interface TriggerSyncResponse {
-  connection: EspConnection;
   jobId: string;
+  status: string;
+  message: string;
+  connection: EspConnection;
 }
 
 /**

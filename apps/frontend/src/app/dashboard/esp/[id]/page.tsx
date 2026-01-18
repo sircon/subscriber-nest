@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, EyeOff, Loader2, Download } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Download, RefreshCw } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 
 export default function EspDetailPage() {
@@ -44,6 +44,10 @@ export default function EspDetailPage() {
   // Export state management
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // Sync state management
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -203,6 +207,41 @@ export default function EspDetailPage() {
     }
   };
 
+  const handleSync = async () => {
+    if (!token || !id) return;
+
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      // Trigger sync - response includes updated connection
+      const response = await espConnectionApi.triggerSync(id as string, token);
+      
+      // Update connection state with the response
+      setConnection(response.connection);
+
+      // Optionally refresh sync history after a short delay to see the new sync record
+      setTimeout(async () => {
+        try {
+          const syncData = await espConnectionApi.getSyncHistory(id as string, token, undefined, 1);
+          setSyncHistory(syncData);
+        } catch (err) {
+          // Silently fail - sync history refresh is optional
+          console.error('Error refreshing sync history:', err);
+        }
+      }, 1000);
+    } catch (err) {
+      console.error('Error triggering sync:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to trigger sync';
+      setSyncError(errorMessage);
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setSyncError(null), 5000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -253,34 +292,56 @@ export default function EspDetailPage() {
           <p className="text-gray-600">{connection.publicationId}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button disabled={isExporting}>
-                {isExporting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('csv')}>
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('json')}>
-                Export as JSON
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                Export as Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSync}
+              disabled={isSyncing || connection.syncStatus === 'syncing'}
+              variant="outline"
+            >
+              {isSyncing || connection.syncStatus === 'syncing' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync
+                </>
+              )}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={isExporting}>
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {syncError && (
+            <p className="text-sm text-red-600">{syncError}</p>
+          )}
           {exportError && (
             <p className="text-sm text-red-600">{exportError}</p>
           )}
