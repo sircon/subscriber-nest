@@ -388,3 +388,30 @@ export const dashboardApi = {
     );
   },
 };
+
+export interface UnmaskEmailResponse {
+  email: string;
+}
+
+/**
+ * Subscriber API functions
+ */
+export const subscriberApi = {
+  /**
+   * Unmask a subscriber's email address
+   */
+  unmaskEmail: async (
+    subscriberId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<UnmaskEmailResponse> => {
+    return apiRequest<UnmaskEmailResponse>(
+      `/subscribers/${subscriberId}/unmask`,
+      {
+        method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+};

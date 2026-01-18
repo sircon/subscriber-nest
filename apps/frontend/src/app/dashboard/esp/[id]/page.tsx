@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { espConnectionApi, EspConnection, PaginatedSubscribers, SyncHistory } from '@/lib/api';
+import { espConnectionApi, subscriberApi, EspConnection, PaginatedSubscribers, SyncHistory } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function EspDetailPage() {
   const { id } = useParams();
@@ -28,6 +28,11 @@ export default function EspDetailPage() {
   const [subscribers, setSubscribers] = useState<PaginatedSubscribers | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Unmask state management
+  const [unmaskedEmails, setUnmaskedEmails] = useState<Map<string, string>>(new Map());
+  const [unmaskingIds, setUnmaskingIds] = useState<Set<string>>(new Set());
+  const [unmaskErrors, setUnmaskErrors] = useState<Map<string, string>>(new Map());
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -99,6 +104,56 @@ export default function EspDetailPage() {
         {status}
       </Badge>
     );
+  };
+
+  const handleUnmaskToggle = async (subscriberId: string) => {
+    // If already unmasked, just re-mask by removing from map
+    if (unmaskedEmails.has(subscriberId)) {
+      const newUnmaskedEmails = new Map(unmaskedEmails);
+      newUnmaskedEmails.delete(subscriberId);
+      setUnmaskedEmails(newUnmaskedEmails);
+      
+      // Clear any error for this subscriber
+      const newErrors = new Map(unmaskErrors);
+      newErrors.delete(subscriberId);
+      setUnmaskErrors(newErrors);
+      return;
+    }
+
+    // Otherwise, unmask the email
+    if (!token) return;
+
+    // Set loading state
+    setUnmaskingIds((prev) => new Set(prev).add(subscriberId));
+    
+    // Clear previous error if any
+    const newErrors = new Map(unmaskErrors);
+    newErrors.delete(subscriberId);
+    setUnmaskErrors(newErrors);
+
+    try {
+      const response = await subscriberApi.unmaskEmail(subscriberId, token);
+      
+      // Update unmasked emails map
+      const newUnmaskedEmails = new Map(unmaskedEmails);
+      newUnmaskedEmails.set(subscriberId, response.email);
+      setUnmaskedEmails(newUnmaskedEmails);
+    } catch (err) {
+      console.error('Error unmasking email:', err);
+      
+      // Store error message for this subscriber
+      const errorMessage = err instanceof Error ? err.message : 'Failed to unmask email';
+      const newErrorMap = new Map(unmaskErrors);
+      newErrorMap.set(subscriberId, errorMessage);
+      setUnmaskErrors(newErrorMap);
+    } finally {
+      // Clear loading state
+      setUnmaskingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(subscriberId);
+        return newSet;
+      });
+    }
   };
 
   if (loading) {
@@ -250,22 +305,57 @@ export default function EspDetailPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  subscribers.data.map((subscriber) => (
-                    <TableRow key={subscriber.id}>
-                      <TableCell className="font-mono text-sm">
-                        {subscriber.maskedEmail}
-                      </TableCell>
-                      <TableCell>{subscriber.firstName || '-'}</TableCell>
-                      <TableCell>{subscriber.lastName || '-'}</TableCell>
-                      <TableCell>{getStatusBadge(subscriber.status)}</TableCell>
-                      <TableCell>{formatDate(subscriber.subscribedAt)}</TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" disabled>
-                          Unmask
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  subscribers.data.map((subscriber) => {
+                    const isUnmasked = unmaskedEmails.has(subscriber.id);
+                    const isUnmasking = unmaskingIds.has(subscriber.id);
+                    const unmaskError = unmaskErrors.get(subscriber.id);
+                    
+                    return (
+                      <TableRow key={subscriber.id}>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span>
+                              {isUnmasked ? unmaskedEmails.get(subscriber.id) : subscriber.maskedEmail}
+                            </span>
+                            {unmaskError && (
+                              <span className="text-xs text-red-600">
+                                {unmaskError}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{subscriber.firstName || '-'}</TableCell>
+                        <TableCell>{subscriber.lastName || '-'}</TableCell>
+                        <TableCell>{getStatusBadge(subscriber.status)}</TableCell>
+                        <TableCell>{formatDate(subscriber.subscribedAt)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUnmaskToggle(subscriber.id)}
+                            disabled={isUnmasking}
+                          >
+                            {isUnmasking ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Loading...
+                              </>
+                            ) : isUnmasked ? (
+                              <>
+                                <EyeOff className="h-3 w-3 mr-1" />
+                                Mask
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-3 w-3 mr-1" />
+                                Unmask
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
