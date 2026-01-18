@@ -290,3 +290,25 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - OAuth callback should handle errors gracefully - connection creation is the critical path, sync trigger is secondary
   - When deleting existing connections, use `repository.remove()` which handles cascading deletes if configured
 ---
+
+## Sun Jan 19 2026 - US-014
+- Updated SubscriberSyncService to support OAuth connections in addition to API key connections
+- Injected KitConnector and OAuthTokenRefreshService into SubscriberSyncService constructor
+- Updated `getConnector()` method to include Kit connector (EspType.KIT)
+- Created `callOAuthConnectorMethodWithRetry()` wrapper method that automatically handles 401 errors from OAuth connector methods by refreshing tokens and retrying once
+- Updated `syncSubscribers()` to check `authMethod` field and handle both API key and OAuth connections
+- For API key connections, uses existing flow: decrypt API key, call `fetchSubscribers()`, process subscribers
+- For OAuth connections: decrypts access token, iterates through `publicationIds` array, calls `fetchSubscribersWithOAuth()` for each publication with automatic token refresh on 401
+- Handles errors gracefully: continues syncing other publications if one fails, continues processing other subscribers if one fails
+- After token refresh, reloads connection from database to get updated encrypted token before continuing
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (updated)
+- **Learnings for future iterations:**
+  - The `callOAuthConnectorMethodWithRetry()` pattern from EspConnectionService can be reused in SubscriberSyncService for consistent token refresh handling
+  - OAuth connections store multiple publication IDs in `publicationIds` JSONB array - need to iterate through all publications when syncing
+  - After token refresh, always reload the connection from database to get the updated encrypted token before using it in subsequent calls
+  - For OAuth connections, fallback to single `publicationId` field if `publicationIds` array is not available (backward compatibility)
+  - When syncing multiple publications, handle errors per publication and continue syncing others - don't fail entire sync if one publication fails
+  - Use Logger instead of console.error for better logging consistency in NestJS services
+  - The sync service now supports both auth methods seamlessly - API key flow unchanged, OAuth flow added alongside it
+---
