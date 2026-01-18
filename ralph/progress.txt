@@ -703,3 +703,29 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - EventEmitterModule is configured for event-based communication with worker service
   - Use `yarn workspace api typecheck`, `turbo run build --filter=api`, and `turbo run lint --filter=api` to verify API service
 ---
+
+## 2026-01-19 - US-035
+- Verified all 3 processors are registered in worker service AppModule: SubscriberSyncProcessor, BillingProcessor, AccountDeletionProcessor
+- Verified all 3 queues are registered in worker service AppModule: subscriber-sync, billing, account-deletion
+- Verified job names match between schedulers/listeners and processors:
+  - SyncEventListenerService adds `sync-publication` jobs → SubscriberSyncProcessor expects `sync-publication` ✓
+  - BillingSchedulerService adds `monthly-billing` jobs → BillingProcessor expects `monthly-billing` ✓
+  - AccountDeletionSchedulerService adds `account-deletion` jobs → AccountDeletionProcessor expects `account-deletion` ✓
+- Verified all processors extend WorkerHost and implement process() method correctly
+- Verified typecheck passes (`yarn workspace worker typecheck`)
+- Verified build passes (`turbo run build --filter=worker`)
+- Verified lint passes (`turbo run lint --filter=worker`)
+- Verified worker service main.ts bootstraps application correctly (no HTTP server, processes jobs and runs cron jobs)
+- Files changed:
+  - No code changes (verification only)
+- **Learnings for future iterations:**
+  - Worker service has 3 processors that handle jobs from 3 queues: subscriber-sync (sync-publication jobs), billing (monthly-billing jobs), account-deletion (account-deletion jobs)
+  - All processors use `@Processor('queue-name')` decorator matching the queue name they process
+  - Processors extend `WorkerHost` and implement `process(job: Job<JobData>)` method
+  - Processors check `job.name` to verify job type matches expected type (e.g., `job.name !== "sync-publication"`)
+  - All processors are registered in AppModule providers array for dependency injection
+  - All queues are registered using `BullModule.registerQueue()` with retry configuration (3 attempts, exponential backoff)
+  - Worker service requires database (PostgreSQL) and Redis connections to actually start, but code structure is verified
+  - Job names must match exactly between schedulers/listeners (where jobs are added) and processors (where jobs are processed)
+  - Use `yarn workspace worker typecheck`, `turbo run build --filter=worker`, and `turbo run lint --filter=worker` to verify worker service
+---
