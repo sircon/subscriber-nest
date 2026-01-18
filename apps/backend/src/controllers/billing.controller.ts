@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
 import Stripe from 'stripe';
 import { StripeService } from '../services/stripe.service';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
@@ -25,6 +27,8 @@ import {
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
+import { EspConnection } from '../entities/esp-connection.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 
 @Controller('billing')
 export class BillingController {
@@ -35,6 +39,10 @@ export class BillingController {
     private readonly billingSubscriptionService: BillingSubscriptionService,
     private readonly billingUsageService: BillingUsageService,
     private readonly configService: ConfigService,
+    @InjectRepository(EspConnection)
+    private readonly espConnectionRepository: Repository<EspConnection>,
+    @InjectRepository(Subscriber)
+    private readonly subscriberRepository: Repository<Subscriber>,
   ) {}
 
   @Post('webhook')
@@ -488,6 +496,79 @@ export class BillingController {
       // Wrap unknown errors
       throw new InternalServerErrorException(
         `Failed to get billing status: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Get current month's usage for the authenticated user
+   * GET /billing/usage
+   */
+  @Get('usage')
+  @UseGuards(AuthGuard)
+  async getCurrentUsage(
+    @CurrentUser() user: User,
+  ): Promise<{
+    maxSubscriberCount: number;
+    calculatedAmount: number;
+    billingPeriodStart: Date;
+    billingPeriodEnd: Date;
+  }> {
+    try {
+      // Get current month's billing usage
+      let billingUsage = await this.billingUsageService.getCurrentUsage(user.id);
+
+      // If no usage record exists for current month, create one with current subscriber count
+      if (!billingUsage) {
+        // Get all ESP connection IDs for the user
+        const userConnections = await this.espConnectionRepository.find({
+          where: { userId: user.id },
+          select: ['id'],
+        });
+
+        const connectionIds = userConnections.map((conn) => conn.id);
+
+        // Count all subscribers across all user's ESP connections
+        let currentSubscriberCount = 0;
+        if (connectionIds.length > 0) {
+          currentSubscriberCount = await this.subscriberRepository.count({
+            where: {
+              espConnectionId: In(connectionIds),
+            },
+          });
+        }
+
+        // Create usage record using updateUsage method (which handles creation)
+        await this.billingUsageService.updateUsage(user.id, currentSubscriberCount);
+
+        // Fetch the newly created record
+        billingUsage = await this.billingUsageService.getCurrentUsage(user.id);
+      }
+
+      if (!billingUsage) {
+        throw new InternalServerErrorException('Failed to create or retrieve billing usage');
+      }
+
+      return {
+        maxSubscriberCount: billingUsage.maxSubscriberCount,
+        calculatedAmount: Number(billingUsage.calculatedAmount),
+        billingPeriodStart: billingUsage.billingPeriodStart,
+        billingPeriodEnd: billingUsage.billingPeriodEnd,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Error getting current usage for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Re-throw known exceptions
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to get current usage: ${error.message}`,
       );
     }
   }

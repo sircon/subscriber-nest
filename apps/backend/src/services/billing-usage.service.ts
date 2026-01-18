@@ -132,4 +132,20 @@ export class BillingUsageService {
     usage.status = status;
     return this.billingUsageRepository.save(usage);
   }
+
+  /**
+   * Get current month's billing usage for a user
+   * @param userId - The ID of the user
+   * @returns Current month's billing usage record or null if not found
+   */
+  async getCurrentUsage(userId: string): Promise<BillingUsage | null> {
+    const { start } = this.getCurrentBillingPeriod();
+
+    return this.billingUsageRepository.findOne({
+      where: {
+        userId,
+        billingPeriodStart: start,
+      },
+    });
+  }
 }
