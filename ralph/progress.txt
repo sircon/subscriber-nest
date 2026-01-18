@@ -832,3 +832,38 @@ Started: Sat Jan 17 2026
   - The validation pattern: fetch resource → check state → reject if invalid state → proceed if valid
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-18 - US-030
+- Updated SubscriberSyncProcessor to mark connection status after sync completion
+- On successful sync: sets both lastSyncedAt and syncStatus to 'synced'
+- On failed sync: sets syncStatus to 'error' before re-throwing error (allows BullMQ retries to continue)
+- Added nested try-catch to ensure status update happens even if the update itself fails
+- Files changed:
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` - Imported EspSyncStatus enum, updated process method to set status on success/failure, updated docstring
+- **Learnings for future iterations:**
+  - Set syncStatus to 'synced' on success and 'error' on failure to track sync state
+  - Update both lastSyncedAt and syncStatus in the same repository.update() call for atomic updates
+  - Use nested try-catch when updating status on error to prevent the status update from blocking error handling
+  - Re-throw the original error after setting status to 'error' so BullMQ can still handle retries
+  - The processor now provides complete status tracking: 'syncing' (from endpoint) → 'synced' or 'error' (from processor)
+  - All quality checks (typecheck, lint, build) passed successfully
+---
+
+## 2026-01-18 - US-031
+- Added sync button to frontend ESP connection cards in dashboard
+- Implemented manual sync trigger with optimistic UI updates
+- Added syncStatus tracking to frontend (idle, syncing, synced, error)
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` - Added syncStatus to EspConnection type, added triggerSync API function with TriggerSyncResponse type
+  - `apps/frontend/src/app/dashboard/page.tsx` - Added sync button, handleSync function, getSyncButtonText helper, syncErrors state, syncStatusLabels mapping
+- **Learnings for future iterations:**
+  - Optimistic UI updates improve perceived performance - immediately update connection status to 'syncing' when button clicked, revert on error
+  - Per-resource error state management (Record<string, string>) allows showing errors on specific cards without affecting others
+  - Button state management: disable button when syncStatus is 'syncing', use destructive variant when status is 'error' for visual feedback
+  - Dynamic button text based on resource state improves UX: 'Sync Now' (idle), 'Syncing...' (syncing), 'Retry Sync' (error), 'Sync Again' (synced)
+  - Display both date and time for lastSyncedAt timestamp using toLocaleDateString() and toLocaleTimeString()
+  - TypeScript const assertion (`as const`) ensures type safety when setting literal union types like syncStatus
+  - Error messages stored per connection ID allow users to see what went wrong with each sync attempt
+  - The triggerSync endpoint returns updated connection object, eliminating need for separate GET request after sync
+  - All quality checks (typecheck, lint, build) passed successfully
+---
