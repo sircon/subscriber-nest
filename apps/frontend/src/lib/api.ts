@@ -68,9 +68,12 @@ export interface EspConnection {
   id: string;
   userId: string;
   espType: string;
-  publicationId: string;
+  authMethod: 'api_key' | 'oauth';
+  publicationId: string | null;
+  publicationIds: string[] | null;
   status: string;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  tokenExpiresAt: string | null;
   lastValidatedAt: string | null;
   lastSyncedAt: string | null;
   createdAt: string;

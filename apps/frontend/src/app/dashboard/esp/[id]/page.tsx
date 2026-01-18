@@ -399,7 +399,25 @@ export default function EspDetailPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{connection.espType}</h1>
-          <p className="text-gray-600">{connection.publicationId}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {connection.publicationId && (
+              <p className="text-gray-600">{connection.publicationId}</p>
+            )}
+            {connection.publicationIds &&
+              connection.publicationIds.length > 0 && (
+                <p className="text-gray-600">
+                  {connection.publicationIds.length} publication
+                  {connection.publicationIds.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            <Badge
+              variant={
+                connection.authMethod === 'oauth' ? 'default' : 'secondary'
+              }
+            >
+              {connection.authMethod === 'oauth' ? 'OAuth' : 'API Key'}
+            </Badge>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex gap-2">
@@ -584,6 +602,63 @@ export default function EspDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* OAuth Connection Details Card */}
+      {connection.authMethod === 'oauth' && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>OAuth Connection Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Token Expiry */}
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Token Expires At
+                </p>
+                <p className="text-base">
+                  {connection.tokenExpiresAt
+                    ? formatDate(connection.tokenExpiresAt)
+                    : 'Not available'}
+                </p>
+              </div>
+
+              {/* Last Refresh */}
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Last Refreshed
+                </p>
+                <p className="text-base">
+                  {connection.lastValidatedAt
+                    ? formatDate(connection.lastValidatedAt)
+                    : 'Never'}
+                </p>
+              </div>
+
+              {/* Connected Publications */}
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-gray-600 mb-2">
+                  Connected Publications
+                </p>
+                {connection.publicationIds &&
+                connection.publicationIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {connection.publicationIds.map((pubId, index) => (
+                      <Badge key={index} variant="outline">
+                        {pubId}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : connection.publicationId ? (
+                  <Badge variant="outline">{connection.publicationId}</Badge>
+                ) : (
+                  <p className="text-sm text-gray-500">No publications</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Subscribers Table */}
       <Card>
