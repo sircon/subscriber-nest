@@ -15,6 +15,13 @@ import { EspConnectionController } from './controllers/esp-connection.controller
 import { SubscriberMapperService } from './services/subscriber-mapper.service';
 import { SubscriberSyncService } from './services/subscriber-sync.service';
 import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor';
+import { EmailService } from './email.service';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { AuthGuard } from './guards/auth.guard';
+import { VerificationCode } from './entities/verification-code.entity';
+import { User } from './entities/user.entity';
+import { Session } from './entities/session.entity';
 
 @Module({
   imports: [
@@ -29,7 +36,13 @@ import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor'
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([Subscriber, EspConnection]),
+    TypeOrmModule.forFeature([
+      Subscriber,
+      EspConnection,
+      VerificationCode,
+      User,
+      Session,
+    ]),
     HttpModule,
     BullModule.forRoot({
       connection: {
@@ -49,7 +62,7 @@ import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor'
       },
     }),
   ],
-  controllers: [AppController, EspConnectionController],
+  controllers: [AppController, AuthController, EspConnectionController],
   providers: [
     AppService,
     EncryptionService,
@@ -59,6 +72,10 @@ import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor'
     SubscriberMapperService,
     SubscriberSyncService,
     SubscriberSyncProcessor,
+    EmailService,
+    AuthService,
+    AuthGuard,
   ],
+  exports: [EmailService],
 })
 export class AppModule {}

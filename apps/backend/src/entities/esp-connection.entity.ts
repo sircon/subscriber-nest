@@ -5,11 +5,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Subscriber } from './subscriber.entity';
+import { User } from './user.entity';
 
 export enum EspType {
   BEEHIIV = 'beehiiv',
+  KIT = 'kit',
+  MAILCHIMP = 'mailchimp',
 }
 
 export enum EspConnectionStatus {
@@ -25,6 +30,10 @@ export class EspConnection {
 
   @Column({ type: 'uuid' })
   userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Column({
     type: 'enum',
