@@ -26,7 +26,7 @@ import {
   SubscriberExportService,
   ExportFormat,
 } from '../services/subscriber-export.service';
-import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
+import { CreateEspConnectionDto } from '@subscriber-nest/shared/dto';
 import {
   EspConnection,
   EspSyncStatus,

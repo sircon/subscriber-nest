@@ -1,2 +1,2 @@
-// DTOs will be exported here once moved from apps/backend/src/dto/
-export {};
+export { CreateEspConnectionDto } from './create-esp-connection.dto';
+export { CreateSubscriberDto } from './create-subscriber.dto';

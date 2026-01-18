@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subscriber } from '@subscriber-nest/shared/entities';
-import { CreateSubscriberDto } from '../dto/create-subscriber.dto';
+import { CreateSubscriberDto } from '@subscriber-nest/shared/dto';
 
 @Injectable()
 export class SubscriberService {

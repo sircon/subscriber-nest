@@ -1,4 +1,4 @@
-import { SubscriberStatus } from '@subscriber-nest/shared/entities';
+import { SubscriberStatus } from '../entities';
 
 export class CreateSubscriberDto {
   espConnectionId: string;

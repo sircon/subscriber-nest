@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SubscriberData } from '../interfaces/esp.interface';
-import { CreateSubscriberDto } from '../dto/create-subscriber.dto';
+import { CreateSubscriberDto } from '@subscriber-nest/shared/dto';
 import { SubscriberStatus } from '@subscriber-nest/shared/entities';
 import { EncryptionService } from './encryption.service';
 import { maskEmail } from '../utils/email.util';
