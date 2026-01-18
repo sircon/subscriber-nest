@@ -817,3 +817,18 @@ Started: Sat Jan 17 2026
   - Atomicity: status update happens in same database transaction as the save operation
   - All quality checks passed (typecheck, lint, build)
 ---
+
+## 2026-01-18 - US-029
+- Added validation to prevent double syncing in POST /esp-connections/:id/sync endpoint
+- Endpoint now checks if syncStatus is 'syncing' and returns 409 Conflict error if sync is already in progress
+- Allows sync to be triggered again if status is 'idle', 'synced', or 'error'
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added ConflictException import, sync status validation, and conflict error handling
+- **Learnings for future iterations:**
+  - Use ConflictException (409) for resource state conflicts (e.g., trying to modify a resource that's already being modified)
+  - Check resource state before operations to prevent race conditions
+  - Store findById result to avoid redundant database queries when checking state
+  - ConflictException should be explicitly handled in error handling to pass through to client with correct status code
+  - The validation pattern: fetch resource → check state → reject if invalid state → proceed if valid
+  - All quality checks (typecheck, lint, build) passed successfully
+---

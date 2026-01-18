@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
-import { EspConnection } from '../entities/esp-connection.entity';
+import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
 
 export interface SyncPublicationJobData {
@@ -32,7 +32,8 @@ export class SubscriberSyncProcessor extends WorkerHost {
    * - Decrypts API key
    * - Uses ESP connector to fetch all subscribers
    * - Processes subscribers in batches and saves to database
-   * - Updates ESP connection lastSyncedAt timestamp on success
+   * - Updates ESP connection lastSyncedAt timestamp and syncStatus to 'synced' on success
+   * - Updates syncStatus to 'error' on failure
    *
    * @param job - The job containing espConnectionId
    */
@@ -52,10 +53,10 @@ export class SubscriberSyncProcessor extends WorkerHost {
       // Sync subscribers using the sync service
       await this.subscriberSyncService.syncSubscribers(espConnectionId);
 
-      // Update lastSyncedAt timestamp on success
+      // Update lastSyncedAt timestamp and syncStatus to 'synced' on success
       await this.espConnectionRepository.update(
         { id: espConnectionId },
-        { lastSyncedAt: new Date() },
+        { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED },
       );
 
       this.logger.log(
@@ -66,6 +67,19 @@ export class SubscriberSyncProcessor extends WorkerHost {
         `Failed to sync subscribers for ESP connection ${espConnectionId}: ${error.message}`,
         error.stack,
       );
+
+      // Update syncStatus to 'error' on failure
+      try {
+        await this.espConnectionRepository.update(
+          { id: espConnectionId },
+          { syncStatus: EspSyncStatus.ERROR },
+        );
+      } catch (updateError: any) {
+        this.logger.error(
+          `Failed to update syncStatus to 'error' for ESP connection ${espConnectionId}: ${updateError.message}`,
+        );
+      }
+
       // Re-throw error so BullMQ can handle retries
       throw error;
     }
