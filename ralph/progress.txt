@@ -132,3 +132,26 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn lint` to verify changes don't break existing code
   - Typecheck passes automatically when there are no TypeScript files to check
 ---
+
+## 2026-01-19 - US-007
+- Created `apps/api/package.json` with NestJS dependencies matching backend configuration
+- Created `apps/api/tsconfig.json` with TypeScript configuration including paths to shared package (`@subscriber-nest/shared` and `@subscriber-nest/shared/*`)
+- Created `apps/api/nest-cli.json` with NestJS CLI configuration
+- Copied `apps/api/eslint.config.mjs` from backend for linting configuration
+- Created minimal `apps/api/src/index.ts` placeholder file to allow typecheck to pass
+- Root `package.json` already had `apps/*` in workspaces, so no update needed
+- Files changed:
+  - `apps/api/package.json` - Created with NestJS dependencies
+  - `apps/api/tsconfig.json` - Created with TypeScript config and shared package paths
+  - `apps/api/nest-cli.json` - Created with NestJS CLI config
+  - `apps/api/eslint.config.mjs` - Copied from backend
+  - `apps/api/src/index.ts` - Created minimal placeholder
+- **Learnings for future iterations:**
+  - Yarn 1.x (used in this project) doesn't support `workspace:*` protocol for workspace dependencies
+  - Use TypeScript path aliases in tsconfig.json to reference shared package instead of adding it as a dependency
+  - TypeScript config needs `include` and `exclude` fields when there are no source files yet (or create a minimal placeholder file)
+  - Copy eslint.config.mjs from backend to maintain consistent linting configuration
+  - Root package.json workspaces already includes `apps/*`, so new apps are automatically recognized
+  - Use `yarn install` after creating package.json to install dependencies
+  - Use `yarn lint --filter=api` and `yarn build --filter=api` to verify API service configuration
+---
