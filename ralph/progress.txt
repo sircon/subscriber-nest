@@ -524,3 +524,32 @@ Started: Sat Jan 17 2026
   - No need to manually check authentication in endpoints - the guard handles it before the endpoint is called
   - The pattern is: AuthGuard validates → attaches user to request → @CurrentUser() extracts user → endpoint uses user.id
 ---
+
+## 2026-01-18 - US-020
+- Verified AppModule configuration is complete and properly merged from both branches
+- All auth components properly imported:
+  - AuthController, AuthService, AuthGuard from auth branch
+  - EmailService from auth branch
+- All ESP sync components properly imported:
+  - BullMQ and Redis configuration
+  - All ESP sync services (EncryptionService, BeehiivConnector, SubscriberService, EspConnectionService, SubscriberMapperService, SubscriberSyncService)
+  - SubscriberSyncProcessor
+- All entities registered in TypeOrmModule.forFeature():
+  - User, Session, VerificationCode (auth entities)
+  - EspConnection, Subscriber (ESP sync entities)
+- All controllers registered:
+  - AppController, AuthController, EspConnectionController
+- All providers registered:
+  - AppService, EmailService, AuthService, AuthGuard
+  - EncryptionService, BeehiivConnector
+  - SubscriberService, SubscriberMapperService, SubscriberSyncService
+  - EspConnectionService, SubscriberSyncProcessor
+- EmailService exported for use in other modules
+- No duplicate imports or conflicting configurations
+- Typecheck passes
+- **Learnings for future iterations:**
+  - This story was completed during US-016 (merge) and US-017 (cleanup)
+  - AppModule was properly merged during conflict resolution
+  - The merge preserved all imports and configurations from both branches
+  - No additional work needed - just verification
+---
