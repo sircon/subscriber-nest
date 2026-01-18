@@ -69,6 +69,23 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - API keys are encrypted before storing in database using EncryptionService
 - API keys are never returned in API responses (only id, provider, createdAt, isActive)
 
+## Subscribers
+
+- `src/subscriber.controller.ts` – SubscriberController with subscriber-specific endpoints (e.g., unmask email)
+- When validating subscriber ownership: query with `relations: ['espConnection']` and compare `espConnection.userId` with authenticated user ID
+- Pattern for sensitive operations on subscribers: fetch with relations → validate ownership → perform operation → handle errors
+
+## File Export
+
+- `src/services/subscriber-export.service.ts` – SubscriberExportService for exporting subscribers in CSV, JSON, and Excel formats
+- Use `StreamableFile` from `@nestjs/common` for file downloads
+- Use `@Res({ passthrough: true })` decorator to set response headers while returning StreamableFile
+- Set headers with `response.set({ 'Content-Type': '...', 'Content-Disposition': 'attachment; filename="..."' })`
+- Excel exports use `exceljs` library (Workbook → Worksheet → writeBuffer)
+- CSV exports use manual implementation with proper escaping (quotes, commas, newlines)
+- Always decrypt sensitive data (emails) before exporting
+- Flatten nested metadata fields for export (e.g., `metadata.field` → `metadata_field`)
+
 ## Encryption
 
 - `src/encryption.service.ts` – EncryptionService using Node's built-in crypto module with AES-256-GCM
@@ -91,4 +108,5 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - **Services with TypeORM**: Use `@InjectRepository(Entity)` to inject repositories. Register entities with `TypeOrmModule.forFeature([Entity])` in the module.
 - **Upsert pattern**: Use `findOne()` to check existence, then `save()` to create or update. The unique constraint on `externalId + espConnectionId` ensures data integrity.
 - **BullMQ queues**: Configure queues using `BullModule.registerQueue()` with `defaultJobOptions` for retry policies. Use `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }` for automatic retries with exponential backoff (2s, 4s, 8s delays).
-- **BullMQ processors**: Processors extend `WorkerHost` from `@nestjs/bullmq` and use `@Processor('queue-name')` decorator. In `@nestjs/bullmq` v11, implement `process(job: Job<JobData>)` method and check `job.name` to handle specific job types (the `@Process` decorator is not available). Processors must be registered in the module's `providers` array. Re-throw errors so BullMQ can handle retries according to the queue's retry policy.  
+- **BullMQ processors**: Processors extend `WorkerHost` from `@nestjs/bullmq` and use `@Processor('queue-name')` decorator. In `@nestjs/bullmq` v11, implement `process(job: Job<JobData>)` method and check `job.name` to handle specific job types (the `@Process` decorator is not available). Processors must be registered in the module's `providers` array. Re-throw errors so BullMQ can handle retries according to the queue's retry policy.
+- **BullMQ retry handling**: Use `job.attemptsMade` and `job.opts.attempts` to detect final retry attempt. Pattern: `const isFinalAttempt = job.attemptsMade >= (job.opts.attempts || 1)`. Only record permanent failure status after all retries exhausted to avoid logging intermediate retry failures.  

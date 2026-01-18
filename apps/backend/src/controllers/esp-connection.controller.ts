@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   BadRequestException,
@@ -12,12 +13,20 @@ import {
   ForbiddenException,
   ConflictException,
   UseGuards,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EspConnectionService } from '../services/esp-connection.service';
+import { SyncHistoryService } from '../services/sync-history.service';
+import { SubscriberService } from '../services/subscriber.service';
+import { SubscriberExportService, ExportFormat } from '../services/subscriber-export.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
+import { SyncHistory } from '../entities/sync-history.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -27,6 +36,9 @@ import { User } from '../entities/user.entity';
 export class EspConnectionController {
   constructor(
     private readonly espConnectionService: EspConnectionService,
+    private readonly syncHistoryService: SyncHistoryService,
+    private readonly subscriberService: SubscriberService,
+    private readonly subscriberExportService: SubscriberExportService,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue,
   ) { }
@@ -163,6 +175,195 @@ export class EspConnectionController {
       // Handle other errors as 500
       throw new InternalServerErrorException(
         'Failed to trigger subscriber sync',
+      );
+    }
+  }
+
+  @Get(':id/sync-history')
+  async getSyncHistory(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Query('limit') limit?: string,
+  ): Promise<Omit<SyncHistory, 'espConnection'>[]> {
+    try {
+      // Validate ESP connection exists and belongs to user
+      await this.espConnectionService.findById(id, user.id);
+
+      // Parse limit parameter (default: 50)
+      const parsedLimit = limit ? parseInt(limit, 10) : 50;
+
+      // Fetch sync history records
+      const syncHistory = await this.syncHistoryService.findByEspConnection(
+        id,
+        parsedLimit,
+      );
+
+      // Remove espConnection relation to avoid exposing sensitive data
+      return syncHistory.map((record) => {
+        const { espConnection, ...syncHistoryRecord } = record;
+        return syncHistoryRecord;
+      });
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection',
+        );
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve sync history',
+      );
+    }
+  }
+
+  @Get(':id/subscribers')
+  async getSubscribers(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ): Promise<{
+    data: Omit<Subscriber, 'encryptedEmail'>[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    try {
+      // Validate ESP connection exists and belongs to user
+      await this.espConnectionService.findById(id, user.id);
+
+      // Parse pagination parameters (defaults: page=1, limit=50)
+      const parsedPage = page ? parseInt(page, 10) : 1;
+      const parsedLimit = limit ? parseInt(limit, 10) : 50;
+
+      // Fetch paginated subscribers
+      const result = await this.subscriberService.findByEspConnectionPaginated(
+        id,
+        parsedPage,
+        parsedLimit,
+        status,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection',
+        );
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve subscribers',
+      );
+    }
+  }
+
+  @Get(':id/subscribers/export')
+  async exportSubscribers(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Query('format') format?: string,
+    @Res({ passthrough: true }) response?: Response,
+  ): Promise<StreamableFile | { data: any }> {
+    try {
+      // Validate ESP connection exists and belongs to user
+      const connection = await this.espConnectionService.findById(id, user.id);
+
+      // Validate format parameter
+      const exportFormat = (format || 'csv').toLowerCase() as ExportFormat;
+      if (!['csv', 'json', 'xlsx'].includes(exportFormat)) {
+        throw new BadRequestException(
+          'Invalid format. Must be one of: csv, json, xlsx',
+        );
+      }
+
+      // Fetch all subscribers for the connection (no pagination)
+      const subscribers = await this.subscriberService.findByEspConnection(id);
+
+      // Generate timestamp for filename
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `subscribers-${connection.espType}-${timestamp}`;
+
+      // Export based on format
+      switch (exportFormat) {
+        case 'csv': {
+          const csvContent = this.subscriberExportService.exportAsCSV(subscribers);
+          const buffer = Buffer.from(csvContent, 'utf-8');
+
+          response?.set({
+            'Content-Type': 'text/csv',
+            'Content-Disposition': `attachment; filename="${filename}.csv"`,
+          });
+
+          return new StreamableFile(buffer);
+        }
+
+        case 'json': {
+          const jsonContent = this.subscriberExportService.exportAsJSON(subscribers);
+          const buffer = Buffer.from(jsonContent, 'utf-8');
+
+          response?.set({
+            'Content-Type': 'application/json',
+            'Content-Disposition': `attachment; filename="${filename}.json"`,
+          });
+
+          return new StreamableFile(buffer);
+        }
+
+        case 'xlsx': {
+          const excelBuffer = await this.subscriberExportService.exportAsExcel(
+            subscribers,
+          );
+
+          response?.set({
+            'Content-Type':
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${filename}.xlsx"`,
+          });
+
+          return new StreamableFile(excelBuffer);
+        }
+
+        default:
+          throw new BadRequestException('Invalid export format');
+      }
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed, or invalid format)
+      if (error instanceof BadRequestException) {
+        // Check if it's an ownership error
+        if (error.message.includes('permission')) {
+          throw new ForbiddenException(
+            'You do not have permission to access this ESP connection',
+          );
+        }
+        // Otherwise, it's a format validation error
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to export subscribers',
       );
     }
   }

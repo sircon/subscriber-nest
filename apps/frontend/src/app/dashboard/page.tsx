@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { espConnectionApi, EspConnection } from '@/lib/api';
+import { dashboardApi, espConnectionApi, DashboardStats, SyncHistory } from '@/lib/api';
 
 const providerNames: Record<string, string> = {
   kit: 'Kit',
@@ -13,34 +14,58 @@ const providerNames: Record<string, string> = {
   mailchimp: 'Mailchimp',
 };
 
-const syncStatusLabels: Record<string, string> = {
-  idle: 'Not synced yet',
-  syncing: 'Syncing...',
-  synced: 'Synced',
-  error: 'Sync failed',
-};
+interface SyncHistoryWithEsp extends SyncHistory {
+  espName: string;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, token } = useAuth();
-  const [connections, setConnections] = useState<EspConnection[]>([]);
+  const { token } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [syncHistory, setSyncHistory] = useState<SyncHistoryWithEsp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncErrors, setSyncErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchConnections = async () => {
+    const fetchDashboardData = async () => {
       if (!token) {
         setLoading(false);
         return;
       }
 
       try {
-        const data = await espConnectionApi.getUserConnections(token, () => {
-          // Handle 401: redirect to login
-          router.push('/login');
-        });
-        setConnections(data);
+        // Fetch stats and connections in parallel
+        const [statsData, connections] = await Promise.all([
+          dashboardApi.getStats(token, () => router.push('/login')),
+          espConnectionApi.getUserConnections(token, () => router.push('/login')),
+        ]);
+
+        setStats(statsData);
+
+        // Fetch sync history for all connections
+        if (connections.length > 0) {
+          const syncHistoryPromises = connections.map((conn) =>
+            espConnectionApi
+              .getSyncHistory(conn.id, token, () => router.push('/login'), 50)
+              .then((history) =>
+                history.map((h) => ({
+                  ...h,
+                  espName: `${providerNames[conn.espType] || conn.espType} (${conn.publicationId})`,
+                }))
+              )
+              .catch(() => []) // Silently handle errors for individual connections
+          );
+
+          const allSyncHistory = await Promise.all(syncHistoryPromises);
+          
+          // Flatten and sort by startedAt DESC
+          const mergedHistory = allSyncHistory
+            .flat()
+            .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+            .slice(0, 50); // Keep only top 50
+
+          setSyncHistory(mergedHistory);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -48,160 +73,155 @@ export default function DashboardPage() {
       }
     };
 
-    fetchConnections();
+    fetchDashboardData();
   }, [token, router]);
 
-  const handleSync = async (connectionId: string) => {
-    if (!token) return;
-
-    // Clear any previous error for this connection
-    setSyncErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[connectionId];
-      return newErrors;
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
-
-    // Optimistically update the connection status to 'syncing'
-    setConnections((prev) =>
-      prev.map((conn) =>
-        conn.id === connectionId ? { ...conn, syncStatus: 'syncing' as const } : conn
-      )
-    );
-
-    try {
-      const result = await espConnectionApi.triggerSync(connectionId, token, () => {
-        router.push('/login');
-      });
-      
-      // Update the connection with the response from the server
-      setConnections((prev) =>
-        prev.map((conn) =>
-          conn.id === connectionId ? result.connection : conn
-        )
-      );
-    } catch (err) {
-      // Revert optimistic update on error
-      setConnections((prev) =>
-        prev.map((conn) =>
-          conn.id === connectionId ? { ...conn, syncStatus: 'error' as const } : conn
-        )
-      );
-      
-      // Store error message
-      setSyncErrors((prev) => ({
-        ...prev,
-        [connectionId]: err instanceof Error ? err.message : 'Failed to trigger sync',
-      }));
-    }
   };
 
-  const getSyncButtonText = (syncStatus: string) => {
-    switch (syncStatus) {
-      case 'syncing':
-        return 'Syncing...';
-      case 'error':
-        return 'Retry Sync';
-      case 'synced':
-        return 'Sync Again';
-      default:
-        return 'Sync Now';
-    }
+  const formatLastSync = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return formatDateTime(dateString);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-4xl">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-secondary rounded w-1/3"></div>
-            <div className="h-4 bg-secondary rounded w-1/2"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="h-32 bg-secondary rounded"></div>
-              <div className="h-32 bg-secondary rounded"></div>
-              <div className="h-32 bg-secondary rounded"></div>
-            </div>
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-secondary rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="h-32 bg-secondary rounded"></div>
+            <div className="h-32 bg-secondary rounded"></div>
+            <div className="h-32 bg-secondary rounded"></div>
           </div>
+          <div className="h-64 bg-secondary rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-6 py-12">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome to SubscriberNest</h1>
-          <p className="text-muted-foreground">
-            {user?.email ? `Signed in as ${user.email}` : 'Loading...'}
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
+        <p className="text-muted-foreground">
+          Monitor your ESP connections and sync activity
+        </p>
+      </div>
 
-        {error && (
-          <Card className="mb-6 border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+      {error && (
+        <Card className="mb-6 border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Connected ESPs</h2>
-          {connections.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground">No ESP connections yet. Connect your first ESP to get started.</p>
-              </CardContent>
-            </Card>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Card>
+          <CardHeader>
+            <CardDescription>Total ESPs</CardDescription>
+            <CardTitle className="text-4xl">{stats?.totalEspConnections || 0}</CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Total Subscribers</CardDescription>
+            <CardTitle className="text-4xl">{stats?.totalSubscribers || 0}</CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription>Last Sync</CardDescription>
+            <CardTitle className="text-2xl">{formatLastSync(stats?.lastSyncTime || null)}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Sync History Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Sync History</CardTitle>
+          <CardDescription>
+            Most recent sync operations across all ESP connections
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {syncHistory.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No sync history yet. Sync your ESP connections to see activity here.
+            </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {connections.map((connection) => (
-                <Card key={connection.id}>
-                  <CardHeader>
-                    <CardTitle>{providerNames[connection.espType] || connection.espType}</CardTitle>
-                    <CardDescription>
-                      Status: {connection.status}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Connected {new Date(connection.createdAt).toLocaleDateString()}
-                      </p>
-                      
-                      <div className="mt-2">
-                        <p className="text-sm font-medium">
-                          Sync Status: {syncStatusLabels[connection.syncStatus] || connection.syncStatus}
-                        </p>
-                        {connection.lastSyncedAt && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Last synced {new Date(connection.lastSyncedAt).toLocaleDateString()} at{' '}
-                            {new Date(connection.lastSyncedAt).toLocaleTimeString()}
-                          </p>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ESP Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Started At</TableHead>
+                    <TableHead>Completed At</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {syncHistory.map((history) => (
+                    <TableRow key={history.id}>
+                      <TableCell className="font-medium">{history.espName}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={history.status === 'success' ? 'default' : 'destructive'}
+                          className={
+                            history.status === 'success'
+                              ? 'bg-green-500 hover:bg-green-600'
+                              : ''
+                          }
+                        >
+                          {history.status.charAt(0).toUpperCase() + history.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDateTime(history.startedAt)}</TableCell>
+                      <TableCell>{formatDateTime(history.completedAt)}</TableCell>
+                      <TableCell>
+                        {history.status === 'failed' && history.errorMessage ? (
+                          <span className="text-sm text-destructive max-w-xs truncate block" title={history.errorMessage}>
+                            {history.errorMessage}
+                          </span>
+                        ) : (
+                          '-'
                         )}
-                      </div>
-                    </div>
-
-                    {syncErrors[connection.id] && (
-                      <div className="text-sm text-destructive">
-                        {syncErrors[connection.id]}
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={() => handleSync(connection.id)}
-                      disabled={connection.syncStatus === 'syncing'}
-                      className="w-full"
-                      variant={connection.syncStatus === 'error' ? 'destructive' : 'default'}
-                    >
-                      {getSyncButtonText(connection.syncStatus)}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -9,9 +9,12 @@ import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
 import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
+import { SubscriberExportService } from './services/subscriber-export.service';
 import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
+import { SubscriberController } from './controllers/subscriber.controller';
+import { DashboardController } from './controllers/dashboard.controller';
 import { SubscriberMapperService } from './services/subscriber-mapper.service';
 import { SubscriberSyncService } from './services/subscriber-sync.service';
 import { SubscriberSyncProcessor } from './processors/subscriber-sync.processor';
@@ -22,6 +25,8 @@ import { AuthGuard } from './guards/auth.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
+import { SyncHistory } from './entities/sync-history.entity';
+import { SyncHistoryService } from './services/sync-history.service';
 
 @Module({
   imports: [
@@ -42,6 +47,7 @@ import { Session } from './entities/session.entity';
       VerificationCode,
       User,
       Session,
+      SyncHistory,
     ]),
     HttpModule,
     BullModule.forRoot({
@@ -62,12 +68,13 @@ import { Session } from './entities/session.entity';
       },
     }),
   ],
-  controllers: [AppController, AuthController, EspConnectionController],
+  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController],
   providers: [
     AppService,
     EncryptionService,
     BeehiivConnector,
     SubscriberService,
+    SubscriberExportService,
     EspConnectionService,
     SubscriberMapperService,
     SubscriberSyncService,
@@ -75,6 +82,7 @@ import { Session } from './entities/session.entity';
     EmailService,
     AuthService,
     AuthGuard,
+    SyncHistoryService,
   ],
   exports: [EmailService],
 })

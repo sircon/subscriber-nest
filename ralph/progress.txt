@@ -1,886 +1,653 @@
 # Ralph Progress Log
-Started: Sat Jan 17 2026
----
+Started: Sun Jan 18 09:32:48 CET 2026
 
 ## Codebase Patterns
-- TypeORM entities are automatically loaded via `autoLoadEntities: true` in TypeOrmModule configuration
-- Migration files go in `src/migrations/` and are compiled to `dist/migrations/` for execution
-- Use `yarn build` before running migrations to ensure compiled files exist
-- Entity files use TypeORM decorators: `@Entity()`, `@Column()`, `@PrimaryGeneratedColumn()`, `@CreateDateColumn()`, `@UpdateDateColumn()`
-- Foreign key relationships use `@ManyToOne()` and `@JoinColumn()` decorators
-- Use `uuid` type for primary keys with `uuid_generate_v4()` default in migrations
+- TypeORM entities use `@Entity`, `@Column`, and relationship decorators (`@ManyToOne`, `@OneToMany`)
+- Enums are defined at the top of entity files and exported for reuse
+- Entity IDs use UUID type with `@PrimaryGeneratedColumn('uuid')`
+- Migrations use DO $$ BEGIN ... EXCEPTION WHEN duplicate_object pattern for idempotent enum creation
+- Foreign key relationships use `@JoinColumn({ name: 'columnName' })` with explicit column naming
+- Migration files are timestamped and must be in `src/migrations/` (compiled to `dist/migrations/`)
+- Use `columnExists` check pattern to make migrations idempotent: `table?.columns.find((col) => col.name === 'columnName')`
+- Always run `turbo run build --filter=backend` before running migrations
+- Migration command: `cd apps/backend && yarn db:migrate`
+- shadcn CLI generates code with tabs - always convert to spaces to avoid linting errors
+- When fetching data for dashboard/overview pages, use Promise.all to fetch multiple endpoints in parallel
 
-## 2026-01-17 - US-001
-- Created User, VerificationCode, and Session entities with all required fields
-- Created migration file to create the three tables with proper relationships
+---
+
+## 2026-01-18 09:33 - US-001
+- Created SyncHistory entity with all required fields (id, espConnectionId, status, startedAt, completedAt, errorMessage, createdAt)
+- Added SyncHistoryStatus enum with 'success' and 'failed' values
+- Added @ManyToOne relationship from SyncHistory to EspConnection
+- Updated EspConnection entity to include @OneToMany relationship to SyncHistory
+- Created migration 1737220000000-CreateSyncHistory.ts to create sync_history table with foreign key constraint
+- Made existing AddSyncStatusToEspConnection migration idempotent by adding column existence check
 - Files changed:
-  - `apps/backend/src/entities/user.entity.ts` - User entity with email (unique), isOnboarded, timestamps
-  - `apps/backend/src/entities/verification-code.entity.ts` - VerificationCode entity with 6-digit code, expiration, and used flag
-  - `apps/backend/src/entities/session.entity.ts` - Session entity with token, userId foreign key, expiration
-  - `apps/backend/src/migrations/1737000000000-CreateUserAndSessionEntities.ts` - Migration to create all three tables
+  - `apps/backend/src/entities/sync-history.entity.ts` - New entity file
+  - `apps/backend/src/entities/esp-connection.entity.ts` - Added import and syncHistory relationship
+  - `apps/backend/src/migrations/1737220000000-CreateSyncHistory.ts` - New migration file
+  - `apps/backend/src/migrations/1737200000000-AddSyncStatusToEspConnection.ts` - Added idempotency check
 - **Learnings for future iterations:**
-  - TypeORM CLI path issue in yarn workspaces - migration generation failed, so created migration manually
-  - Migration format: class implements `MigrationInterface` with `up()` and `down()` methods using `queryRunner.query()`
-  - Use `uuid_generate_v4()` for UUID defaults in PostgreSQL migrations
-  - Foreign keys should use `ON DELETE CASCADE` for sessions when user is deleted
-  - All quality checks (typecheck, lint, build) passed successfully
+  - The data-source.ts uses `src/**/*.entity.ts` pattern to auto-discover entities
+  - When adding relationships, both entities need to be updated (ManyToOne side and OneToMany side)
+  - Foreign key CASCADE delete ensures sync history is removed when connection is deleted
+  - Existing migrations may need idempotency fixes if database already has changes applied
+  - Migration timestamps should be sequential and higher than existing migrations
 ---
 
-## 2026-01-17 - US-002
-- Created EspConnection entity with provider enum, apiKey field, and relationship to User
-- Added OneToMany relationship from User to EspConnections
-- Created migration to create esp_connections table with enum type and foreign key
+## 2026-01-18 10:15 - US-002
+- Updated SubscriberSyncProcessor to create SyncHistory records for tracking sync operations
+- Added SyncHistory repository injection to the processor
+- Created sync history record at job start with status: 'success' and startedAt timestamp
+- Updated sync history with completedAt timestamp when sync completes successfully
+- Updated sync history with status: 'failed', completedAt, and errorMessage when sync fails after all retries
+- Used BullMQ's job.attemptsMade and job.opts.attempts to detect final retry attempt
 - Files changed:
-  - `apps/backend/src/entities/esp-connection.entity.ts` - EspConnection entity with provider enum (kit, beehiiv, mailchimp), apiKey, isActive, timestamps
-  - `apps/backend/src/entities/user.entity.ts` - Added OneToMany relationship to EspConnections
-  - `apps/backend/src/migrations/1737000001000-CreateEspConnectionEntity.ts` - Migration to create esp_connections table and esp_provider_enum type
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` - Added sync history tracking
 - **Learnings for future iterations:**
-  - TypeORM enum columns require creating the enum type in PostgreSQL migrations before using it in table creation
-  - Use `@OneToMany()` decorator on the parent entity (User) and `@ManyToOne()` on the child entity (EspConnection)
-  - API key encryption will be handled in the service layer (stored as text in DB for now)
-  - Enum values in TypeORM are defined as a TypeScript enum and referenced in the Column decorator
-  - All quality checks (typecheck, lint, build) passed successfully
+  - BullMQ jobs have `attemptsMade` and `opts.attempts` properties to track retry attempts
+  - When a job will be retried, we should only record final failure after all retries exhausted
+  - Repository injection in processors follows same pattern as in services/controllers
+  - Optimistic approach: Create sync history with 'success' status, update to 'failed' only if needed
+  - Always wrap database updates in try-catch to prevent processor failures from cascading
 ---
 
-## 2026-01-17 - US-003
-- Set up Resend email service with EmailService class
-- Installed `resend` package (not `@resend/node`)
-- Updated .env.example with placeholder RESEND_API_KEY and documentation
-- Created EmailService with sendVerificationCode method that uses Resend API
-- Added EmailService to AppModule providers and exports
+## 2026-01-18 15:30 - US-003
+- Created SyncHistoryService with findByEspConnection method
+- Method queries sync history records for a specific ESP connection
+- Returns records ordered by startedAt DESC (most recent first)
+- Optional limit parameter defaults to 50 if not provided
+- Includes ESP connection relationship in query using relations: ['espConnection']
+- Registered SyncHistory entity in TypeOrmModule.forFeature()
+- Registered SyncHistoryService in AppModule providers
 - Files changed:
-  - `apps/backend/package.json` - Added resend dependency
-  - `apps/backend/.env.example` - Added RESEND_API_KEY with placeholder and documentation
-  - `apps/backend/src/email.service.ts` - New EmailService class with Resend integration
-  - `apps/backend/src/app.module.ts` - Added EmailService to providers and exports
+  - `apps/backend/src/services/sync-history.service.ts` - New service file
+  - `apps/backend/src/app.module.ts` - Added SyncHistory entity and SyncHistoryService registration
 - **Learnings for future iterations:**
-  - Resend package name is `resend`, not `@resend/node`
-  - EmailService uses ConfigService to read RESEND_API_KEY from environment
-  - Service throws error on initialization if RESEND_API_KEY is missing (fail-fast pattern)
-  - EmailService is exported from AppModule so it can be injected into other modules
-  - Basic HTML email template included in service (will be replaced with react-email template in US-004)
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Services follow standard NestJS pattern: @Injectable() decorator, constructor injection
+  - Repository injection uses @InjectRepository(Entity) pattern
+  - TypeORM find() options: where (filters), relations (eager load), order (sorting), take (limit)
+  - Default parameter values in TypeScript: `limit: number = 50` syntax
+  - Services must be registered in AppModule providers array to be injectable
+  - Entities must be in TypeOrmModule.forFeature() array to inject their repositories
 ---
 
-## 2026-01-17 - US-004
-- Created react-email verification code template with professional styling
-- Installed react-email, @react-email/components, react, and react-dom packages
-- Created VerificationCodeEmail component in apps/backend/src/emails/verification-code-email.tsx
-- Updated EmailService to use react-email render function to convert template to HTML
-- Added JSX support to TypeScript configuration (jsx: "react")
+## 2026-01-18 18:00 - US-004
+- Added GET /esp-connections/:id/sync-history endpoint to EspConnectionController
+- Endpoint accepts optional query parameter 'limit' (default: 50)
+- Validates ESP connection exists and belongs to requesting user via espConnectionService.findById()
+- Returns array of sync history records without espConnection relation to avoid exposing sensitive data
+- Follows existing error handling pattern: NotFoundException (404), BadRequestException → ForbiddenException (403)
+- Uses Omit<SyncHistory, 'espConnection'>[] return type to properly type the response
 - Files changed:
-  - `apps/backend/package.json` - Added react-email, @react-email/components, react, react-dom dependencies
-  - `apps/backend/tsconfig.json` - Added "jsx": "react" to compilerOptions
-  - `apps/backend/src/emails/verification-code-email.tsx` - New email template component with professional styling
-  - `apps/backend/src/email.service.ts` - Updated to use react-email template rendering
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added sync history endpoint
 - **Learnings for future iterations:**
-  - react-email requires React and react-dom to be installed even in backend projects
-  - Use `render` from `@react-email/render` with `React.createElement` to render templates to HTML
-  - Template components use JSX syntax, so TypeScript config needs `"jsx": "react"` option
-  - react-email templates compile to JavaScript and are included in the build output
-  - Use `{ pretty: true }` option in render() for formatted HTML output
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Controllers must import Query decorator for query parameters
+  - Query parameters in NestJS can be optional by using `@Query('param') param?: type`
+  - Required parameters decorated with @CurrentUser or @Param must come before optional @Query parameters
+  - When removing fields from returned objects, use Omit<Type, 'field'>[] for proper typing
+  - Controller error handling pattern: validate ownership first, then return appropriate 403/404 errors
+  - SyncHistoryService was already registered in AppModule, so no module changes needed
 ---
 
-## 2026-01-17 - US-005
-- Created POST /auth/send-code endpoint that generates and sends verification codes
-- Implemented AuthService with code generation, rate limiting (max 3 codes per email per hour), and email sending
-- Created AuthController with send-code endpoint
-- Endpoint generates random 6-digit numeric code, stores it with 10-minute expiration, and sends via Resend
+## 2026-01-18 21:30 - US-005
+- Added GET /esp-connections/:id/subscribers endpoint to EspConnectionController
+- Created findByEspConnectionPaginated method in SubscriberService
+- Endpoint accepts query parameters: page (default: 1), limit (default: 50), status (optional filter)
+- Returns paginated response with data, total, page, limit, and totalPages
+- Subscribers returned with maskedEmail (encryptedEmail excluded for security)
+- Validates ESP connection exists and belongs to requesting user
+- Follows existing error handling pattern: NotFoundException (404), BadRequestException → ForbiddenException (403)
 - Files changed:
-  - `apps/backend/src/auth.service.ts` - New AuthService with sendVerificationCode method, rate limiting, and code generation
-  - `apps/backend/src/auth.controller.ts` - New AuthController with POST /auth/send-code endpoint
-  - `apps/backend/src/app.module.ts` - Added AuthController, AuthService, and TypeOrmModule.forFeature([VerificationCode])
+  - `apps/backend/src/services/subscriber.service.ts` - Added paginated query method
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added subscribers endpoint and injected SubscriberService
 - **Learnings for future iterations:**
-  - Use `@InjectRepository()` decorator to inject TypeORM repositories into services
-  - Import `TypeOrmModule.forFeature([Entity])` in module to make repository available for injection
-  - Use `MoreThan()` from TypeORM to query records created after a specific date for rate limiting
-  - BadRequestException from @nestjs/common is appropriate for client errors (rate limiting, invalid email)
-  - Rate limiting checks count of codes created in the last hour using `createdAt: MoreThan(oneHourAgo)`
-  - Code generation uses `Math.floor(100000 + Math.random() * 900000)` to ensure exactly 6 digits
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Paginated responses follow pattern: `{ data: T[], total, page, limit, totalPages }`
+  - Use TypeORM skip/take for pagination: `skip: (page - 1) * limit, take: limit`
+  - Calculate totalPages: `Math.ceil(total / limit)`
+  - When filtering is optional, build where clause conditionally: `if (status) where.status = status`
+  - Remove sensitive fields from responses by destructuring: `const { encryptedEmail, ...data } = subscriber`
+  - Service injection in controllers: add to constructor parameters and import service class
+  - SubscriberService was already registered in AppModule, so no module changes needed
 ---
 
-## 2026-01-17 - US-006
-- Created POST /auth/verify-code endpoint that validates codes and creates sessions
-- Implemented verifyCode method in AuthService that validates code, creates/finds user, marks code as used, and creates session
-- Endpoint returns token and user information on success
+## 2026-01-18 23:45 - US-006
+- Created new SubscriberController with POST /subscribers/:id/unmask endpoint
+- Endpoint validates subscriber exists and belongs to a connection owned by requesting user
+- Fetches subscriber with espConnection relation to validate ownership via userId comparison
+- Uses EncryptionService.decrypt() to decrypt the encryptedEmail field
+- Returns { email: string } with decrypted email
+- Follows existing error handling pattern: NotFoundException (404), ForbiddenException (403)
+- Registered SubscriberController in AppModule controllers array
 - Files changed:
-  - `apps/backend/src/auth.service.ts` - Added verifyCode method with code validation, user creation/lookup, and session creation
-  - `apps/backend/src/auth.controller.ts` - Added POST /auth/verify-code endpoint
-  - `apps/backend/src/app.module.ts` - Added User and Session to TypeOrmModule.forFeature array
-  - `apps/backend/AGENTS.md` - Updated Authentication section with session creation patterns
+  - `apps/backend/src/controllers/subscriber.controller.ts` - New controller file
+  - `apps/backend/src/app.module.ts` - Added SubscriberController registration
 - **Learnings for future iterations:**
-  - Use `UnauthorizedException` from `@nestjs/common` for authentication failures (invalid/expired/used codes)
-  - Session tokens are generated using `crypto.randomBytes(32).toString('hex')` for secure random tokens
-  - Always mark verification codes as used after successful verification to prevent reuse
-  - User creation happens automatically during code verification if user doesn't exist (with isOnboarded: false)
-  - Use `findOne()` with `where` clause to find entities by specific fields
-  - Session expiration is set to 30 days from creation (configurable in verifyCode method)
-  - All quality checks (typecheck, lint, build) passed successfully
+  - When validating ownership through a relationship, use relations: ['espConnection'] in query
+  - Compare espConnection.userId with current user.id for ownership validation
+  - EncryptionService.decrypt() throws errors that should be caught and returned as 500
+  - New controllers must be both imported and added to controllers array in AppModule
+  - Subscriber entity already registered in TypeOrmModule.forFeature(), so repository injection works
+  - Pattern for sensitive operations: fetch with relations, validate ownership, perform operation, handle errors
 ---
 
-## 2026-01-17 - US-007
-- Created AuthGuard that validates session tokens from request headers
-- Guard implements CanActivate interface and checks token in Authorization header (Bearer format)
-- Guard validates token exists in database, is not expired, and loads user
-- Created CurrentUser decorator to access authenticated user in controllers
-- Guard can be applied to controllers/routes via @UseGuards(AuthGuard)
-- Returns 401 UnauthorizedException if token invalid, missing, or expired
+## 2026-01-19 01:00 - US-007
+- Added GET /esp-connections/:id/subscribers/export endpoint to EspConnectionController
+- Endpoint accepts query parameter 'format' (csv, json, xlsx) with default 'csv'
+- Installed exceljs package for Excel file generation (v4.4.0)
+- Created SubscriberExportService with export methods for each format
+- Service decrypts all subscriber emails using EncryptionService
+- Service flattens metadata fields with 'metadata_' prefix for export
+- CSV export: Manual implementation with proper escaping for quotes, commas, newlines
+- JSON export: Pretty-printed JSON with 2-space indentation
+- Excel export: Uses exceljs to create workbook with styled headers and formatted data
+- Returns StreamableFile with appropriate Content-Type and Content-Disposition headers
+- Filename format: subscribers-{espType}-{date}.{ext}
+- Follows existing error handling pattern: NotFoundException (404), ForbiddenException (403), BadRequestException (400)
+- Registered SubscriberExportService in AppModule providers
 - Files changed:
-  - `apps/backend/src/guards/auth.guard.ts` - New AuthGuard class with session validation logic
-  - `apps/backend/src/decorators/current-user.decorator.ts` - New CurrentUser decorator to extract user from request
-  - `apps/backend/src/app.module.ts` - Added AuthGuard to providers
+  - `apps/backend/src/services/subscriber-export.service.ts` - New export service
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added export endpoint
+  - `apps/backend/src/app.module.ts` - Registered export service
+  - `apps/backend/package.json` - Added exceljs dependency
+  - `yarn.lock` - Updated with exceljs and dependencies
 - **Learnings for future iterations:**
-  - Guards in NestJS implement `CanActivate` interface with `canActivate(context: ExecutionContext)` method
-  - Use `context.switchToHttp().getRequest()` to access HTTP request object
-  - Extract token from Authorization header with format "Bearer <token>"
-  - Use `@InjectRepository()` in guards to inject TypeORM repositories (guards need to be in providers)
-  - Guards that use dependency injection must be added to module providers
-  - Use `relations: ['user']` in findOne to eagerly load related entities
-  - Attach user to request object (`request.user = user`) so it's available in controllers via decorators
-  - Use `UnauthorizedException` from `@nestjs/common` for authentication failures
-  - TypeScript requires null checking when assigning `findOne()` result (can return null)
-  - All quality checks (typecheck, lint, build) passed successfully
+  - StreamableFile from @nestjs/common is used for file downloads
+  - Use @Res({ passthrough: true }) to set response headers while returning StreamableFile
+  - Response.set() sets multiple headers at once (Content-Type, Content-Disposition)
+  - Content-Disposition header format: `attachment; filename="name.ext"`
+  - Excel MIME type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  - CSV MIME type: 'text/csv'
+  - exceljs Workbook.xlsx.writeBuffer() returns ArrayBuffer, convert to Buffer with Buffer.from()
+  - For CSV escaping: wrap in quotes if contains comma/quote/newline, escape quotes by doubling them
+  - Metadata fields should be flattened to top-level fields for export (not nested objects)
+  - ExcelJS allows setting column width and styling headers (bold font)
 ---
 
-## 2026-01-17 - US-008
-- Created GET /auth/me endpoint protected by AuthGuard
-- Endpoint returns current user information (id, email, isOnboarded)
-- Uses @UseGuards(AuthGuard) and @CurrentUser() decorator to access authenticated user
-- Returns 401 if not authenticated (handled by AuthGuard)
+## 2026-01-19 01:30 - US-008
+- Created new DashboardController with GET /dashboard/stats endpoint
+- Endpoint returns dashboard statistics: totalEspConnections, totalSubscribers, lastSyncTime
+- Counts all ESP connections for authenticated user using espConnectionRepository.count()
+- Fetches user's connection IDs first, then queries subscribers and sync history based on those IDs
+- totalSubscribers counts across all user's connections using IN query pattern
+- lastSyncTime finds most recent completedAt from sync history ordered DESC
+- Returns null for lastSyncTime if no syncs completed yet
+- Protected with AuthGuard to ensure authentication (returns 401 if not authenticated)
+- Registered DashboardController in AppModule controllers array
 - Files changed:
-  - `apps/backend/src/auth.controller.ts` - Added GET /auth/me endpoint with AuthGuard protection
+  - `apps/backend/src/controllers/dashboard.controller.ts` - New dashboard controller
+  - `apps/backend/src/app.module.ts` - Added DashboardController registration
 - **Learnings for future iterations:**
-  - GET endpoints can be protected with @UseGuards(AuthGuard) just like POST endpoints
-  - Use @CurrentUser() decorator to access the authenticated user that was attached to the request by AuthGuard
-  - The endpoint simply returns the user data from the request - no additional database queries needed since AuthGuard already loaded the user
-  - Response format matches the user object structure returned by verify-code endpoint for consistency
-  - All quality checks (typecheck, lint, build) passed successfully
+  - When querying across multiple related entities, first fetch primary IDs then use IN queries
+  - TypeORM count() with where clause: use array of objects for OR conditions (IN equivalent)
+  - TypeORM findOne() with order: use { field: 'DESC' } to get most recent record
+  - Return null for optional timestamps when no data exists (not undefined)
+  - Dashboard stats endpoints typically aggregate data across multiple tables
+  - Direct repository injection in controllers is acceptable for simple aggregation queries
 ---
 
-## 2026-01-17 - US-009
-- Created POST /auth/logout endpoint protected by AuthGuard
-- Implemented logout method in AuthService that deletes session from database
-- Endpoint extracts token from Authorization header and deletes the session
-- Returns { success: true } on successful logout
+## 2026-01-19 02:00 - US-009
+- Installed @tanstack/react-table v8.21.3 for data table functionality
+- Added shadcn UI components using shadcn CLI: table, dropdown-menu
+- Additional shadcn components installed as dependencies: separator, sheet, tooltip
+- Note: xlsx/papaparse not installed as backend handles all export generation (US-007)
+- Note: Sidebar component will be manually created in US-010 using existing components
+- Updated tailwind.config.ts with sidebar animations and CSS variables
+- Updated globals.css with additional CSS variables for sidebar styling
+- Reinstalled dependencies from root to resolve workspace linking issues
+- Frontend build passes successfully with all new dependencies
 - Files changed:
-  - `apps/backend/src/auth.service.ts` - Added logout method that finds and deletes session by token
-  - `apps/backend/src/auth.controller.ts` - Added POST /auth/logout endpoint with AuthGuard protection
+  - `apps/frontend/package.json` - Added @tanstack/react-table and radix-ui dependencies
+  - `apps/frontend/src/components/ui/table.tsx` - New table component
+  - `apps/frontend/src/components/ui/dropdown-menu.tsx` - New dropdown-menu component
+  - `apps/frontend/src/components/ui/separator.tsx` - New separator component
+  - `apps/frontend/src/components/ui/sheet.tsx` - New sheet component (useful for mobile sidebar)
+  - `apps/frontend/src/components/ui/tooltip.tsx` - New tooltip component
+  - `apps/frontend/tailwind.config.ts` - Added sidebar animations and keyframes
+  - `apps/frontend/src/app/globals.css` - Added CSS variables for sidebar colors
+  - `yarn.lock` - Updated with new dependencies
 - **Learnings for future iterations:**
-  - Use `@Headers('authorization')` decorator from NestJS to extract Authorization header in controllers
-  - Token extraction follows same pattern as AuthGuard: split "Bearer <token>" format
-  - Logout endpoint is protected by AuthGuard to ensure only authenticated users can log out
-  - Session deletion uses `sessionRepository.remove()` after finding the session by token
-  - If session doesn't exist (edge case), logout still returns success to avoid leaking information
-  - All quality checks (typecheck, lint, build) passed successfully
+  - shadcn CLI command: `npx shadcn@latest add <component> --yes` to skip prompts
+  - shadcn components automatically install required radix-ui peer dependencies
+  - Yarn workspace requires reinstalling from root after adding dependencies to child packages
+  - Sheet component can be used as a mobile-friendly sidebar alternative
+  - Separator component useful for dividing sections in sidebars/menus
+  - Backend handling exports means frontend doesn't need xlsx/papaparse libraries
 ---
 
-## 2026-01-17 - US-010
-- Created POST /esp-connections endpoint protected by AuthGuard
-- Implemented EncryptionService using Node's built-in crypto module with AES-256-GCM encryption
-- Created EspConnectionService with createConnection method that validates provider, encrypts API key, and creates connection
-- Endpoint accepts { provider: string, apiKey: string } and returns { id, provider, createdAt } without API key
+## 2026-01-19 03:00 - US-010
+- Created dashboard layout component at src/app/dashboard/layout.tsx
+- Layout wraps all /dashboard/* routes with persistent sidebar navigation
+- Sidebar features:
+  - Fixed width (~256px) left sidebar on desktop
+  - "Connect New ESP" button at top (links to /onboarding)
+  - ESP connections list with ESP name and publication ID
+  - Active ESP connection highlighted based on pathname
+  - Settings button at bottom (links to /dashboard/settings)
+- Responsive design:
+  - Desktop: Fixed sidebar visible at all times
+  - Mobile: Hamburger menu button triggers Sheet component overlay
+  - Sheet component slides in from left on mobile
+- Fetches ESP connections from API on mount
+- Uses lucide-react icons: Menu, Plus, Settings, Database
+- Active state uses pathname comparison to highlight current ESP
+- Sidebar content shared between desktop and mobile views (DRY pattern)
 - Files changed:
-  - `apps/backend/src/encryption.service.ts` - New EncryptionService with encrypt/decrypt methods using AES-256-GCM
-  - `apps/backend/src/esp-connection.service.ts` - New EspConnectionService with createConnection method
-  - `apps/backend/src/esp-connection.controller.ts` - New EspConnectionController with POST /esp-connections endpoint
-  - `apps/backend/src/app.module.ts` - Added EspConnectionController, EspConnectionService, EncryptionService, and EspConnection entity
-  - `apps/backend/.env.example` - Added ENCRYPTION_KEY environment variable with documentation
+  - `apps/frontend/src/app/dashboard/layout.tsx` - New dashboard layout
 - **Learnings for future iterations:**
-  - Use Node's built-in `crypto` module for encryption (no external dependencies needed)
-  - AES-256-GCM provides authenticated encryption (encryption + integrity verification)
-  - Encryption format: `iv:authTag:encryptedData` (colon-separated hex strings)
-  - EncryptionService uses ConfigService to read ENCRYPTION_KEY from environment and throws error if missing (fail-fast)
-  - Convert encryption key to 32-byte buffer using SHA-256 hash for AES-256 key requirement
-  - Provider validation checks against EspProvider enum values using `Object.values(EspProvider).includes()`
-  - Use `BadRequestException` for invalid provider validation errors
-  - API keys are encrypted before storing in database, never returned in API responses
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Next.js App Router layouts wrap all child routes in that directory
+  - Use pathname from usePathname() to highlight active navigation items
+  - Sheet component is perfect for mobile-friendly sidebars
+  - Fixed sidebar on desktop: `md:fixed md:inset-y-0` with matching `md:ml-64` on main content
+  - Hamburger menu should be `fixed` with high z-index to stay visible
+  - Extract shared sidebar content into separate component to DRY between desktop/mobile
+  - useEffect with token dependency to refetch connections when auth state changes
+  - Close mobile sidebar on navigation by calling setMobileOpen(false) in onClick handlers
 ---
 
-## 2026-01-17 - US-011
-- Created POST /auth/complete-onboarding endpoint protected by AuthGuard
-- Implemented completeOnboarding method in AuthService that sets user's isOnboarded to true
-- Endpoint uses @CurrentUser() decorator to get authenticated user and updates their onboarding status
-- Returns { success: true, user: { id, email, isOnboarded: true } } on success
+## 2026-01-19 04:00 - US-011
+- Created dashboard overview page at apps/frontend/src/app/dashboard/page.tsx
+- Replaced existing dashboard page with new overview design
+- Implemented three stats cards displaying:
+  - Total ESPs count from dashboard stats endpoint
+  - Total Subscribers count from dashboard stats endpoint
+  - Last Sync time with relative time formatting ("X mins ago", "Never", etc.)
+- Added sync history table below stats cards with columns:
+  - ESP Name (includes ESP type and publication ID)
+  - Status (badge component: green for success, red for failed)
+  - Started At (formatted date/time)
+  - Completed At (formatted date/time)
+  - Error (only shown when status is 'failed', truncated with title tooltip)
+- Fetches sync history for all ESP connections in parallel and merges them
+- Sorts merged sync history by startedAt DESC and limits to 50 records
+- Implemented loading state with skeleton animation
+- Implemented error state with error message display
+- Added Badge component using shadcn CLI
+- Added API client functions:
+  - dashboardApi.getStats() - GET /dashboard/stats
+  - espConnectionApi.getSyncHistory() - GET /esp-connections/:id/sync-history
+- Added TypeScript interfaces: DashboardStats, SyncHistory, SyncHistoryWithEsp
+- Fixed linting issues in tailwind.config.ts (converted tabs to spaces from shadcn)
 - Files changed:
-  - `apps/backend/src/auth.service.ts` - Added completeOnboarding method that updates user's isOnboarded field
-  - `apps/backend/src/auth.controller.ts` - Added POST /auth/complete-onboarding endpoint with AuthGuard protection
+  - apps/frontend/src/app/dashboard/page.tsx - New dashboard overview implementation
+  - apps/frontend/src/lib/api.ts - Added dashboard and sync history API functions
+  - apps/frontend/src/components/ui/badge.tsx - New badge component
+  - apps/frontend/tailwind.config.ts - Fixed mixed spaces/tabs linting errors
 - **Learnings for future iterations:**
-  - User updates use `userRepository.save()` after modifying entity properties
-  - The endpoint follows the same pattern as other protected endpoints: @UseGuards(AuthGuard) and @CurrentUser() decorator
-  - Response format matches the user object structure from other auth endpoints for consistency
-  - User lookup by ID is performed even though @CurrentUser() provides the user, to ensure user still exists in database
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Dashboard fetches data from multiple endpoints: fetch stats and connections in parallel with Promise.all
+  - When aggregating data across multiple connections, map over connections and fetch data in parallel
+  - Use .flat() to flatten array of arrays, then sort and slice for final result
+  - Silent error handling for individual connection sync history (return empty array) prevents one failing connection from breaking entire dashboard
+  - Relative time formatting improves UX: "X mins ago" > full timestamp for recent syncs
+  - Badge component with custom className can override default colors (e.g., bg-green-500 for success)
+  - Error messages in table cells should be truncated with title attribute for hover tooltip
+  - Use max-w-xs and truncate classes for long text in table cells
+  - shadcn CLI generates code with tabs, which causes linting errors - convert to spaces
+  - Loading state should match final layout structure (3 cards + table) for better UX
 ---
 
-## 2026-01-17 - US-012
-- Created GET /esp-connections endpoint protected by AuthGuard
-- Implemented getUserConnections method in EspConnectionService that fetches user's ESP connections
-- Endpoint returns array of connections with id, provider, isActive, and createdAt (excludes API key)
+## 2026-01-19 06:00 - US-012
+- Created ESP detail page at apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+- Added API client functions for ESP detail page functionality:
+  - espConnectionApi.getConnection(connectionId) - GET /esp-connections/:id
+  - espConnectionApi.getSubscribers(connectionId, page, limit, status) - GET /esp-connections/:id/subscribers
+- Added TypeScript interfaces: Subscriber, PaginatedSubscribers
+- Page displays 4 info cards showing ESP connection metrics:
+  - Card 1: List Size (total subscriber count)
+  - Card 2: Last Sync (timestamp and status badge)
+  - Card 3: Connection Status (syncStatus and status)
+  - Card 4: Subscriber Breakdown (active vs unsubscribed count)
+- Implemented paginated subscriber table with columns:
+  - Email (masked, font-mono styling)
+  - First Name (with fallback to '-')
+  - Last Name (with fallback to '-')
+  - Status (badge component with color coding)
+  - Subscribed At (formatted date)
+  - Actions (Unmask button - disabled placeholder for US-013)
+- Pagination controls at bottom with Previous/Next buttons
+- Uses URL search params for pagination state (?page=1&limit=50)
+- Page fetches connection, sync history (limit 1), and subscribers in parallel using Promise.all
+- Implemented loading state with skeleton animation (matches layout structure)
+- Implemented error state with error message display
+- Responsive grid layout for info cards (1/2/4 columns on mobile/tablet/desktop)
 - Files changed:
-  - `apps/backend/src/esp-connection.controller.ts` - Added GET /esp-connections endpoint with AuthGuard protection
-  - `apps/backend/src/esp-connection.service.ts` - Added getUserConnections method that queries connections by userId
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx - New ESP detail page
+  - apps/frontend/src/lib/api.ts - Added getConnection and getSubscribers API functions
 - **Learnings for future iterations:**
-  - Use `select` option in TypeORM `find()` to explicitly exclude sensitive fields like API keys from query results
-  - GET endpoints follow same pattern as POST endpoints: @UseGuards(AuthGuard) and @CurrentUser() decorator
-  - Service methods can use `find()` with `where` clause to filter by userId for user-specific data
-  - Response format returns array of connection objects without sensitive data (API keys are never included)
-  - All quality checks (typecheck, lint, build) passed successfully
+  - When creating dynamic routes in Next.js App Router, use [param] syntax in directory name
+  - useParams() returns route parameters, useSearchParams() returns URL query parameters
+  - Parallel data fetching pattern: Promise.all([connection, syncHistory, subscribers])
+  - Fetch only latest sync (limit: 1) for "Last Sync" card to minimize data transfer
+  - URLSearchParams.toString() returns empty string if no params, so check before adding '?'
+  - router.push() with new search params preserves other params using searchParams.toString()
+  - Calculate active/unsubscribed counts from current page data (subscribers.data.filter)
+  - Show '-' for null/undefined values in table cells instead of empty cells
+  - Pagination info format: "Showing X to Y of Z subscribers" with calculated ranges
+  - Disable pagination buttons at edges (currentPage === 1, currentPage === totalPages)
+  - Use font-mono class for masked email display to ensure consistent character width
+  - Badge colors: green for success/active, red for failed/bounced, gray for unsubscribed
+  - Loading skeleton should match final layout structure for better perceived performance
+  - Unmask button is disabled in US-012, will be implemented in US-013
 ---
 
-## 2026-01-17 - US-013
-- Created login page UI with email input form and verification code request functionality
-- Created shadcn Input component following the same pattern as Button component
-- Implemented form with loading, success, and error states
-- Form calls POST /auth/send-code endpoint and redirects to /verify-code with email in query params
+## 2026-01-19 07:30 - US-013
+- Implemented email unmasking functionality in ESP detail page subscriber table
+- Added subscriberApi.unmaskEmail() function to API client (POST /subscribers/:id/unmask)
+- Added UnmaskEmailResponse interface for type safety
+- Implemented state management for unmasked emails using Map<subscriberId, email>
+- Implemented loading state using Set<subscriberId> for individual unmask operations
+- Implemented error state using Map<subscriberId, errorMessage> for inline error display
+- Added toggle functionality: unmask reveals email, mask hides it again
+- Unmasked emails persist in component state until page refresh
+- Button shows Eye icon for "Unmask", EyeOff icon for "Mask", Loader2 with spinner during loading
+- Error messages displayed inline below email in red text
 - Files changed:
-  - `apps/frontend/src/components/ui/input.tsx` - New Input component with shadcn styling
-  - `apps/frontend/src/app/login/page.tsx` - New login page with email form, loading/success/error states, and redirect logic
-  - `apps/frontend/.eslintrc.json` - Added "node": true to env and "process": "readonly" to globals to fix lint errors
+  - `apps/frontend/src/lib/api.ts` - Added subscriberApi with unmaskEmail function
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Implemented unmask functionality with state management
 - **Learnings for future iterations:**
-  - Next.js client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time)
-  - Use `useRouter()` from `next/navigation` for client-side navigation in App Router
-  - shadcn components follow a consistent pattern: forwardRef, className merging with cn(), and TypeScript interfaces extending HTML element props
-  - Form state management: use useState for email, loading, error, and success states
-  - Error handling: check response.ok and parse error messages from API responses
-  - Redirect after success: use setTimeout with router.push() to show success message before redirecting
-  - ESLint config needs "node": true in env for config files (tailwind.config.ts) and "process" in globals for client components using env vars
-  - All quality checks (typecheck, lint, build) passed successfully
-  - Page verified loading correctly in browser (dev server on port 3000)
+  - Use Map for storing keyed data (subscriberId -> email) instead of objects for better performance
+  - Use Set for storing loading states of multiple items (allows easy add/delete operations)
+  - When toggling state, check if item exists in Map first before making API call (for re-masking)
+  - Display errors inline where they occurred (in table cell) rather than global error messages
+  - Lucide-react icons: Eye for unmask, EyeOff for mask, Loader2 with animate-spin for loading
+  - Disabled state on button should only apply during loading, not when unmasked (allow re-masking)
+  - Clear errors when re-masking or attempting to unmask again (provide fresh feedback)
+  - Session-based persistence is simple: just store in component state, cleared on page refresh
+  - Update Map/Set state immutably: create new Map/Set from old one, then modify
 ---
 
-## 2026-01-17 - US-014
-- Created verify code page UI with 6-digit code input and verification functionality
-- Page reads email from query params and redirects to login if missing
-- Implemented form with loading, error states, and conditional redirects based on isOnboarded status
-- Form calls POST /auth/verify-code endpoint and stores token in localStorage
+## 2026-01-19 08:00 - US-014
+- Implemented export functionality in ESP detail page
+- Added exportSubscribers() function to espConnectionApi in API client
+- Function makes GET request to /esp-connections/:id/subscribers/export with format parameter
+- Returns blob and filename extracted from Content-Disposition header
+- Added Export dropdown button in ESP detail page header (top-right)
+- Dropdown menu shows three options: Export as CSV, JSON, Excel
+- Clicking option triggers handleExport() which downloads file via Blob URL
+- Implemented loading state: button disabled with spinner during export
+- Implemented error handling: inline error message below button, auto-clears after 5 seconds
+- Download mechanism: creates Blob URL, temporary anchor element, triggers click, then cleanup
 - Files changed:
-  - `apps/frontend/src/app/verify-code/page.tsx` - New verify code page with 6-digit input, form validation, API integration, and conditional redirects
+  - `apps/frontend/src/lib/api.ts` - Added exportSubscribers function
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Added export UI and download logic
 - **Learnings for future iterations:**
-  - `useSearchParams()` must be wrapped in a Suspense boundary in Next.js App Router to avoid build errors
-  - Split component into form component and page component: form uses useSearchParams(), page wraps in Suspense
-  - Code input validation: use `replace(/\D/g, '')` to only allow digits, limit to 6 characters with maxLength
-  - Input styling: use `text-center text-2xl tracking-widest font-mono` for code input to make digits clearly visible
-  - Token storage: store in localStorage temporarily (will be moved to auth context in US-017)
-  - Conditional redirects: check `data.user.isOnboarded` to redirect to /onboarding (false) or /dashboard (true)
-  - Email validation: redirect to /login if email query param is missing (handled in useEffect)
-  - Suspense fallback: provide loading skeleton that matches page layout for better UX
-  - All quality checks (typecheck, lint, build) passed successfully
+  - For file downloads from API, fetch returns Blob via response.blob()
+  - Extract filename from Content-Disposition header: match /filename="(.+)"/
+  - Trigger browser download: create Blob URL with URL.createObjectURL(), create temp <a> element, set href and download attributes, click it programmatically
+  - Always cleanup Blob URLs with URL.revokeObjectURL() and remove temp elements to prevent memory leaks
+  - Auto-clear error messages after timeout for better UX (don't persist errors indefinitely)
+  - For export endpoints that return files, bypass the standard apiRequest wrapper to handle Blob response
+  - DropdownMenu component requires DropdownMenuTrigger, DropdownMenuContent, and DropdownMenuItem sub-components
+  - Use align="end" on DropdownMenuContent to right-align dropdown below button
+  - Header layout: flex with justify-between to position title left and export button right
+  - Use flex-col with items-end for stacking button and error message vertically, right-aligned
 ---
 
-## 2026-01-17 - US-015
-- Created onboarding provider selection page with card-based UI
-- Created shadcn Card component following standard shadcn pattern
-- Implemented provider selection UI showing Kit, beehiiv, and Mailchimp as clickable cards
-- Each card displays provider name and description with a selection button
-- On selection, redirects to /onboarding/api-key?provider={provider}
+## 2026-01-19 08:30 - US-015
+- Created settings page at apps/frontend/src/app/dashboard/settings/page.tsx
+- Settings page accessible via existing Settings button in sidebar (links to /dashboard/settings)
+- Implemented navigation menu structure with three sections: General, Billing, Account
+- Menu items clickable and switch active section using useState hook
+- Active section highlighted with secondary button variant
+- Each section displays placeholder content in Card components:
+  - General: Coming soon message for notification preferences, language settings
+  - Billing: Coming soon message for subscription plans, payment methods, invoices
+  - Account: Coming soon message for profile info, password change, email preferences
+- Layout uses two-column flex design: 256px fixed-width menu sidebar + flexible content area
+- Menu navigation uses Button components with ghost/secondary variants
+- Separator components between menu items for visual clarity
+- Used colored alert boxes (blue/yellow) for "Coming soon" messages
 - Files changed:
-  - `apps/frontend/src/components/ui/card.tsx` - New Card component with CardHeader, CardTitle, CardDescription, CardContent, and CardFooter subcomponents
-  - `apps/frontend/src/app/onboarding/page.tsx` - New onboarding page with provider selection grid layout
+  - `apps/frontend/src/app/dashboard/settings/page.tsx` - New settings page
 - **Learnings for future iterations:**
-  - shadcn Card component follows same pattern as Button: forwardRef, className merging with cn(), and TypeScript interfaces extending HTML element props
-  - Card subcomponents (CardHeader, CardTitle, CardDescription, CardContent, CardFooter) are separate forwardRef components for flexibility
-  - Provider list is defined as a constant array with type safety using TypeScript union types
-  - Grid layout uses `grid-cols-1 md:grid-cols-3` for responsive design (1 column on mobile, 3 on desktop)
-  - Card click handler and button click handler both trigger navigation (with stopPropagation on button to prevent double navigation)
-  - Provider values match EspProvider enum from backend (kit, beehiiv, mailchimp) for consistency
-  - All quality checks (typecheck, lint, build) passed successfully
-  - Page verified rendering correctly in browser (dev server on port 3000)
+  - Settings pages often use sidebar navigation menu pattern (menu left, content right)
+  - Use flex layout with fixed-width sidebar (w-64 = 256px) and flex-1 for content area
+  - Button variant="secondary" for active menu items, variant="ghost" for inactive
+  - Separator components between navigation items improve visual hierarchy
+  - Use colored alert boxes (bg-blue-50 border-blue-200 etc.) for informational messages
+  - justify-start class on buttons makes text left-aligned (better for navigation menus)
+  - rounded-none on menu buttons creates seamless list appearance
+  - CardDescription component provides subtitle/description for card headers
+  - Client-side navigation state (useState) is sufficient for simple settings menu switching
+  - No need for URL-based routing for settings tabs if content is all on one page
 ---
 
-## 2026-01-17 - US-016
-- Created onboarding API key entry page with provider selection and API key input form
-- Implemented form that reads provider from query params and displays provider name
-- Form includes password-type API key input and 'Sync subscribers to vault' CTA button
-- On submit, calls POST /esp-connections to save connection, then POST /auth/complete-onboarding, then redirects to /dashboard
-- Added loading and error states with proper error handling
+## 2026-01-19 08:45 - US-016
+- Verified all API client functions are already implemented from previous user stories
+- dashboardApi.getStats() - Added in US-011 (Dashboard Overview)
+- espConnectionApi.getSyncHistory() - Added in US-011 (Dashboard Overview)
+- espConnectionApi.getSubscribers() - Added in US-012 (ESP Detail Page)
+- subscriberApi.unmaskEmail() - Added in US-013 (Email Unmasking)
+- espConnectionApi.exportSubscribers() - Added in US-014 (Export Functionality)
+- All functions have proper TypeScript types (interfaces defined)
+- All functions handle authentication tokens via token parameter
+- All functions handle 401 errors via onUnauthorized callback
+- exportSubscribers handles file download correctly (returns blob and filename)
+- Build and typecheck pass successfully
+- Files verified:
+  - `apps/frontend/src/lib/api.ts` - All API functions present with correct signatures
+- **Learnings for future iterations:**
+  - When stories have dependencies, API functions are naturally added incrementally
+  - US-016 was a consolidation story to verify all endpoints were implemented
+  - Pattern: Add API functions as part of feature implementation, not as separate task
+  - This approach ensures API functions are tested immediately with the feature
+  - TypeScript interfaces should be defined near the functions that use them
+  - Namespace pattern (authApi, espConnectionApi, dashboardApi, subscriberApi) keeps API organized
+---
+
+## 2026-01-19 09:00 - US-017
+- Created reusable Pagination component at apps/frontend/src/components/ui/pagination.tsx
+- Component is fully typed with PaginationProps interface
+- Props: currentPage, totalPages, onPageChange, itemsPerPage, totalItems
+- Displays "Showing X to Y of Z items" info on left side
+- Navigation controls on right: Previous button, page indicator, Next button
+- Previous/Next buttons disabled at edges (currentPage === 1, currentPage === totalPages)
+- Component hidden when totalPages <= 1 (returns null)
+- Accessibility features implemented:
+  - role="navigation" and aria-label="Pagination" on container
+  - aria-label on Previous/Next buttons
+  - aria-current="page" on page indicator
+  - aria-live="polite" on items info for screen reader announcements
+  - Keyboard navigation support (Enter/Space key handlers)
+- Uses existing shadcn Button component and lucide-react icons (ChevronLeft, ChevronRight)
+- Refactored ESP detail page to use new Pagination component
+- Replaced 32 lines of inline pagination code with 7-line component usage
+- Fixed ESLint error: added eslint-disable comment for unused parameter in interface
 - Files changed:
-  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - New API key entry page with form, API integration, and conditional redirects
+  - `apps/frontend/src/components/ui/pagination.tsx` - New pagination component
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Refactored to use component
 - **Learnings for future iterations:**
-  - API key entry page follows same pattern as verify-code page: Suspense boundary for useSearchParams, form component with state management
-  - Provider validation: redirect to /onboarding if provider is missing or invalid (handled in useEffect)
-  - Token retrieval: read auth token from localStorage (stored by verify-code page) for authenticated API calls
-  - Multi-step API flow: save ESP connection first, then complete onboarding, then update localStorage with new user data, then redirect
-  - Error handling: check for token existence before making API calls, show user-friendly error messages
-  - Form validation: check for empty API key before submission, disable button during loading
-  - Card component usage: use Card, CardHeader, CardTitle, CardDescription, and CardContent for consistent layout
-  - Suspense fallback: provide loading skeleton that matches page layout for better UX
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Reusable components should be in components/ui/ directory following shadcn pattern
+  - Export both component and Props interface for easy importing
+  - Accessibility is critical: use semantic HTML, ARIA attributes, keyboard support
+  - aria-live="polite" announces changes to screen readers without interrupting
+  - role="navigation" with aria-label describes the purpose of the navigation section
+  - Early return (null) for edge cases (single page) prevents unnecessary rendering
+  - handleKeyDown pattern: check for Enter or Space key, preventDefault, call action
+  - ESLint complains about unused parameters in interfaces - use eslint-disable-next-line
+  - Calculate display ranges: startItem = ((page - 1) * perPage) + 1, endItem = min(page * perPage, total)
+  - Refactoring inline code to components improves maintainability and DRY principle
 ---
 
-## 2026-01-17 - US-017
-- Created AuthContext with provider and useAuth hook for managing authentication state across the app
-- Context stores: user, token, loading, isAuthenticated
-- Context provides: login(token, user), logout(), checkAuth() methods
-- On mount, loads token from localStorage and calls GET /auth/me to restore session
-- Token stored in localStorage (can be upgraded to httpOnly cookies later)
-- Updated layout to wrap app with AuthProvider
-- Updated verify-code and onboarding/api-key pages to use auth context instead of localStorage directly
+## 2026-01-19 09:15 - All Stories Complete! 🎉
+
+**Dashboard Feature PRD Complete**
+
+All 17 user stories have been successfully implemented and are passing:
+
+**Backend (US-001 to US-008):**
+- ✅ US-001: Sync History Entity and Migration
+- ✅ US-002: Sync Processor Recording
+- ✅ US-003: Sync History Service
+- ✅ US-004: Sync History Controller Endpoint
+- ✅ US-005: Subscriber List Endpoint
+- ✅ US-006: Unmask Email Endpoint
+- ✅ US-007: Export Subscribers Endpoint (CSV/JSON/Excel)
+- ✅ US-008: Dashboard Stats Endpoint
+
+**Frontend (US-009 to US-017):**
+- ✅ US-009: Frontend Dependencies Installation
+- ✅ US-010: Dashboard Layout with Sidebar
+- ✅ US-011: Dashboard Overview Page
+- ✅ US-012: ESP Detail Page
+- ✅ US-013: Email Unmasking in Subscriber Table
+- ✅ US-014: Export Functionality
+- ✅ US-015: Settings Menu Structure
+- ✅ US-016: API Client Functions (completed incrementally)
+- ✅ US-017: Reusable Pagination Component
+
+**Quality Metrics:**
+- ✅ All builds passing (backend + frontend)
+- ✅ All linters passing (no errors)
+- ✅ All TypeScript checks passing
+- ✅ Migrations tested and working
+- ✅ API endpoints tested and documented
+
+**Files Created/Modified:** 30+ files across backend and frontend
+**Total Commits:** 20+ commits with detailed commit messages
+**Documentation:** Updated AGENTS.md, PRD, and progress log throughout
+
+The SubscriberNest dashboard is now fully functional with comprehensive features for managing ESP connections, viewing subscribers, syncing data, and exporting subscriber lists.
+---
+
+## 2026-01-19 09:30 - US-018
+- Improved selected ESP connection design in sidebar to have distinct visual appearance
+- Updated selected state styling to use left border indicator (border-l-4 border-primary) instead of button-like appearance
+- Selected items now use subtle background (bg-primary/10) with primary text color
+- Removed hover effect on active items to prevent button-like interaction
+- Updated publication ID text color to match primary color when active (text-primary/70)
+- Selected state clearly distinguishable from unselected items (unselected items only have hover:bg-accent)
+- Design matches dashboard aesthetic with primary color theme
+- Selected state persists correctly when navigating to ESP detail page (pathname-based detection unchanged)
 - Files changed:
-  - `apps/frontend/src/contexts/AuthContext.tsx` - New AuthContext provider with authentication state management
-  - `apps/frontend/src/app/layout.tsx` - Added AuthProvider wrapper
-  - `apps/frontend/src/app/verify-code/page.tsx` - Updated to use auth context login() method
-  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated to use auth context token and login() method
-  - `apps/frontend/AGENTS.md` - Added Authentication section with context usage patterns
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Updated ESP connection item styling
 - **Learnings for future iterations:**
-  - React Context pattern: create context with createContext, provide via Provider component, access via custom hook (useAuth)
-  - Token storage: use localStorage for now (keys: 'auth_token', 'user'), can be upgraded to httpOnly cookies for better security
-  - Session restoration: on mount, load token from storage and call GET /auth/me to verify session is still valid
-  - Circular dependency handling: use local variables (currentToken) in useCallback closures to avoid stale closures
-  - Loading state: set loading to false when no token exists on initial load, or after checkAuth completes
-  - Logout cleanup: clear token/user state, remove from localStorage, and optionally call logout endpoint to invalidate server session
-  - ESLint false positive: parameter names in TypeScript type definitions trigger no-unused-vars rule - use eslint-disable comment or type aliases
-  - Context provider placement: wrap app in root layout (layout.tsx) so auth state is available to all pages
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Use left border (border-l-4) as visual indicator for selected navigation items (common pattern)
+  - Primary color with opacity (bg-primary/10) provides subtle background without being too bold
+  - Remove hover states on active items to prevent confusion (active items shouldn't look interactive)
+  - Use primary color variants (text-primary, text-primary/70) for consistent theming
+  - Conditional className with cn() utility allows clean conditional styling
+  - Selected navigation items should look like "selected state" not "button ready to click"
 ---
 
-## 2026-01-17 - US-018
-- Created Next.js middleware to protect routes and redirect unauthenticated users
-- Middleware checks for auth token and user data in cookies
-- Implemented redirect logic: unauthenticated users accessing protected routes → /login, authenticated but not onboarded users accessing protected routes → /onboarding
-- Updated AuthContext to set/clear cookies in addition to localStorage so middleware can access auth state
-- Middleware allows access to /login and /verify-code without auth, and /onboarding/* if authenticated but not onboarded
+## 2026-01-18 11:34 - US-019
+- Added Dashboard navigation item at the top of the sidebar (above ESP connections list)
+- Dashboard item uses LayoutDashboard icon from lucide-react
+- Dashboard item navigates to `/dashboard` when clicked
+- Dashboard item is highlighted when pathname === '/dashboard' using same styling pattern as ESP connections
+- Selected state uses left border indicator (border-l-4 border-primary) with primary background (bg-primary/10)
+- Dashboard item styling matches sidebar design system (same hover and active states as ESP connections)
+- Mobile sidebar closes when Dashboard item is clicked (onClick handler calls setMobileOpen(false))
 - Files changed:
-  - `apps/frontend/src/middleware.ts` - New Next.js middleware with route protection and redirect logic
-  - `apps/frontend/src/contexts/AuthContext.tsx` - Updated to set/clear cookies for middleware access
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Added Dashboard navigation item at top of sidebar
 - **Learnings for future iterations:**
-  - Next.js middleware runs on the edge/server and cannot access localStorage - must use cookies for auth state
-  - Middleware can read cookies via `request.cookies.get()` from NextRequest
-  - Use `NextResponse.redirect()` to redirect users in middleware
-  - Configure middleware matcher to exclude API routes, static files, and Next.js internal routes
-  - Cookies set from client-side must not be httpOnly if middleware needs to read them
-  - Use `SameSite=Lax` for cookies to work with middleware redirects
-  - Cookie expiration should match session expiration (30 days default)
-  - Middleware runs before page rendering, so it's the first line of defense for route protection
-  - Next.js shows deprecation warning about "middleware" convention (suggests using "proxy" instead), but middleware still works
-  - Route matching: use `pathname.startsWith(route)` to match route prefixes (e.g., `/onboarding` matches `/onboarding/api-key`)
-  - Home page (`/`) is treated as public route and doesn't require authentication
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Dashboard navigation item should be at the very top of sidebar for easy access to overview
+  - Use LayoutDashboard icon for dashboard navigation (more specific than Home icon)
+  - Active state detection: check pathname === '/dashboard' (exact match, not startsWith)
+  - Reuse existing active state styling pattern (border-l-4, bg-primary/10, text-primary) for consistency
+  - Dashboard item should be in its own section with border-b separator for visual hierarchy
+  - When adding navigation items, ensure mobile sidebar closes on click for better UX
 ---
 
-## 2026-01-17 - US-019
-- Created dashboard page with welcome message and ESP connections display
-- Page shows user email from auth context and fetches ESP connections from GET /esp-connections endpoint
-- Displays connected ESPs in a grid layout using Card components
-- Handles loading and error states with appropriate UI feedback
-- Page is protected by middleware (already configured in US-018)
+## 2026-01-19 10:00 - US-020
+- Created new ESP connection flow page at apps/frontend/src/app/dashboard/esp/new/page.tsx
+- Page accessible via "Connect New ESP" button in sidebar (navigates to /dashboard/esp/new)
+- Implemented two-step flow: ESP type selection followed by credentials form
+- ESP type selection displays three cards: beehiiv, Kit, Mailchimp with descriptions
+- After ESP selection, shows form with API Key (password input) and Publication ID (text input)
+- Form includes client-side validation: both fields required with error messages
+- Form submission flow:
+  - Step 1: Creates ESP connection via POST /esp-connections endpoint
+  - Step 2: Automatically triggers sync via POST /esp-connections/:id/sync endpoint
+  - Step 3: Redirects to ESP detail page (/dashboard/esp/[id])
+- Handles loading states: button shows spinner and "Connecting..." text during submission
+- Handles error states: displays error messages in red alert box, allows retry
+- If sync trigger fails, still redirects to detail page (user can manually trigger sync)
+- Updated sidebar to link to /dashboard/esp/new instead of /onboarding
+- Navigation includes "Back" buttons to return to previous step or dashboard
 - Files changed:
-  - `apps/frontend/src/app/dashboard/page.tsx` - New dashboard page with welcome message, ESP connections display, and loading/error states
+  - `apps/frontend/src/app/dashboard/esp/new/page.tsx` - New ESP connection flow page
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Updated sidebar link to /dashboard/esp/new
 - **Learnings for future iterations:**
-  - Dashboard page follows same pattern as other pages: 'use client', useAuth hook, fetch API calls with Authorization header
-  - ESP connections endpoint returns array of { id, provider, isActive, createdAt } objects
-  - Provider names are mapped from enum values (kit, beehiiv, mailchimp) to display names using a Record type
-  - Loading state shows skeleton UI matching the final layout for better UX
-  - Empty state message shown when no ESP connections exist
-  - Date formatting uses `toLocaleDateString()` for user-friendly date display
-  - Grid layout uses `grid-cols-1 md:grid-cols-3` for responsive design (1 column on mobile, 3 on desktop)
-  - Page automatically fetches connections on mount using useEffect with token dependency
-  - Error handling displays error message in a Card with destructive styling
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Multi-step forms can use conditional rendering based on state (selectedEspType)
+  - Client-side validation should check for empty/whitespace strings using trim()
+  - Display validation errors inline below each field for better UX
+  - Password input type for sensitive fields like API keys
+  - Loading state should disable form inputs and show spinner on submit button
+  - Error handling: catch API errors and display user-friendly messages
+  - Graceful degradation: if sync trigger fails, still complete primary action (connection creation)
+  - Navigation flow: provide "Back" buttons for multi-step processes
+  - Form state management: clear errors when user changes input or navigates back
+  - Use ArrowLeft icon from lucide-react for back navigation buttons
+  - Container with max-w-2xl provides good form width for readability
+  - Card component with CardHeader and CardContent provides consistent form layout
 ---
 
-## 2026-01-17 - US-020
-- Created centralized API client with typed functions for all backend endpoints
-- Implemented base apiRequest function that handles auth tokens, 401 errors, and automatic redirects
-- Created typed functions for all auth endpoints (sendCode, verifyCode, getCurrentUser, logout, completeOnboarding)
-- Created typed functions for all ESP connection endpoints (createConnection, getUserConnections)
-- Updated all pages and AuthContext to use the new API client instead of direct fetch calls
+## 2026-01-19 10:30 - US-021
+- Added manual sync button next to Export button in ESP detail page header
+- Implemented handleSync function that calls POST /esp-connections/:id/sync endpoint
+- Button is disabled when syncStatus === 'syncing' or during sync trigger (isSyncing state)
+- Button shows "Syncing..." text with spinner icon when sync is active
+- Button shows "Sync" text with RefreshCw icon when not syncing
+- After triggering sync, updates connection state with response from API (includes updated syncStatus)
+- Refreshes sync history after 1 second delay to show new sync record
+- Handles error states: displays error message below button, auto-clears after 5 seconds
+- Updated TriggerSyncResponse interface to match backend response structure (includes status, message fields)
+- Button uses variant="outline" to match dashboard design system
 - Files changed:
-  - `apps/frontend/src/lib/api.ts` - New API client module with typed functions and 401 error handling
-  - `apps/frontend/src/app/login/page.tsx` - Updated to use authApi.sendCode
-  - `apps/frontend/src/app/verify-code/page.tsx` - Updated to use authApi.verifyCode
-  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated to use espConnectionApi.createConnection and authApi.completeOnboarding
-  - `apps/frontend/src/app/dashboard/page.tsx` - Updated to use espConnectionApi.getUserConnections
-  - `apps/frontend/src/contexts/AuthContext.tsx` - Updated to use authApi.getCurrentUser and authApi.logout
-  - `apps/frontend/.eslintrc.json` - Updated ESLint config to disable no-undef rule (TypeScript handles type checking)
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Added sync button and handler
+  - `apps/frontend/src/lib/api.ts` - Updated TriggerSyncResponse interface
 - **Learnings for future iterations:**
-  - API client pattern: Create centralized API client with typed functions to avoid code duplication and ensure consistency
-  - HeadersInit type: Use Record<string, string> for headers and cast to HeadersInit when passing to fetch to avoid TypeScript errors
-  - 401 error handling: API client accepts optional onUnauthorized callback for custom handling, and automatically redirects to /login if not already there
-  - Token parameter: API functions accept token as parameter (from AuthContext) rather than reading it internally, allowing flexibility
-  - Type safety: Export TypeScript interfaces for all request/response types to ensure type safety across the app
-  - ESLint config: Disable no-undef rule when using TypeScript (TypeScript compiler handles undefined variable checking)
-  - API client functions are organized into namespaces (authApi, espConnectionApi) for better organization
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Backend sync endpoint returns updated connection immediately after queuing job (syncStatus set to 'syncing')
+  - Use connection from API response to update state instead of making separate getConnection call
+  - Refresh sync history with setTimeout delay to allow backend to create sync history record
+  - Check both isSyncing state and connection.syncStatus === 'syncing' to properly disable button
+  - Use RefreshCw icon from lucide-react for sync/refresh actions
+  - Sync button should be placed next to Export button in header for easy access
+  - Error messages should auto-clear after timeout for better UX (don't persist indefinitely)
+  - API response types should match backend response structure exactly (including all fields)
 ---
 
-## 2026-01-18 - US-016
-- Successfully merged main branch (auth and onboarding features) into ralph/esp-subscriber-sync branch
-- Identified and documented all merge conflicts in 8 files
-- Resolved conflicts by merging both versions where appropriate
-- Files with conflicts resolved:
-  - `apps/backend/src/entities/esp-connection.entity.ts` - Merged EspConnection entity to include both User relationship (from main) and all ESP sync fields (encryptedApiKey, publicationId, status, lastValidatedAt, lastSyncedAt)
-  - `apps/backend/src/app.module.ts` - Merged imports and providers from both branches (auth services + ESP sync services + BullMQ)
-  - `apps/backend/src/main.ts` - Combined CORS configuration with credentials and ValidationPipe
-  - `apps/backend/package.json` - Merged all dependencies from both branches
-  - `ralph/.last-branch`, `ralph/prd.json`, `ralph/progress.txt` - Used main branch versions
-  - `yarn.lock` - Used main branch version (will be regenerated)
-- Duplicate files identified (to be resolved in US-017-US-026):
-  - `src/esp-connection.controller.ts` (from main - simple version)
-  - `src/controllers/esp-connection.controller.ts` (from ESP sync - full-featured version)
-  - `src/esp-connection.service.ts` (from main - basic version)
-  - `src/services/esp-connection.service.ts` (from ESP sync - complete version with validation)
-  - `src/encryption.service.ts` (from main)
-  - `src/services/encryption.service.ts` (from ESP sync)
-- TypeScript compilation errors present (expected, will be resolved in subsequent stories):
-  - EspProvider vs EspType enum mismatch
-  - provider vs espType field name mismatch
-  - apiKey vs encryptedApiKey field name mismatch
-  - isActive vs status field mismatch
-  - Import path conflicts between duplicate files
-- **Learnings for future iterations:**
-  - When merging branches with parallel development, expect entity schema conflicts
-  - The main branch had simpler versions of ESP connection code (for onboarding UI)
-  - The ESP sync branch has more complete, production-ready versions with encryption, validation, and queue processing
-  - Subsequent stories will resolve these conflicts by:
-    1. Keeping the ESP sync branch versions (more complete)
-    2. Updating the entity to match both schemas
-    3. Removing duplicate files from main branch
-    4. Fixing all import paths
-  - Git merge strategy: preserve both sides initially, then resolve systematically in dedicated stories
-  - The merged entity includes User relationship (needed for auth) and all ESP sync fields (needed for sync functionality)
----
-
-## 2026-01-18 - US-017
-- Resolved EspConnection entity conflicts from merge
-- Entity already contained all required fields from merge resolution in US-016
-- Verified entity has proper relationships:
-  - `@ManyToOne(() => User)` with `@JoinColumn({ name: 'userId' })` on EspConnection
-  - `@OneToMany(() => EspConnection)` on User entity
-- Verified enums are correct:
-  - `EspType`: beehiiv, kit, mailchimp
-  - `EspConnectionStatus`: active, invalid, error
-- Removed duplicate files from main branch:
-  - `src/esp-connection.controller.ts` (simple version) - kept `src/controllers/esp-connection.controller.ts` (full version)
-  - `src/esp-connection.service.ts` (basic version) - kept `src/services/esp-connection.service.ts` (complete version)
-  - `src/encryption.service.ts` (duplicate) - kept `src/services/encryption.service.ts` (original)
-- Removed conflicting migrations:
-  - Deleted `1737000001000-CreateEspConnectionEntity.ts` (simple version from main)
-  - Deleted `1768693294548-AddLastSyncedAtToEspConnection.ts` (separate migration)
-- Updated main migration `1737129600000-CreateEspConnectionAndSubscriber.ts`:
-  - Added all ESP types to enum: beehiiv, kit, mailchimp (was only beehiiv)
-  - Added `lastSyncedAt` column (was in separate migration)
-  - Added foreign key from esp_connections to users table
+## 2026-01-19 11:00 - US-022
+- Capitalized all status badges across the dashboard for better readability
+- Updated sync history status badges in dashboard overview page (success/failed → Success/Failed)
+- Updated subscriber status badges in ESP detail page (active/unsubscribed/bounced → Active/Unsubscribed/Bounced)
+- Updated connection status badges in ESP detail page (idle/syncing/synced/error → Idle/Syncing/Synced/Error)
+- Updated last sync status badge in ESP detail page (success/failed → Success/Failed)
+- Updated connection status text display (active → Active)
+- Used simple capitalization pattern: `status.charAt(0).toUpperCase() + status.slice(1)`
+- Badge colors and styling remain unchanged (only text capitalization modified)
 - Files changed:
-  - Deleted: `apps/backend/src/esp-connection.controller.ts`
-  - Deleted: `apps/backend/src/esp-connection.service.ts`
-  - Deleted: `apps/backend/src/encryption.service.ts`
-  - Deleted: `apps/backend/src/migrations/1737000001000-CreateEspConnectionEntity.ts`
-  - Deleted: `apps/backend/src/migrations/1768693294548-AddLastSyncedAtToEspConnection.ts`
-  - Updated: `apps/backend/src/migrations/1737129600000-CreateEspConnectionAndSubscriber.ts`
+  - `apps/frontend/src/app/dashboard/page.tsx` - Capitalized sync history status badges
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Capitalized all status badges and connection status text
 - **Learnings for future iterations:**
-  - When merging branches with duplicate files, keep the more complete/production-ready version
-  - The ESP sync branch versions (in services/, controllers/ subdirectories) are more feature-complete than main branch versions (in src/ root)
-  - Consolidate migrations when possible - having one migration create all fields is cleaner than multiple incremental migrations
-  - Update enum types in migrations to include all values from the entity definition
-  - Foreign key relationships must be defined both in entities (TypeORM decorators) and migrations (createForeignKey)
-  - After removing duplicate files, verify all imports in app.module.ts point to the correct remaining files
-  - Typecheck is the best way to verify all conflicts are resolved and imports are correct
+  - Simple string capitalization: `str.charAt(0).toUpperCase() + str.slice(1)` works for all status values
+  - Status badges display in multiple locations: dashboard overview, ESP detail page cards, and subscriber table
+  - Connection status appears both as badge (syncStatus) and as plain text (status field)
+  - All status values are lowercase from backend, so capitalization is purely a frontend display concern
+  - No need for helper function - inline capitalization is clear and readable
 ---
 
-## 2026-01-18 - US-018
-- Verified User, Session, and VerificationCode entities exist from main branch merge
-- All entities have correct fields and relationships:
-  - User: id (UUID), email (unique), isOnboarded (boolean, default false), createdAt, updatedAt
-  - Session: id (UUID), userId (FK to User), token (unique string), expiresAt (timestamp), createdAt
-  - VerificationCode: id (UUID), email, code (6-digit string), expiresAt (timestamp), used (boolean, default false), createdAt
-- User entity has `@OneToMany(() => EspConnection)` relationship (verified in US-017)
-- Migration `1737000000000-CreateUserAndSessionEntities.ts` creates all three tables with proper foreign key relationships
-- Session table has FK constraint from userId to users(id) with CASCADE delete
-- All entities properly imported in app.module.ts and registered with TypeOrmModule.forFeature()
-- Typecheck passes
-- **Learnings for future iterations:**
-  - This story was already completed by the merge - entities and migrations came from the main branch
-  - Always verify existing code before starting implementation
-  - When merging branches with parallel development, many stories may already be completed by one branch
----
-
-## 2026-01-18 - US-019
-- Integrated AuthGuard into all ESP Connection endpoints
-- Added `@UseGuards(AuthGuard)` decorator at controller level (applies to all endpoints)
-- Imported and used `@CurrentUser()` decorator from `src/decorators/current-user.decorator.ts`
-- Removed all placeholder userId logic (`'placeholder-user-id'`) from all three endpoints
-- Removed all TODO comments about getting userId from authentication context
-- Updated GET `/api/esp-connections/:id` endpoint:
-  - Added `@CurrentUser() user: User` parameter
-  - Changed from `userId` to `user.id` for ownership validation
-- Updated POST `/api/esp-connections` endpoint:
-  - Added `@CurrentUser() user: User` parameter
-  - Changed from `userId` to `user.id` for creating connection
-- Updated POST `/api/esp-connections/:id/sync` endpoint:
-  - Added `@CurrentUser() user: User` parameter
-  - Changed from `userId` to `user.id` for ownership validation
-- All endpoints now return 401 Unauthorized if authentication fails (handled by AuthGuard)
-- AuthGuard validates Bearer token, checks session expiration, and attaches user to request
+## 2026-01-19 11:30 - US-023
+- Moved mask/unmask action from separate Actions column to within Email cell as icon button
+- Replaced text button with icon-only button (Eye icon for unmask, EyeOff icon for mask, Loader2 spinner for loading)
+- Icon button appears inline with masked email text using flex layout (flex items-center gap-2)
+- Added Tooltip component wrapper for accessibility (shows "Unmask email", "Mask email", or "Loading..." on hover)
+- Button uses variant="ghost" with size="sm" and className="h-6 w-6 p-0" for compact icon-only appearance
+- Removed Actions column header and column from table
+- Updated empty state colSpan from 6 to 5 to match new column count
+- All existing functionality preserved: loading state, error handling, toggle behavior
+- Error messages still display below email in same cell
 - Files changed:
-  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added auth integration
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Moved unmask button to Email cell, removed Actions column
+  - `apps/frontend/AGENTS.md` - Added pattern for icon buttons in table cells
 - **Learnings for future iterations:**
-  - Apply `@UseGuards()` at the controller level to protect all endpoints with one decorator
-  - The `@CurrentUser()` decorator extracts the user attached to the request by AuthGuard
-  - AuthGuard throws UnauthorizedException (401) automatically if token is missing, invalid, or expired
-  - The user object is typed as `User` entity, so we have full type safety when accessing `user.id`
-  - No need to manually check authentication in endpoints - the guard handles it before the endpoint is called
-  - The pattern is: AuthGuard validates → attaches user to request → @CurrentUser() extracts user → endpoint uses user.id
----
-
-## 2026-01-18 - US-020
-- Verified AppModule configuration is complete and properly merged from both branches
-- All auth components properly imported:
-  - AuthController, AuthService, AuthGuard from auth branch
-  - EmailService from auth branch
-- All ESP sync components properly imported:
-  - BullMQ and Redis configuration
-  - All ESP sync services (EncryptionService, BeehiivConnector, SubscriberService, EspConnectionService, SubscriberMapperService, SubscriberSyncService)
-  - SubscriberSyncProcessor
-- All entities registered in TypeOrmModule.forFeature():
-  - User, Session, VerificationCode (auth entities)
-  - EspConnection, Subscriber (ESP sync entities)
-- All controllers registered:
-  - AppController, AuthController, EspConnectionController
-- All providers registered:
-  - AppService, EmailService, AuthService, AuthGuard
-  - EncryptionService, BeehiivConnector
-  - SubscriberService, SubscriberMapperService, SubscriberSyncService
-  - EspConnectionService, SubscriberSyncProcessor
-- EmailService exported for use in other modules
-- No duplicate imports or conflicting configurations
-- Typecheck passes
-- **Learnings for future iterations:**
-  - This story was completed during US-016 (merge) and US-017 (cleanup)
-  - AppModule was properly merged during conflict resolution
-  - The merge preserved all imports and configurations from both branches
-  - No additional work needed - just verification
----
-
-## 2026-01-18 - US-021
-- Verified EncryptionService is properly configured without duplicates
-- Only one EncryptionService exists at `src/services/encryption.service.ts` (duplicate from main removed in US-017)
-- EncryptionService registered as provider in AppModule - all services get same instance via DI
-- EncryptionService usage verified across codebase:
-  - `EspConnectionService` uses it to encrypt API keys before storing in database
-  - `SubscriberMapperService` uses it to encrypt email addresses before storing in database
-  - `SubscriberSyncService` uses it to decrypt API keys when fetching subscribers from ESP APIs
-- All services use the same EncryptionService instance via dependency injection (singleton)
-- ENCRYPTION_KEY environment variable documented in `apps/backend/.env.example`
-- Added Redis configuration to .env.example:
-  - REDIS_HOST (default: localhost)
-  - REDIS_PORT (default: 6379)
-  - REDIS_PASSWORD (optional, commented out by default)
-- Files changed:
-  - `apps/backend/.env.example` - Added Redis configuration
-- **Learnings for future iterations:**
-  - NestJS dependency injection ensures a single instance of EncryptionService is shared across all services
-  - Services registered in AppModule providers array are singletons by default
-  - Environment variables should be documented in .env.example with comments explaining their purpose
-  - Redis configuration was missing from .env.example - needed for BullMQ queue processing
-  - The pattern: one service implementation → registered in module → injected where needed → all consumers use same instance
----
-
-## 2026-01-18 - US-022
-- Reviewed and verified all migrations are properly sequenced and conflict-free
-- Migration order verified:
-  1. `1737000000000-CreateUserAndSessionEntities.ts` - Creates User, Session, VerificationCode tables
-  2. `1737129600000-CreateEspConnectionAndSubscriber.ts` - Creates EspConnection and Subscriber tables
-- Proper sequence maintained: User/Session/VerificationCode created first, then EspConnection (which has FK to User), then Subscriber (which has FK to EspConnection)
-- EspConnection migration updated in US-017 with:
-  - All ESP types in enum (beehiiv, kit, mailchimp)
-  - `lastSyncedAt` column
-  - Foreign key from `esp_connections.userId` to `users.id`
-- All enum types use safe creation pattern:
-  ```sql
-  DO $$ BEGIN
-    CREATE TYPE "enum_name" AS ENUM (...);
-  EXCEPTION
-    WHEN duplicate_object THEN null;
-  END $$;
-  ```
-- This pattern allows migrations to be re-run without errors if enum types already exist
-- Foreign key relationships verified:
-  - `sessions.userId` → `users.id` (CASCADE delete)
-  - `esp_connections.userId` → `users.id` (CASCADE delete)
-  - `subscribers.espConnectionId` → `esp_connections.id` (CASCADE delete)
-- Unique constraints verified:
-  - `users.email` - Unique index
-  - `sessions.token` - Unique index
-  - `subscribers.(espConnectionId, externalId)` - Unique composite index (for upsert)
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Migration timestamps determine execution order (lower numbers run first)
-  - Always create parent tables (User) before child tables (EspConnection) that reference them
-  - Use DO $$ BEGIN ... EXCEPTION WHEN duplicate_object pattern for PostgreSQL enum types
-  - This allows migrations to be idempotent and re-runnable
-  - Foreign key relationships should cascade deletes to maintain referential integrity
-  - The composite unique index on `(espConnectionId, externalId)` is crucial for the upsert pattern in subscriber syncing
----
-
-## 2026-01-18 - US-023
-- Verified EspConnectionService is properly designed and already works with User entity relationships
-- Service design analysis:
-  - `createConnection(userId: string, ...)` accepts userId as string (backward compatible)
-  - Controller (updated in US-019) passes `user.id` from authenticated User entity
-  - Service creates EspConnection with userId field set to user.id
-  - User relationship is defined in EspConnection entity via `@ManyToOne(() => User)` and `@JoinColumn({ name: 'userId' })`
-  - Foreign key constraint enforced at database level (migration creates FK from esp_connections.userId to users.id)
-- `findById(id: string, userId?: string)` method validates ownership:
-  - Fetches connection by id
-  - If userId provided, validates `connection.userId === userId`
-  - Throws NotFoundException if connection not found
-  - Throws BadRequestException if ownership validation fails
-- Foreign key constraints respected:
-  - Database enforces FK constraint (cannot create EspConnection with invalid userId)
-  - TypeORM ensures userId field is populated before save
-  - CASCADE delete ensures EspConnections deleted when User is deleted
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Services can work with userId strings while entities maintain relationship definitions
-  - The pattern: Controller extracts user.id from User entity → passes string to service → service stores in userId field
-  - TypeORM relationships are defined in entities, not services
-  - Services work with scalar values (strings, numbers) while entities maintain object relationships
-  - Foreign key constraints at DB level provide data integrity regardless of how TypeScript code is structured
-  - This design is more flexible - service doesn't need full User entity, just the id
-  - Ownership validation via string comparison is efficient and doesn't require loading related entities
----
-
-## 2026-01-18 - US-025
-- Updated ESP connection endpoints to match auth branch API conventions
-- Route prefix standardization:
-  - Changed from `@Controller('api/esp-connections')` to `@Controller('esp-connections')`
-  - Auth routes: `/auth/*` (send-code, verify-code, me, logout, complete-onboarding)
-  - ESP connection routes: `/esp-connections/*` (was `/api/esp-connections/*`)
-  - No global API prefix configured in main.ts, so controllers define full routes
-- Response format consistency verified:
-  - Both controllers return plain TypeScript objects with specific fields
-  - Auth: Returns objects like `{ success: true }`, `{ token: string, user: {...} }`
-  - ESP connections: Returns EspConnection objects with `encryptedApiKey` excluded
-  - Both use explicit return types for type safety
-- Error response consistency verified:
-  - 400 BadRequestException: Validation errors, invalid input
-  - 401 UnauthorizedException: Authentication failures (from AuthGuard)
-  - 403 ForbiddenException: Authorization failures (user doesn't own resource)
-  - 404 NotFoundException: Resource not found
-  - 500 InternalServerErrorException: Server errors
-  - Both controllers follow same error handling patterns
-- Files changed:
-  - `apps/backend/src/controllers/esp-connection.controller.ts` - Updated route prefix
-- **Learnings for future iterations:**
-  - Controllers in NestJS define their full route path (no global API prefix in this app)
-  - Consistent route patterns across controllers improve API usability
-  - The pattern: `/resource-name/*` without `/api` prefix (matches REST conventions)
-  - Response format consistency: return plain objects, use explicit return types
-  - Error handling consistency: use standard NestJS exceptions with appropriate HTTP status codes
-  - Frontend API client will need to be updated to use new `/esp-connections/*` routes
----
-
-## 2026-01-18 - US-024
-- Updated frontend integration to match merged backend API
-- Frontend pages verified to exist:
-  - `/login` - Login page with email input
-  - `/verify-code` - Code verification page
-  - `/onboarding` - ESP provider selection page
-  - `/onboarding/api-key` - API key and publication ID entry page
-  - `/dashboard` - Dashboard displaying ESP connections
-- Updated API client (`src/lib/api.ts`):
-  - Changed `CreateEspConnectionRequest` from `{ provider, apiKey }` to `{ espType, apiKey, publicationId }`
-  - Changed `EspConnection` interface to match backend entity: `espType`, `status`, `lastSyncedAt`, `publicationId`, etc.
-  - Updated routes from `/api/esp-connections` to `/esp-connections` to match US-025 changes
-- Updated onboarding API key page:
-  - Added `publicationId` state and input field
-  - Updated form to include publication ID field
-  - Changed API call from `{ provider, apiKey }` to `{ espType: provider, apiKey, publicationId }`
-  - Added validation for publication ID
-- Updated dashboard page:
-  - Changed `connection.provider` to `connection.espType`
-  - Changed `connection.isActive` to `connection.status`
-  - Added display of `lastSyncedAt` if available
-  - Updated provider name lookup to use espType
-- Frontend typecheck passes (0 errors)
-- Files changed:
-  - `apps/frontend/src/lib/api.ts` - Updated types to match backend
-  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Added publication ID field
-  - `apps/frontend/src/app/dashboard/page.tsx` - Updated to use new field names
-- **Learnings for future iterations:**
-  - Frontend API client types must exactly match backend DTO structure
-  - When backend changes field names (provider → espType), frontend must be updated consistently
-  - The onboarding flow now requires publication ID, which users must provide
-  - Alternative approach: fetch publications using API key, then let user select from dropdown
-  - Browser testing required to verify complete user flow works end-to-end
-  - Note: Runtime testing deferred - all pages exist, types match, static analysis passes
----
-
-## 2026-01-18 - US-026
-- Verified all merged features are properly integrated via code review and typecheck
-- Backend typecheck: PASS (0 errors)
-- Frontend typecheck: PASS (0 errors)
-- Code review confirms proper integration:
-  - Authentication: AuthGuard protects all ESP connection endpoints (verified in US-019)
-  - ESP connections properly linked to authenticated users via userId foreign key (verified in US-017)
-  - Subscriber sync jobs use espConnectionId to fetch connection and decrypt API key (verified in US-009-US-010)
-  - Database relationships verified in migrations:
-    - User → EspConnection (CASCADE delete)
-    - EspConnection → Subscriber (CASCADE delete)
-    - Session → User (CASCADE delete)
-  - All entities registered in TypeOrmModule.forFeature() (verified in US-020)
-  - BullMQ queue configured with retry policy (verified in US-008, US-012)
-- Complete user flow (code-level verification):
-  1. Send verification code: `POST /auth/send-code` → creates VerificationCode
-  2. Verify code: `POST /auth/verify-code` → validates code → creates Session → returns token
-  3. Complete onboarding: `POST /auth/complete-onboarding` → sets user.isOnboarded = true
-  4. Create ESP connection: `POST /esp-connections` → validates API key → encrypts → stores with userId
-  5. Trigger sync: `POST /esp-connections/:id/sync` → validates ownership → queues job
-  6. Process sync: SubscriberSyncProcessor → fetches subscribers → encrypts emails → stores
-- All endpoints require authentication except /auth/send-code and /auth/verify-code
-- Error handling verified: 400, 401, 403, 404, 500 responses properly configured
-- **Remaining considerations for runtime testing:**
-  - Redis must be running for BullMQ queue processing
-  - PostgreSQL must be running with migrations applied
-  - ENCRYPTION_KEY must be set in environment
-  - RESEND_API_KEY must be set for email verification codes
-  - REDIS_HOST, REDIS_PORT, REDIS_PASSWORD must be configured
-  - Valid Beehiiv API key and publication ID needed for testing ESP connection
-  - Frontend must be built and running on localhost:3000
-  - Backend must be running on localhost:4000
-- **Learnings for future iterations:**
-  - TypeScript compilation passing is a strong signal of correct integration
-  - Code review can verify logic flow without runtime testing
-  - All acceptance criteria met at code level - runtime testing is final verification
-  - The system is architected correctly with proper separation of concerns
-  - Authentication, authorization, data encryption, queue processing all properly implemented
----
-
-## 2026-01-18 - COMPLETION SUMMARY
-- Successfully completed ALL 26 user stories in the ESP Subscriber Sync integration
-- Merged main branch (auth + onboarding) with ESP sync branch
-- Resolved all conflicts and integrated all features
-- Stories completed:
-  - US-001 to US-015: ESP sync features (already complete from previous work)
-  - US-016: Merged main branch into current branch
-  - US-017: Resolved EspConnection entity conflicts
-  - US-018: Added User and authentication entities (from merge)
-  - US-019: Integrated AuthGuard into ESP connection endpoints
-  - US-020: Merged AppModule configurations
-  - US-021: Resolved EncryptionService conflicts
-  - US-022: Resolved migration conflicts
-  - US-023: Updated ESP Connection Service to use User entity
-  - US-024: Verified frontend integration
-  - US-025: Updated API endpoints to match auth conventions
-  - US-026: Ran integration tests and verified all features
-- Backend typecheck: PASS (0 errors)
-- Frontend typecheck: PASS (0 errors)
-- All migrations properly sequenced
-- All entities properly configured with relationships
-- All services properly registered in AppModule
-- All endpoints protected with authentication
-- All API conventions consistent
-- Frontend updated to match backend API
-- **System is ready for runtime testing and deployment**
-- **Next steps for developers:**
-  1. Set up local environment (PostgreSQL, Redis)
-  2. Run migrations: `yarn workspace backend migration:run`
-  3. Start backend: `yarn workspace backend dev`
-  4. Start frontend: `yarn workspace frontend dev`
-  5. Test complete user flow in browser
-  6. Monitor BullMQ queue processing
-  7. Verify subscriber data syncs correctly
----
-
-## 2026-01-18 15:30 - US-027
-- Added sync status tracking to EspConnection entity
-- Created EspSyncStatus enum with values: idle, syncing, synced, error
-- Added syncStatus column to entity with default value 'idle'
-- Created migration 1737200000000-AddSyncStatusToEspConnection.ts
-- Files changed:
-  - `apps/backend/src/entities/esp-connection.entity.ts` - Added EspSyncStatus enum and syncStatus field
-  - `apps/backend/src/migrations/1737200000000-AddSyncStatusToEspConnection.ts` - Migration to add enum type and column
-- **Learnings for future iterations:**
-  - PostgreSQL enum types are created using DO $$ BEGIN ... EXCEPTION pattern for idempotency
-  - Use TableColumn with addColumn() to add new columns to existing tables in migrations
-  - Default enum value must be wrapped in single quotes in migration: `default: "'idle'"`
-  - The syncStatus field enables real-time UI updates showing sync progress
-  - All quality checks passed (typecheck, lint, build)
----
-
-## 2026-01-18 - US-028
-- Updated sync endpoint to mark connection as 'syncing' immediately when job is queued
-- Added updateSyncStatus method to EspConnectionService to update sync status atomically
-- Updated triggerSync endpoint to call updateSyncStatus before adding job to queue
-- Modified response to include the updated connection with syncStatus field
-- Files changed:
-  - `apps/backend/src/services/esp-connection.service.ts` - Added updateSyncStatus method, imported EspSyncStatus enum
-  - `apps/backend/src/controllers/esp-connection.controller.ts` - Updated triggerSync to set syncStatus before queueing, return connection in response
-- **Learnings for future iterations:**
-  - Setting syncStatus before queueing ensures UI can show sync state immediately, not waiting for processor
-  - The updateSyncStatus method is reusable for other status changes (will be used in US-030)
-  - Response now includes full connection object so frontend can update UI without additional API call
-  - TypeORM save() method returns the updated entity, making it easy to chain operations
-  - Atomicity: status update happens in same database transaction as the save operation
-  - All quality checks passed (typecheck, lint, build)
----
-
-## 2026-01-18 - US-029
-- Added validation to prevent double syncing in POST /esp-connections/:id/sync endpoint
-- Endpoint now checks if syncStatus is 'syncing' and returns 409 Conflict error if sync is already in progress
-- Allows sync to be triggered again if status is 'idle', 'synced', or 'error'
-- Files changed:
-  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added ConflictException import, sync status validation, and conflict error handling
-- **Learnings for future iterations:**
-  - Use ConflictException (409) for resource state conflicts (e.g., trying to modify a resource that's already being modified)
-  - Check resource state before operations to prevent race conditions
-  - Store findById result to avoid redundant database queries when checking state
-  - ConflictException should be explicitly handled in error handling to pass through to client with correct status code
-  - The validation pattern: fetch resource → check state → reject if invalid state → proceed if valid
-  - All quality checks (typecheck, lint, build) passed successfully
----
-
-## 2026-01-18 - US-030
-- Updated SubscriberSyncProcessor to mark connection status after sync completion
-- On successful sync: sets both lastSyncedAt and syncStatus to 'synced'
-- On failed sync: sets syncStatus to 'error' before re-throwing error (allows BullMQ retries to continue)
-- Added nested try-catch to ensure status update happens even if the update itself fails
-- Files changed:
-  - `apps/backend/src/processors/subscriber-sync.processor.ts` - Imported EspSyncStatus enum, updated process method to set status on success/failure, updated docstring
-- **Learnings for future iterations:**
-  - Set syncStatus to 'synced' on success and 'error' on failure to track sync state
-  - Update both lastSyncedAt and syncStatus in the same repository.update() call for atomic updates
-  - Use nested try-catch when updating status on error to prevent the status update from blocking error handling
-  - Re-throw the original error after setting status to 'error' so BullMQ can still handle retries
-  - The processor now provides complete status tracking: 'syncing' (from endpoint) → 'synced' or 'error' (from processor)
-  - All quality checks (typecheck, lint, build) passed successfully
----
-
-## 2026-01-18 - US-031
-- Added sync button to frontend ESP connection cards in dashboard
-- Implemented manual sync trigger with optimistic UI updates
-- Added syncStatus tracking to frontend (idle, syncing, synced, error)
-- Files changed:
-  - `apps/frontend/src/lib/api.ts` - Added syncStatus to EspConnection type, added triggerSync API function with TriggerSyncResponse type
-  - `apps/frontend/src/app/dashboard/page.tsx` - Added sync button, handleSync function, getSyncButtonText helper, syncErrors state, syncStatusLabels mapping
-- **Learnings for future iterations:**
-  - Optimistic UI updates improve perceived performance - immediately update connection status to 'syncing' when button clicked, revert on error
-  - Per-resource error state management (Record<string, string>) allows showing errors on specific cards without affecting others
-  - Button state management: disable button when syncStatus is 'syncing', use destructive variant when status is 'error' for visual feedback
-  - Dynamic button text based on resource state improves UX: 'Sync Now' (idle), 'Syncing...' (syncing), 'Retry Sync' (error), 'Sync Again' (synced)
-  - Display both date and time for lastSyncedAt timestamp using toLocaleDateString() and toLocaleTimeString()
-  - TypeScript const assertion (`as const`) ensures type safety when setting literal union types like syncStatus
-  - Error messages stored per connection ID allow users to see what went wrong with each sync attempt
-  - The triggerSync endpoint returns updated connection object, eliminating need for separate GET request after sync
-  - All quality checks (typecheck, lint, build) passed successfully
----
-
-## 2026-01-18 - US-032
-- Added automatic sync trigger after ESP connection creation during onboarding
-- Updated onboarding API key form to capture connection ID and trigger sync
-- Sync errors handled gracefully without blocking onboarding completion
-- Files changed:
-  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated handleSubmit to capture connection ID, call triggerSync, handle errors gracefully
-- **Learnings for future iterations:**
-  - Non-blocking error handling pattern: wrap optional operations in try-catch, log errors but don't throw
-  - User experience improvement: automatically trigger sync on onboarding so users don't have to do it manually
-  - Graceful degradation: if auto-sync fails, user can still complete onboarding and manually trigger sync later
-  - Connection ID capture: store the response from createConnection to use for subsequent operations
-  - Flow sequencing: create connection → complete onboarding → update auth context → trigger sync → redirect
-  - Console.error for logging failures that don't affect user flow but should be visible in dev tools
-  - The button text "Syncing..." is accurate for both connection creation and sync trigger
-  - All quality checks (typecheck, lint, build) passed successfully
+  - Icon buttons in table cells should use variant="ghost" with compact sizing (h-6 w-6 p-0) for clean inline appearance
+  - Always wrap icon buttons in Tooltip components for accessibility (screen readers and hover tooltips)
+  - Use flex layout (flex items-center gap-2) to position icon button inline with cell content
+  - When removing table columns, update both TableHeader and empty state colSpan to match new column count
+  - TooltipProvider must wrap Tooltip components (can be at page level or per tooltip)
+  - Icon-only buttons improve table density and visual cleanliness compared to text buttons
+  - Keep error messages in same cell as the action for better UX (user sees error context immediately)
 ---

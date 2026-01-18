@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
 import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
+import { SyncHistory, SyncHistoryStatus } from '../entities/sync-history.entity';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
 
 export interface SyncPublicationJobData {
@@ -21,6 +22,8 @@ export class SubscriberSyncProcessor extends WorkerHost {
   constructor(
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
+    @InjectRepository(SyncHistory)
+    private syncHistoryRepository: Repository<SyncHistory>,
     private subscriberSyncService: SubscriberSyncService,
   ) {
     super();
@@ -28,12 +31,15 @@ export class SubscriberSyncProcessor extends WorkerHost {
 
   /**
    * Processes a sync-publication job
+   * - Creates sync history record at start
    * - Retrieves ESP connection from database
    * - Decrypts API key
    * - Uses ESP connector to fetch all subscribers
    * - Processes subscribers in batches and saves to database
    * - Updates ESP connection lastSyncedAt timestamp and syncStatus to 'synced' on success
+   * - Updates sync history with completedAt on success
    * - Updates syncStatus to 'error' on failure
+   * - Updates sync history with failed status and error message on final failure
    *
    * @param job - The job containing espConnectionId
    */
@@ -49,6 +55,16 @@ export class SubscriberSyncProcessor extends WorkerHost {
       `Processing sync job ${job.id} for ESP connection ${espConnectionId}`,
     );
 
+    // Create sync history record at start with optimistic 'success' status
+    const syncHistory = this.syncHistoryRepository.create({
+      espConnectionId,
+      status: SyncHistoryStatus.SUCCESS,
+      startedAt: new Date(),
+      completedAt: null,
+      errorMessage: null,
+    });
+    await this.syncHistoryRepository.save(syncHistory);
+
     try {
       // Sync subscribers using the sync service
       await this.subscriberSyncService.syncSubscribers(espConnectionId);
@@ -57,6 +73,12 @@ export class SubscriberSyncProcessor extends WorkerHost {
       await this.espConnectionRepository.update(
         { id: espConnectionId },
         { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED },
+      );
+
+      // Update sync history with completedAt timestamp
+      await this.syncHistoryRepository.update(
+        { id: syncHistory.id },
+        { completedAt: new Date() },
       );
 
       this.logger.log(
@@ -78,6 +100,28 @@ export class SubscriberSyncProcessor extends WorkerHost {
         this.logger.error(
           `Failed to update syncStatus to 'error' for ESP connection ${espConnectionId}: ${updateError.message}`,
         );
+      }
+
+      // Check if this is the final attempt (after all retries)
+      const maxAttempts = job.opts.attempts || 1;
+      const isFinalAttempt = job.attemptsMade >= maxAttempts;
+
+      if (isFinalAttempt) {
+        // Update sync history with failed status and error message
+        try {
+          await this.syncHistoryRepository.update(
+            { id: syncHistory.id },
+            {
+              status: SyncHistoryStatus.FAILED,
+              completedAt: new Date(),
+              errorMessage: error.message,
+            },
+          );
+        } catch (updateError: any) {
+          this.logger.error(
+            `Failed to update sync history to 'failed' for ESP connection ${espConnectionId}: ${updateError.message}`,
+          );
+        }
       }
 
       // Re-throw error so BullMQ can handle retries

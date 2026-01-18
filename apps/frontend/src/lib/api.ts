@@ -76,6 +76,45 @@ export interface EspConnection {
   updatedAt: string;
 }
 
+export interface DashboardStats {
+  totalEspConnections: number;
+  totalSubscribers: number;
+  lastSyncTime: string | null;
+}
+
+export interface SyncHistory {
+  id: string;
+  espConnectionId: string;
+  status: 'success' | 'failed';
+  startedAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface Subscriber {
+  id: string;
+  espConnectionId: string;
+  externalId: string;
+  maskedEmail: string;
+  status: 'active' | 'unsubscribed' | 'bounced';
+  firstName: string | null;
+  lastName: string | null;
+  subscribedAt: string | null;
+  unsubscribedAt: string | null;
+  metadata: Record<string, any> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedSubscribers {
+  data: Subscriber[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Error handling callback type
 type OnUnauthorizedCallback = () => void;
 
@@ -200,8 +239,10 @@ export const authApi = {
 };
 
 export interface TriggerSyncResponse {
-  connection: EspConnection;
   jobId: string;
+  status: string;
+  message: string;
+  connection: EspConnection;
 }
 
 /**
@@ -254,6 +295,172 @@ export const espConnectionApi = {
   ): Promise<TriggerSyncResponse> => {
     return apiRequest<TriggerSyncResponse>(
       `/esp-connections/${connectionId}/sync`,
+      {
+        method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get sync history for ESP connection
+   */
+  getSyncHistory: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    limit?: number,
+  ): Promise<SyncHistory[]> => {
+    const url = `/esp-connections/${connectionId}/sync-history${limit ? `?limit=${limit}` : ''}`;
+    return apiRequest<SyncHistory[]>(
+      url,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get single ESP connection by ID
+   */
+  getConnection: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<EspConnection> => {
+    return apiRequest<EspConnection>(
+      `/esp-connections/${connectionId}`,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get paginated subscribers for ESP connection
+   */
+  getSubscribers: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    page?: number,
+    limit?: number,
+    status?: string,
+  ): Promise<PaginatedSubscribers> => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (status) params.append('status', status);
+    
+    const url = `/esp-connections/${connectionId}/subscribers${params.toString() ? `?${params.toString()}` : ''}`;
+    return apiRequest<PaginatedSubscribers>(
+      url,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Export subscribers in specified format (CSV, JSON, or Excel)
+   * Returns a Blob that can be used to trigger browser download
+   */
+  exportSubscribers: async (
+    connectionId: string,
+    format: 'csv' | 'json' | 'xlsx',
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const headers: Record<string, string> = {};
+    
+    // Add auth token if provided
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/esp-connections/${connectionId}/subscribers/export?format=${format}`, {
+      method: 'GET',
+      headers: headers as HeadersInit,
+    });
+
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Export failed: ${response.statusText}`);
+    }
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `subscribers.${format}`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    return { blob, filename };
+  },
+};
+
+/**
+ * Dashboard API functions
+ */
+export const dashboardApi = {
+  /**
+   * Get dashboard statistics
+   */
+  getStats: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<DashboardStats> => {
+    return apiRequest<DashboardStats>(
+      '/dashboard/stats',
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+};
+
+export interface UnmaskEmailResponse {
+  email: string;
+}
+
+/**
+ * Subscriber API functions
+ */
+export const subscriberApi = {
+  /**
+   * Unmask a subscriber's email address
+   */
+  unmaskEmail: async (
+    subscriberId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<UnmaskEmailResponse> => {
+    return apiRequest<UnmaskEmailResponse>(
+      `/subscribers/${subscriberId}/unmask`,
       {
         method: 'POST',
       },

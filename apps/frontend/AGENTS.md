@@ -7,10 +7,11 @@ Next.js app in `apps/frontend`: UI to manage subscribers, sync, and export.
 | Area | Responsibility |
 |-----|----------------|
 | **App Router** | `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`. |
-| **Subscriber list** (to add) | Page(s) and components to show the subscriber list from the backend. |
+| **Dashboard** | Dashboard overview with stats cards and sync history table at `src/app/dashboard/page.tsx`. Layout with sidebar at `src/app/dashboard/layout.tsx`. |
+| **ESP Detail** | ESP detail page showing connection info and paginated subscriber list at `src/app/dashboard/esp/[id]/page.tsx`. |
 | **Sync** (to add) | Trigger sync with ESP and show sync status. |
 | **Export** (to add) | Trigger export and handle download (CSV/JSON). |
-| **Settings / config** (to add) | ESP connection and app settings. |
+| **Settings** (to add) | ESP connection and app settings. |
 
 ## Important paths
 
@@ -44,6 +45,41 @@ All subscriber, sync, and export behavior depends on the backend API. Point `NEX
 
 ## Next.js App Router patterns
 
+- **Dynamic routes**: Use `[param]` syntax in directory names (e.g., `dashboard/esp/[id]/page.tsx`). Access with `useParams()` hook.
 - **useSearchParams() requires Suspense**: When using `useSearchParams()` in a client component, wrap it in a Suspense boundary to avoid build errors. Split the component: create a form component that uses `useSearchParams()`, and a page component that wraps it in `<Suspense>`.
 - **Client-side navigation**: Use `useRouter()` from `next/navigation` for client-side navigation in App Router (not `next/router`).
 - **Environment variables**: Client components can access `process.env.NEXT_PUBLIC_*` variables directly (replaced at build time).
+- **URL pagination**: Use `useSearchParams()` to read pagination params, `useRouter().push()` to update URL. Build query strings with `URLSearchParams` API.
+
+## Dashboard patterns
+
+- **Parallel data fetching**: Use `Promise.all([fetch1(), fetch2()])` to fetch multiple endpoints in parallel for faster page loads.
+- **Aggregating data across connections**: When showing data from multiple ESP connections, fetch each connection's data in parallel, then merge and sort the results.
+- **Loading states**: Match the skeleton loading state to the final layout structure (e.g., 3 cards + table) for better UX.
+- **Relative time formatting**: For "last sync" timestamps, use relative time ("5 mins ago") for recent events and fall back to full date/time for older events.
+- **Error handling**: Use silent error handling (return empty array) for individual items in aggregated lists to prevent one failure from breaking the entire dashboard.
+- **Sidebar navigation**: Selected navigation items use left border indicator (`border-l-4 border-primary`) with subtle background (`bg-primary/10`) and primary text color. Remove hover states on active items to prevent button-like appearance. Use `pathname === '/dashboard/esp/${id}'` to detect active state.
+
+## API client patterns
+
+- **API structure**: API client is organized into namespaces (`authApi`, `espConnectionApi`, `dashboardApi`) in `src/lib/api.ts`.
+- **Adding new endpoints**: Create interface for response type, then add function to appropriate namespace following existing patterns.
+- **Error handling**: All API functions support `onUnauthorized` callback for 401 error handling (typically redirects to login).
+- **TypeScript types**: Always define TypeScript interfaces for request/response types at the top of the file.
+- **Query parameters**: Use `URLSearchParams` to build query strings. Check if `params.toString()` is empty before adding `?` to URL.
+- **Pagination responses**: Backend returns `{ data: T[], total, page, limit, totalPages }`. Define interfaces for both the item type and paginated response type.
+
+## shadcn UI components
+
+- **Adding components**: Use `npx shadcn@latest add <component> --yes` to add components (the `--yes` flag skips prompts).
+- **Linting issue**: shadcn CLI generates code with tabs. Always convert tabs to spaces in generated files to avoid linting errors.
+- **Available components**: badge, button, card, dropdown-menu, input, separator, sheet, table, tooltip.
+- **Icon buttons in table cells**: For inline actions in table cells, use icon-only buttons (`variant="ghost"`, `size="sm"`, `className="h-6 w-6 p-0"`) wrapped in Tooltip components for accessibility. Place icon button inline with cell content using `flex items-center gap-2` on the cell container.
+
+## State management patterns
+
+- **Multiple item states**: Use `Map<itemId, value>` for storing keyed data (e.g., unmasked emails by subscriber ID). Maps offer better performance than objects for frequent lookups and updates.
+- **Loading states**: Use `Set<itemId>` for tracking loading state of multiple items simultaneously (e.g., which items are currently being processed).
+- **Inline errors**: Use `Map<itemId, errorMessage>` to store errors per item. Display errors inline next to the item rather than global error messages for better UX.
+- **Immutable state updates**: When updating Map or Set state, create new instance: `setMap(new Map(oldMap))` then modify. React needs new reference to trigger re-render.
+- **Toggling state**: Check if item exists in Map before making API call to determine action (e.g., mask vs unmask).
