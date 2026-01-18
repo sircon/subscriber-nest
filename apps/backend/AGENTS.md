@@ -90,6 +90,10 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - Token refresh may return a new refresh_token - if provided, update it; otherwise keep the existing refresh token
 - Handle token refresh errors: 400 (invalid refresh token), 401 (expired/revoked refresh token) - throw BadRequestException with user-friendly messages
 - After successful token refresh, update `encryptedAccessToken`, `encryptedRefreshToken` (if new one provided), `tokenExpiresAt`, and `lastValidatedAt` in the database
+- `src/services/oauth-token-refresh-scheduler.service.ts` – OAuthTokenRefreshSchedulerService schedules proactive token refresh jobs (runs every 5 minutes)
+- `src/processors/oauth-token-refresh.processor.ts` – OAuthTokenRefreshProcessor finds OAuth connections with tokens expiring within 10 minutes and refreshes them
+- Scheduled token refresh jobs use BullMQ queue (`oauth-token-refresh`) and run every 5 minutes to proactively refresh tokens before expiry
+- Processor handles errors gracefully - logs failures but continues processing other connections to prevent one failure from blocking all refreshes
 
 ## Subscribers
 

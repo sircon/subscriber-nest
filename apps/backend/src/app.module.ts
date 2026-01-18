@@ -47,6 +47,8 @@ import { OAuthStateCleanupProcessor } from './processors/oauth-state-cleanup.pro
 import { OAuthStateSchedulerService } from './services/oauth-state-scheduler.service';
 import { OAuthConfigService } from './services/oauth-config.service';
 import { OAuthTokenRefreshService } from './services/oauth-token-refresh.service';
+import { OAuthTokenRefreshProcessor } from './processors/oauth-token-refresh.processor';
+import { OAuthTokenRefreshSchedulerService } from './services/oauth-token-refresh-scheduler.service';
 
 @Module({
   imports: [
@@ -120,6 +122,16 @@ import { OAuthTokenRefreshService } from './services/oauth-token-refresh.service
         },
       },
     }),
+    BullModule.registerQueue({
+      name: 'oauth-token-refresh',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
   ],
   controllers: [
     AppController,
@@ -159,6 +171,8 @@ import { OAuthTokenRefreshService } from './services/oauth-token-refresh.service
     OAuthStateSchedulerService,
     OAuthConfigService,
     OAuthTokenRefreshService,
+    OAuthTokenRefreshProcessor,
+    OAuthTokenRefreshSchedulerService,
   ],
   exports: [EmailService],
 })
