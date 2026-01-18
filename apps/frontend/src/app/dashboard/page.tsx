@@ -91,15 +91,20 @@ export default function DashboardPage() {
               {connections.map((connection) => (
                 <Card key={connection.id}>
                   <CardHeader>
-                    <CardTitle>{providerNames[connection.provider] || connection.provider}</CardTitle>
+                    <CardTitle>{providerNames[connection.espType] || connection.espType}</CardTitle>
                     <CardDescription>
-                      {connection.isActive ? 'Active' : 'Inactive'}
+                      {connection.status}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
                       Connected {new Date(connection.createdAt).toLocaleDateString()}
                     </p>
+                    {connection.lastSyncedAt && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Last synced {new Date(connection.lastSyncedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}

@@ -21,6 +21,7 @@ function ApiKeyForm() {
     const searchParams = useSearchParams();
     const { token, login } = useAuth();
     const [apiKey, setApiKey] = useState('');
+    const [publicationId, setPublicationId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const provider = (searchParams.get('provider') || '') as Provider;
@@ -42,6 +43,12 @@ function ApiKeyForm() {
             return;
         }
 
+        if (!publicationId.trim()) {
+            setError('Please enter your publication ID');
+            setLoading(false);
+            return;
+        }
+
         try {
             if (!token) {
                 throw new Error('Authentication required. Please log in again.');
@@ -49,7 +56,7 @@ function ApiKeyForm() {
 
             // Step 1: Create ESP connection
             await espConnectionApi.createConnection(
-                { provider, apiKey },
+                { espType: provider, apiKey, publicationId },
                 token,
                 () => {
                     // Handle 401: redirect to login
@@ -110,6 +117,24 @@ function ApiKeyForm() {
                                 />
                             </div>
 
+                            <div>
+                                <label
+                                    htmlFor="publicationId"
+                                    className="block text-sm font-medium mb-2"
+                                >
+                                    Publication ID
+                                </label>
+                                <Input
+                                    id="publicationId"
+                                    type="text"
+                                    placeholder="Enter your publication ID"
+                                    value={publicationId}
+                                    onChange={(e) => setPublicationId(e.target.value)}
+                                    required
+                                    disabled={loading}
+                                />
+                            </div>
+
                             {error && (
                                 <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                                     {error}
@@ -119,7 +144,7 @@ function ApiKeyForm() {
                             <Button
                                 type="submit"
                                 className="w-full"
-                                disabled={loading || !apiKey.trim()}
+                                disabled={loading || !apiKey.trim() || !publicationId.trim()}
                             >
                                 {loading ? 'Syncing...' : 'Sync subscribers to vault'}
                             </Button>

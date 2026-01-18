@@ -46,21 +46,33 @@ export interface CompleteOnboardingResponse {
 }
 
 export interface CreateEspConnectionRequest {
-  provider: string;
+  espType: string;
   apiKey: string;
+  publicationId: string;
 }
 
 export interface CreateEspConnectionResponse {
   id: string;
-  provider: string;
-  createdAt: Date;
+  userId: string;
+  espType: string;
+  publicationId: string;
+  status: string;
+  lastValidatedAt: string | null;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface EspConnection {
   id: string;
-  provider: string;
-  isActive: boolean;
-  createdAt: Date;
+  userId: string;
+  espType: string;
+  publicationId: string;
+  status: string;
+  lastValidatedAt: string | null;
+  lastSyncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Error handling callback type
