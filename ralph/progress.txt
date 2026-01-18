@@ -332,3 +332,58 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn install` after creating package.json to install dependencies
   - Use `turbo run lint --filter=worker`, `turbo run build --filter=worker`, and `yarn workspace worker typecheck` to verify worker service configuration
 ---
+
+## 2026-01-19 - US-016
+- Copied all 3 processor files from `apps/backend/src/processors/` to `apps/worker/src/processors/`:
+  - subscriber-sync.processor.ts
+  - billing.processor.ts
+  - account-deletion.processor.ts
+- All processors already use shared package imports (`@subscriber-nest/shared/entities`) - no updates needed
+- Service imports point to `../services/` which is correct for worker service structure (services will be copied in US-017)
+- Removed placeholder `apps/worker/src/index.ts` file
+- Files changed:
+  - Created `apps/worker/src/processors/subscriber-sync.processor.ts`
+  - Created `apps/worker/src/processors/billing.processor.ts`
+  - Created `apps/worker/src/processors/account-deletion.processor.ts`
+  - Deleted `apps/worker/src/index.ts` placeholder file
+- **Learnings for future iterations:**
+  - Processors copied from backend already use shared package imports (from previous stories), so no import updates needed
+  - Processors import services from `../services/` which will be copied in US-017
+  - Type errors for missing services are expected until US-017 is completed (similar to how controllers had type errors until services were copied in US-009)
+  - All entity imports correctly use `@subscriber-nest/shared/entities` paths
+  - Use `turbo run lint --filter=worker` to verify code style after copying processors
+  - Processors use `@InjectRepository` for TypeORM repositories, which will need to be configured in AppModule (US-018)
+---
+
+## 2026-01-18 15:45 - US-017
+- Copied all 3 core worker services from `apps/backend/src/services/` to `apps/worker/src/services/`:
+  - SubscriberSyncService
+  - SubscriberMapperService
+  - SyncHistoryService
+- Copied BeehiivConnector from `apps/backend/src/connectors/` to `apps/worker/src/connectors/`
+- Copied supporting files:
+  - IEspConnector interface to `apps/worker/src/interfaces/`
+  - esp.interface.ts to `apps/worker/src/interfaces/`
+  - email.util.ts to `apps/worker/src/utils/`
+- Copied dependent services needed by SubscriberSyncService:
+  - SubscriberService
+  - BillingUsageService (depends on BillingCalculationService and EspConnectionService)
+  - BillingSubscriptionService
+  - StripeService
+  - BillingCalculationService
+  - EspConnectionService
+- All services already use shared package imports (`@subscriber-nest/shared/entities`, `@subscriber-nest/shared/dto`, `@subscriber-nest/shared/services`) - no updates needed
+- Files changed:
+  - Created 10 service files in `apps/worker/src/services/`
+  - Created `apps/worker/src/connectors/beehiiv.connector.ts`
+  - Created `apps/worker/src/interfaces/esp-connector.interface.ts` and `esp.interface.ts`
+  - Created `apps/worker/src/utils/email.util.ts`
+- **Learnings for future iterations:**
+  - Services copied from backend already use shared package imports (from previous stories), so no import updates needed
+  - When copying services, also copy their dependencies (e.g., SubscriberSyncService depends on SubscriberService, BillingUsageService, BillingSubscriptionService, StripeService)
+  - BillingUsageService depends on BillingCalculationService and EspConnectionService, which also need to be copied
+  - Worker service needs all services that SubscriberSyncService depends on, even if they're not explicitly listed in the PRD
+  - All entity, DTO, and shared service imports correctly use `@subscriber-nest/shared/*` paths
+  - Use `turbo run lint --filter=worker`, `turbo run build --filter=worker`, and `yarn workspace worker typecheck` to verify compilation and code style
+  - Services use `@InjectRepository` for TypeORM repositories, which will need to be configured in AppModule (US-018)
+---
