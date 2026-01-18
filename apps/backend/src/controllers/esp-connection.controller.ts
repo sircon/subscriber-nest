@@ -19,6 +19,7 @@ import {
 import { Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
 import { EspConnectionService } from '../services/esp-connection.service';
 import { SyncHistoryService } from '../services/sync-history.service';
 import { SubscriberService } from '../services/subscriber.service';
@@ -26,10 +27,13 @@ import {
   SubscriberExportService,
   ExportFormat,
 } from '../services/subscriber-export.service';
+import { OAuthStateService } from '../services/oauth-state.service';
+import { OAuthConfigService } from '../services/oauth-config.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import {
   EspConnection,
   EspSyncStatus,
+  EspType,
 } from '../entities/esp-connection.entity';
 import { SyncHistory } from '../entities/sync-history.entity';
 import { Subscriber } from '../entities/subscriber.entity';
@@ -46,6 +50,9 @@ export class EspConnectionController {
     private readonly syncHistoryService: SyncHistoryService,
     private readonly subscriberService: SubscriberService,
     private readonly subscriberExportService: SubscriberExportService,
+    private readonly oauthStateService: OAuthStateService,
+    private readonly oauthConfigService: OAuthConfigService,
+    private readonly configService: ConfigService,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue
   ) {}
@@ -58,6 +65,78 @@ export class EspConnectionController {
       user.id
     );
     return connections.map(({ encryptedApiKey, ...connection }) => connection);
+  }
+
+  @Get('oauth/initiate/:provider')
+  async initiateOAuth(
+    @Param('provider') provider: string,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ): Promise<void> {
+    try {
+      // Validate provider
+      if (provider !== 'kit' && provider !== 'mailchimp') {
+        throw new BadRequestException(
+          'Invalid provider. Must be one of: kit, mailchimp'
+        );
+      }
+
+      // Map provider string to EspType enum
+      const espType: EspType =
+        provider === 'kit' ? EspType.KIT : EspType.MAILCHIMP;
+
+      // Get OAuth configuration
+      let oauthConfig;
+      try {
+        oauthConfig = this.oauthConfigService.getConfig(espType);
+      } catch (error) {
+        throw new InternalServerErrorException(
+          `OAuth configuration not available for ${provider}. Please contact support.`
+        );
+      }
+
+      // Get backend URL from environment or construct from request
+      const backendUrl =
+        this.configService.get<string>('BACKEND_URL') ||
+        this.configService.get<string>('API_URL') ||
+        'http://localhost:4000';
+
+      // Build redirect URI
+      const redirectUri = `${backendUrl}/api/esp-connections/oauth/callback/${provider}`;
+
+      // Create OAuth state
+      const state = await this.oauthStateService.createState(
+        user.id,
+        espType,
+        redirectUri
+      );
+
+      // Build authorization URL
+      const authUrl = new URL(oauthConfig.authorizationUrl);
+      authUrl.searchParams.set('client_id', oauthConfig.clientId);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', oauthConfig.scopes);
+      authUrl.searchParams.set('state', state);
+
+      // Redirect to ESP's OAuth authorization page
+      res.redirect(authUrl.toString());
+    } catch (error) {
+      // Handle BadRequestException (400 - invalid provider)
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      // Handle InternalServerErrorException (500 - missing config)
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        `Failed to initiate OAuth flow for ${provider}`
+      );
+    }
   }
 
   @Get(':id')

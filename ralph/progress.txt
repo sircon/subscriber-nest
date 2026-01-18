@@ -97,3 +97,24 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Service throws descriptive errors indicating which environment variables are missing
   - OAuthConfig interface exported for use by other services
 ---
+
+## Sun Jan 19 2026 - US-005
+- Created OAuth initiate endpoint `GET /esp-connections/oauth/initiate/:provider` in EspConnectionController
+- Endpoint accepts 'kit' or 'mailchimp' as provider parameter and validates input
+- Endpoint requires authentication via `@UseGuards(AuthGuard)` (inherited from controller-level guard)
+- Creates OAuth state using OAuthStateService with user ID, ESP type, and redirect URI
+- Builds OAuth authorization URL with all required parameters: client_id, redirect_uri, response_type=code, scope, state
+- Redirect URI constructed as `{BACKEND_URL}/api/esp-connections/oauth/callback/{provider}` using ConfigService (falls back to BACKEND_URL or API_URL env vars, defaults to localhost:4000)
+- Redirects user to ESP's OAuth authorization page using Express Response.redirect()
+- Handles errors appropriately: BadRequestException for invalid provider, InternalServerErrorException for missing OAuth config
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (updated)
+- **Learnings for future iterations:**
+  - OAuth routes should be placed before parameterized routes (e.g., `:id`) to avoid route conflicts
+  - Use `@Res()` decorator with Express Response type for redirects in NestJS controllers
+  - ConfigService is globally available, can inject directly into controllers
+  - For OAuth redirect URIs, prefer environment variable (BACKEND_URL) but can fallback to constructing from request if needed
+  - Map provider strings ('kit', 'mailchimp') to EspType enum values when calling services
+  - Use URL constructor and URLSearchParams for building OAuth authorization URLs cleanly
+  - Controller-level `@UseGuards(AuthGuard)` applies to all routes in the controller
+---
