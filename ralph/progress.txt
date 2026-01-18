@@ -740,3 +740,44 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Migration generation requires building the project first to compile TypeScript entities
   - Nullable integer columns in PostgreSQL are created with `ALTER TABLE "table_name" ADD "column_name" integer` (no NOT NULL constraint)
 ---
+
+## 2026-01-19 - US-036
+- Created `calculatePerPublicationMaxUsage()` method in `BillingUsageService` to calculate maximum subscriber count per publication during billing period
+- Method queries all ESP connections for the user using `EspConnectionService.findAllByUserId()`
+- For each ESP connection, queries SyncHistory records within the billing period using TypeORM query builder
+- Uses query builder with date range filters: `startedAt >= billingPeriodStart` and `startedAt < billingPeriodEnd`
+- Only considers successful syncs (status = 'success') using `SyncHistoryStatus.SUCCESS` filter
+- Finds maximum `subscriberCount` from sync history records for each ESP connection
+- If no sync history exists or max is 0, uses current subscriber count as fallback via `subscriberRepository.count()`
+- Returns Map with ESP connection ID as key and max subscriber count as value
+- Injected required dependencies: `EspConnectionService`, `SyncHistory` repository, and `Subscriber` repository into `BillingUsageService`
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added calculatePerPublicationMaxUsage method, injected dependencies)
+- **Learnings for future iterations:**
+  - When querying with date ranges in TypeORM, use query builder (`createQueryBuilder()`) instead of simple `find()` when you need multiple conditions on the same field
+  - Query builder allows chaining `.andWhere()` clauses for complex date range queries (e.g., `startedAt >= startDate AND startedAt < endDate`)
+  - When finding maximum values from an array, filter out null/zero values first before using `Math.max()` to avoid errors
+  - Use `Map<string, number>` for key-value pairs where keys are entity IDs (more efficient than objects for this use case)
+  - When injecting multiple repositories into a service, all entities must be registered in `TypeOrmModule.forFeature()` in the module
+  - Services can inject other services (like `EspConnectionService`) if they're registered in the same module's providers array
+  - Fallback logic (using current subscriber count when no sync history exists) ensures billing calculations work even for new ESP connections
+---
+
+## 2026-01-19 - US-037
+- Created `calculateMeterUsage(perPublicationMax: Map<string, number>): number` method in `BillingUsageService`
+- Method sums all values from the per-publication max Map using a for...of loop
+- Converts total subscriber count to units of 10,000 by dividing by 10,000
+- Always rounds up using `Math.ceil()` to ensure proper billing (e.g., 25,000 = 2.5 → 3, 20,000 = 2.0 → 2, 15,000 = 1.5 → 2)
+- Returns integer representing number of 10k units for Stripe meter reporting
+- Handles edge case: returns 0 units for 0 subscribers
+- Method is synchronous and doesn't require database access, making it efficient for meter usage calculations
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added calculateMeterUsage method)
+- **Learnings for future iterations:**
+  - When calculating meter usage, always round up using `Math.ceil()` to ensure users are charged for partial units (e.g., 15,001 subscribers = 2 units, not 1)
+  - Stripe meters use units of 10,000 subscribers, so divide total subscriber count by 10,000 and round up
+  - The method takes a Map from `calculatePerPublicationMaxUsage()` as input, which provides per-publication maximums
+  - Sum all values from the Map before converting to units to get total subscriber count across all publications
+  - Edge case handling (0 subscribers = 0 units) prevents division by zero issues and ensures correct billing
+  - Synchronous methods that don't require database access are more efficient for calculation purposes
+---

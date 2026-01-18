@@ -255,4 +255,29 @@ export class BillingUsageService {
 
     return perPublicationMax;
   }
+
+  /**
+   * Calculate total usage in 10k units (rounded up) from per-publication maximums
+   * @param perPublicationMax - Map with ESP connection ID as key and max subscriber count as value
+   * @returns Integer representing number of 10k units
+   */
+  calculateMeterUsage(perPublicationMax: Map<string, number>): number {
+    // Sum all values from the per-publication max Map
+    let totalSubscriberCount = 0;
+    for (const count of perPublicationMax.values()) {
+      totalSubscriberCount += count;
+    }
+
+    // Handle edge case: 0 subscribers = 0 units
+    if (totalSubscriberCount === 0) {
+      return 0;
+    }
+
+    // Convert total subscriber count to units of 10,000 (divides by 10,000)
+    // Always rounds up using Math.ceil()
+    // Examples: 25,000 = 2.5 → 3, 20,000 = 2.0 → 2, 15,000 = 1.5 → 2
+    const units = Math.ceil(totalSubscriberCount / 10000);
+
+    return units;
+  }
 }
