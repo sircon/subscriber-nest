@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { espConnectionApi, subscriberApi, EspConnection, PaginatedSubscribers, SyncHistory } from '@/lib/api';
+import { espConnectionApi, subscriberApi, billingApi, EspConnection, PaginatedSubscribers, SyncHistory, BillingStatusResponse } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -55,6 +55,10 @@ export default function EspDetailPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  // Subscription status state
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const itemsPerPage = parseInt(searchParams.get('limit') || '50', 10);
@@ -87,6 +91,30 @@ export default function EspDetailPage() {
 
     fetchData();
   }, [token, id, currentPage, itemsPerPage]);
+
+  // Check subscription status on page load
+  useEffect(() => {
+    async function checkSubscription() {
+      if (!token) {
+        setCheckingSubscription(false);
+        return;
+      }
+
+      setCheckingSubscription(true);
+      try {
+        const status: BillingStatusResponse = await billingApi.getBillingStatus(token);
+        setHasActiveSubscription(status.hasActiveSubscription);
+      } catch (err) {
+        console.error('Error checking subscription status:', err);
+        // Default to false if check fails (fail-safe)
+        setHasActiveSubscription(false);
+      } finally {
+        setCheckingSubscription(false);
+      }
+    }
+
+    checkSubscription();
+  }, [token]);
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -301,51 +329,98 @@ export default function EspDetailPage() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex gap-2">
-            <Button
-              onClick={handleSync}
-              disabled={isSyncing || connection.syncStatus === 'syncing'}
-              variant="outline"
-            >
-              {isSyncing || connection.syncStatus === 'syncing' ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Sync
-                </>
-              )}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button disabled={isExporting}>
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('csv')}>
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('json')}>
-                  Export as JSON
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                  Export as Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      onClick={handleSync}
+                      disabled={
+                        checkingSubscription ||
+                        isSyncing ||
+                        connection.syncStatus === 'syncing' ||
+                        hasActiveSubscription === false
+                      }
+                      variant="outline"
+                    >
+                      {checkingSubscription ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Checking...
+                        </>
+                      ) : isSyncing || connection.syncStatus === 'syncing' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sync
+                        </>
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {hasActiveSubscription === false && (
+                  <TooltipContent>
+                    <p>Active subscription required to sync</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          disabled={
+                            checkingSubscription ||
+                            isExporting ||
+                            hasActiveSubscription === false
+                          }
+                        >
+                          {checkingSubscription ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Checking...
+                            </>
+                          ) : isExporting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Exporting...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4 mr-2" />
+                              Export
+                            </>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExport('csv')}>
+                          Export as CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport('json')}>
+                          Export as JSON
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                          Export as Excel
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </span>
+                </TooltipTrigger>
+                {hasActiveSubscription === false && (
+                  <TooltipContent>
+                    <p>Active subscription required to export</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {syncError && (
             <p className="text-sm text-red-600">{syncError}</p>

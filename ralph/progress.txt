@@ -584,3 +584,27 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Always check if user is authenticated and has token before making API calls in banner components
   - Dismissal logic should clear localStorage when expiration period has passed to prevent stale data
 ---
+
+## 2026-01-19 - US-028
+- Updated ESP detail page (`apps/frontend/src/app/dashboard/esp/[id]/page.tsx`) to check subscription status on page load
+- Added subscription status state (`hasActiveSubscription`) and loading state (`checkingSubscription`)
+- Added useEffect hook to fetch subscription status using `billingApi.getBillingStatus()` on component mount
+- Disabled "Sync" button when subscription is inactive, with tooltip showing "Active subscription required to sync"
+- Disabled "Export" button when subscription is inactive, with tooltip showing "Active subscription required to export"
+- Buttons show "Checking..." loading state with spinner while subscription status is being checked
+- Wrapped disabled buttons in TooltipProvider and Tooltip components from shadcn UI
+- Used span wrapper pattern for disabled buttons to enable tooltip functionality (disabled buttons don't trigger tooltips directly)
+- Typecheck passes: `yarn tsc --noEmit` completes successfully
+- Lint passes: `turbo run lint --filter=frontend` completes successfully
+- Build passes: `turbo run build --filter=frontend` completes successfully
+- Files changed:
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` (added subscription check, disabled buttons with tooltips)
+- **Learnings for future iterations:**
+  - Disabled buttons in React don't trigger pointer events, so tooltips need to wrap the button in a span element for proper functionality
+  - When checking subscription status, use separate state for loading (`checkingSubscription`) and result (`hasActiveSubscription`) to show appropriate UI states
+  - Default subscription status to `null` initially, then set to `boolean` after check completes (allows distinguishing between "not checked" and "checked, inactive")
+  - TooltipProvider can wrap individual tooltips or multiple tooltips - both patterns work, but wrapping multiple tooltips in one provider is more efficient
+  - When disabling buttons based on subscription status, check `hasActiveSubscription === false` (not just falsy) to avoid disabling during initial loading state
+  - Subscription status check should happen in separate useEffect from main data fetching to avoid blocking page load
+  - Always handle subscription check errors gracefully - default to inactive (fail-safe) if check fails
+---
