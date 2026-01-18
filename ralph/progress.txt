@@ -614,3 +614,31 @@ Started: Sat Jan 17 2026
   - Foreign key relationships should cascade deletes to maintain referential integrity
   - The composite unique index on `(espConnectionId, externalId)` is crucial for the upsert pattern in subscriber syncing
 ---
+
+## 2026-01-18 - US-023
+- Verified EspConnectionService is properly designed and already works with User entity relationships
+- Service design analysis:
+  - `createConnection(userId: string, ...)` accepts userId as string (backward compatible)
+  - Controller (updated in US-019) passes `user.id` from authenticated User entity
+  - Service creates EspConnection with userId field set to user.id
+  - User relationship is defined in EspConnection entity via `@ManyToOne(() => User)` and `@JoinColumn({ name: 'userId' })`
+  - Foreign key constraint enforced at database level (migration creates FK from esp_connections.userId to users.id)
+- `findById(id: string, userId?: string)` method validates ownership:
+  - Fetches connection by id
+  - If userId provided, validates `connection.userId === userId`
+  - Throws NotFoundException if connection not found
+  - Throws BadRequestException if ownership validation fails
+- Foreign key constraints respected:
+  - Database enforces FK constraint (cannot create EspConnection with invalid userId)
+  - TypeORM ensures userId field is populated before save
+  - CASCADE delete ensures EspConnections deleted when User is deleted
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Services can work with userId strings while entities maintain relationship definitions
+  - The pattern: Controller extracts user.id from User entity → passes string to service → service stores in userId field
+  - TypeORM relationships are defined in entities, not services
+  - Services work with scalar values (strings, numbers) while entities maintain object relationships
+  - Foreign key constraints at DB level provide data integrity regardless of how TypeScript code is structured
+  - This design is more flexible - service doesn't need full User entity, just the id
+  - Ownership validation via string comparison is efficient and doesn't require loading related entities
+---
