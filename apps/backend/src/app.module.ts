@@ -34,7 +34,6 @@ import { StripeService } from './services/stripe.service';
 import { BillingCalculationService } from './services/billing-calculation.service';
 import { BillingUsageService } from './services/billing-usage.service';
 import { BillingProcessor } from './processors/billing.processor';
-import { BillingSchedulerService } from './services/billing-scheduler.service';
 import { BillingSubscriptionService } from './services/billing-subscription.service';
 import { BillingController } from './controllers/billing.controller';
 import { AccountController } from './controllers/account.controller';
@@ -132,7 +131,6 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
     BillingUsageService,
     BillingSubscriptionService,
     BillingProcessor,
-    BillingSchedulerService,
     AccountDeletionProcessor,
     AccountDeletionSchedulerService,
   ],

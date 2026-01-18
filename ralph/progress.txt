@@ -550,3 +550,21 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Handle errors at both the individual connection level (continue processing others) and the overall scheduler level (log but don't crash)
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify scheduler implementation
 ---
+
+## 2026-01-18 15:59 - US-027
+- Moved `BillingSchedulerService` from `apps/backend/src/services/` to `apps/worker/src/services/`
+- Updated import path for `MonthlyBillingJobData` to reference worker processor (`../processors/billing.processor`)
+- Registered `BillingSchedulerService` in worker service AppModule providers
+- Removed `BillingSchedulerService` from backend AppModule (both import and provider registration)
+- All imports already use shared package entities (no updates needed)
+- Files changed:
+  - Created `apps/worker/src/services/billing-scheduler.service.ts` - Copied from backend
+  - Updated `apps/worker/src/app.module.ts` - Added BillingSchedulerService import and registration
+  - Updated `apps/backend/src/app.module.ts` - Removed BillingSchedulerService import and registration
+- **Learnings for future iterations:**
+  - When moving scheduler services to worker, update import paths for processor types (e.g., `MonthlyBillingJobData`) to reference worker processor location
+  - Scheduler services that use `OnModuleInit` to schedule BullMQ repeatable jobs can be moved to worker service without changes (they'll be converted to cron decorators in a later story)
+  - Worker service already has all required dependencies (BullMQ, TypeORM) for scheduler services
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify service migration
+  - Backend service still compiles correctly after removing scheduler service (verified with `turbo run build --filter=backend`)
+---
