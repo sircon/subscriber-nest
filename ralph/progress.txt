@@ -273,3 +273,27 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Redis connection uses environment variables with defaults (localhost:6379, no password)
   - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify BullMQ configuration
 ---
+
+## 2026-01-18 15:39 - US-013
+- Created `apps/api/src/main.ts` that bootstraps NestJS application with all required configurations
+- Configured HTTP server to listen on port from `PORT` env var (default 4000)
+- Enabled CORS with origin 'http://localhost:3000' and credentials enabled (matching backend configuration)
+- Configured raw body middleware for Stripe webhook endpoint at `/billing/webhook` using `express.raw({ type: 'application/json' })`
+- Configured global ValidationPipe with transform, whitelist, and forbidNonWhitelisted options
+- Set up Bull Board dashboard at `/admin/queues` for queue monitoring (copied from backend)
+- Created `apps/api/src/bull-board.ts` helper file for Bull Board setup
+- Removed placeholder `apps/api/src/index.ts` file
+- Files changed:
+  - `apps/api/src/main.ts` - Created with NestJS bootstrap configuration
+  - `apps/api/src/bull-board.ts` - Created Bull Board setup helper
+  - Deleted `apps/api/src/index.ts` - Removed placeholder file
+- **Learnings for future iterations:**
+  - API service main.ts follows same pattern as backend main.ts for consistency
+  - Raw body middleware must be configured for webhook endpoints that need signature verification (e.g., Stripe)
+  - NestFactory.create() with `rawBody: true` option enables raw body access throughout the app
+  - Express middleware (`express.raw()`) can be applied to specific routes using `app.use()`
+  - Bull Board dashboard is useful for monitoring queue jobs in development
+  - CORS configuration should match frontend origin (http://localhost:3000)
+  - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify main.ts configuration
+  - API service can start successfully once database and Redis connections are configured
+---
