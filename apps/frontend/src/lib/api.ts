@@ -604,3 +604,29 @@ export const billingApi = {
     );
   },
 };
+
+export interface DeleteAccountResponse {
+  message: string;
+}
+
+/**
+ * Account API functions
+ */
+export const accountApi = {
+  /**
+   * Request account deletion
+   */
+  deleteAccount: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<DeleteAccountResponse> => {
+    return apiRequest<DeleteAccountResponse>(
+      '/account/delete',
+      {
+        method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+};
