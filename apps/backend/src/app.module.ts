@@ -28,6 +28,7 @@ import { Session } from './entities/session.entity';
 import { SyncHistory } from './entities/sync-history.entity';
 import { SyncHistoryService } from './services/sync-history.service';
 import { BillingSubscription } from './entities/billing-subscription.entity';
+import { BillingUsage } from './entities/billing-usage.entity';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { BillingSubscription } from './entities/billing-subscription.entity';
       Session,
       SyncHistory,
       BillingSubscription,
+      BillingUsage,
     ]),
     HttpModule,
     BullModule.forRoot({

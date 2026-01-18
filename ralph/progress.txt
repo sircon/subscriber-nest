@@ -20,3 +20,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Enum types are automatically created in migrations when using TypeORM enum columns
   - Unique constraints are automatically added for `@Column({ unique: true })` decorators
 ---
+
+## 2026-01-18 12:26:50 - US-002
+- Created `BillingUsage` entity with all required fields (id, userId, billingPeriodStart, billingPeriodEnd, maxSubscriberCount, calculatedAmount with decimal precision 10 scale 2, stripeInvoiceId, status enum, createdAt, updatedAt)
+- Added `@ManyToOne` relationship from `BillingUsage` to `User` entity
+- Added inverse `@OneToMany` relationship from `User` to `BillingUsage` entity
+- Added unique index on `userId` + `billingPeriodStart` using `@Index` decorator to prevent duplicate billing periods per user
+- Registered `BillingUsage` entity in `AppModule` TypeOrmModule.forFeature array
+- Generated migration `1768735595273-CreateBillingUsage.ts` which creates the table with proper enum type, decimal column (numeric(10,2)), unique composite index, and foreign key
+- Files changed:
+  - `apps/backend/src/entities/billing-usage.entity.ts` (new)
+  - `apps/backend/src/entities/user.entity.ts` (added relationship)
+  - `apps/backend/src/app.module.ts` (registered entity)
+  - `apps/backend/src/migrations/1768735595273-CreateBillingUsage.ts` (new)
+- **Learnings for future iterations:**
+  - TypeORM decimal columns use `type: 'decimal'` with `precision` and `scale` options, which generates `numeric(precision, scale)` in PostgreSQL
+  - Composite unique indexes are created using `@Index(['field1', 'field2'], { unique: true })` decorator at the entity class level
+  - TypeORM ManyToOne relationships require `@JoinColumn` on the side that owns the foreign key (BillingUsage side)
+  - Migration generation automatically creates enum types, foreign key constraints, and indexes based on entity decorators
+---
