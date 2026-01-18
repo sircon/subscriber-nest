@@ -6,13 +6,24 @@ import {
   BillingUsageStatus,
 } from '../entities/billing-usage.entity';
 import { BillingCalculationService } from './billing-calculation.service';
+import { EspConnectionService } from './esp-connection.service';
+import {
+  SyncHistory,
+  SyncHistoryStatus,
+} from '../entities/sync-history.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 
 @Injectable()
 export class BillingUsageService {
   constructor(
     @InjectRepository(BillingUsage)
     private billingUsageRepository: Repository<BillingUsage>,
-    private billingCalculationService: BillingCalculationService
+    @InjectRepository(SyncHistory)
+    private syncHistoryRepository: Repository<SyncHistory>,
+    @InjectRepository(Subscriber)
+    private subscriberRepository: Repository<Subscriber>,
+    private billingCalculationService: BillingCalculationService,
+    private espConnectionService: EspConnectionService
   ) {}
 
   /**
@@ -178,5 +189,70 @@ export class BillingUsageService {
       order: { billingPeriodStart: 'DESC' },
       take: limit,
     });
+  }
+
+  /**
+   * Calculate the maximum subscriber count per publication (ESP connection) during a billing period
+   * @param userId - The ID of the user
+   * @param billingPeriodStart - Start date of the billing period
+   * @param billingPeriodEnd - End date of the billing period
+   * @returns Map with ESP connection ID as key and max subscriber count as value
+   */
+  async calculatePerPublicationMaxUsage(
+    userId: string,
+    billingPeriodStart: Date,
+    billingPeriodEnd: Date
+  ): Promise<Map<string, number>> {
+    // Get all ESP connections for the user
+    const espConnections =
+      await this.espConnectionService.findAllByUserId(userId);
+
+    const perPublicationMax = new Map<string, number>();
+
+    // For each ESP connection, find the maximum subscriber count from sync history
+    for (const espConnection of espConnections) {
+      // Query SyncHistory records within the billing period for this ESP connection
+      // Only consider successful syncs (status = 'success')
+      // Use query builder to handle date range properly
+      const syncHistoryRecords = await this.syncHistoryRepository
+        .createQueryBuilder('syncHistory')
+        .where('syncHistory.espConnectionId = :espConnectionId', {
+          espConnectionId: espConnection.id,
+        })
+        .andWhere('syncHistory.status = :status', {
+          status: SyncHistoryStatus.SUCCESS,
+        })
+        .andWhere('syncHistory.startedAt >= :billingPeriodStart', {
+          billingPeriodStart,
+        })
+        .andWhere('syncHistory.startedAt < :billingPeriodEnd', {
+          billingPeriodEnd,
+        })
+        .getMany();
+
+      // Find maximum subscriberCount from sync history records
+      let maxSubscriberCount = 0;
+      if (syncHistoryRecords.length > 0) {
+        const subscriberCounts = syncHistoryRecords
+          .map((record) => record.subscriberCount ?? 0)
+          .filter((count) => count > 0);
+        if (subscriberCounts.length > 0) {
+          maxSubscriberCount = Math.max(...subscriberCounts);
+        }
+      }
+
+      // If no sync history exists or max is 0, use current subscriber count as fallback
+      if (maxSubscriberCount === 0) {
+        const currentSubscriberCount = await this.subscriberRepository.count({
+          where: { espConnectionId: espConnection.id },
+        });
+        maxSubscriberCount = currentSubscriberCount;
+      }
+
+      // Store the max subscriber count for this ESP connection
+      perPublicationMax.set(espConnection.id, maxSubscriberCount);
+    }
+
+    return perPublicationMax;
   }
 }
