@@ -47,7 +47,7 @@ export class BillingController {
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(Subscriber)
     private readonly subscriberRepository: Repository<Subscriber>,
-  ) {}
+  ) { }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)

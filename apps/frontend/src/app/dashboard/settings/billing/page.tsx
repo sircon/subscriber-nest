@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
 import { billingApi, BillingStatusResponse, CurrentUsageResponse, BillingHistoryItem } from '@/lib/api';
+import Link from 'next/link';
 
 function BillingSettingsPageContent() {
   const router = useRouter();
@@ -294,10 +295,12 @@ function BillingSettingsPageContent() {
               <div className="space-y-4">
                 <p className="text-gray-600">No active subscription found.</p>
                 <Button
-                  onClick={() => router.push('/onboarding/stripe')}
                   variant="default"
+                  asChild
                 >
-                  Set Up Subscription
+                  <Link href="/onboarding/stripe">
+                    Set Up Subscription
+                  </Link>
                 </Button>
               </div>
             )}

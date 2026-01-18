@@ -490,6 +490,63 @@
       "priority": 28,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Improve Subscription Warning Banner Styling",
+      "description": "As a user, I want the subscription warning banner to look professional with better colors and button styling.",
+      "acceptanceCriteria": [
+        "Update SubscriptionWarningBanner component styling",
+        "Replace Alert variant=\"warning\" with custom styling using professional color scheme",
+        "Use appropriate background color (e.g., amber/yellow-50) with subtle border",
+        "Update button from variant=\"outline\" to variant=\"default\" or custom styled button",
+        "Ensure button has proper contrast and looks clickable",
+        "Improve overall visual hierarchy and spacing",
+        "Maintain dismissible functionality and localStorage persistence",
+        "Banner should look professional and match dashboard design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Fix Set Up Subscription Button for Onboarded Users",
+      "description": "As a user, I want the \"Set Up Subscription\" button to work even when I'm already onboarded, so I can add a subscription from the billing page.",
+      "acceptanceCriteria": [
+        "Update billing settings page \"Set Up Subscription\" button to call checkout session endpoint directly instead of linking to onboarding",
+        "Button calls `POST /billing/create-checkout-session` endpoint when clicked",
+        "On success, redirects user to Stripe Checkout URL",
+        "After successful checkout, Stripe redirects to `/dashboard/settings/billing?session_id=...`",
+        "Billing page handles checkout success via existing session_id logic",
+        "Button works for both onboarding flow (not onboarded) and existing users (onboarded)",
+        "Update middleware to allow `/onboarding/stripe` access for onboarded users (or remove redirect requirement)",
+        "Handle loading and error states appropriately",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "Filter Billing History to Show Only Past Invoices",
+      "description": "As a user, I want to see only past billed invoices in billing history, not future billing periods.",
+      "acceptanceCriteria": [
+        "Update `BillingUsageService.getBillingHistory()` method to filter out future billing periods",
+        "Filter records where `billingPeriodStart` is in the future (after current date)",
+        "Only return billing usage records where `billingPeriodStart <= current date`",
+        "Maintain existing ordering (DESC by billingPeriodStart) and limit functionality",
+        "Update backend endpoint to ensure only past invoices are returned",
+        "Frontend billing history table should not display future periods",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

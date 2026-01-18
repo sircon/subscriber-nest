@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,8 @@ const DISMISSAL_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 export function SubscriptionWarningBanner() {
   const router = useRouter();
   const { token } = useAuth();
-  const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
+  const [billingStatus, setBillingStatus] =
+    useState<BillingStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
@@ -25,7 +25,7 @@ export function SubscriptionWarningBanner() {
         const { timestamp } = JSON.parse(dismissalData);
         const now = Date.now();
         const timeSinceDismissal = now - timestamp;
-        
+
         // If less than 24 hours have passed, keep it dismissed
         if (timeSinceDismissal < DISMISSAL_DURATION_MS) {
           setDismissed(true);
@@ -84,26 +84,30 @@ export function SubscriptionWarningBanner() {
   }
 
   return (
-    <Alert variant="warning" className="mb-6 relative">
+    <div className="mb-6 relative rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/8 to-amber-500/10 p-5 shadow-sm backdrop-blur-sm">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <AlertTitle>Subscription Inactive</AlertTitle>
-          <AlertDescription>
-            Your subscription is inactive. Please update your payment method to continue syncing and exporting.
-          </AlertDescription>
+        <div className="flex-1 space-y-1.5">
+          <h5 className="font-semibold text-amber-200 leading-tight tracking-tight">
+            Subscription Inactive
+          </h5>
+          <p className="text-sm text-amber-100/90 leading-relaxed">
+            Your subscription is inactive. Please update your payment method to
+            continue syncing and exporting.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleManageSubscription}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all hover:shadow-md"
           >
             Manage Subscription
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 text-amber-200/70 hover:text-amber-200 hover:bg-amber-500/10"
             onClick={handleDismiss}
             aria-label="Dismiss"
           >
@@ -111,6 +115,6 @@ export function SubscriptionWarningBanner() {
           </Button>
         </div>
       </div>
-    </Alert>
+    </div>
   );
 }
