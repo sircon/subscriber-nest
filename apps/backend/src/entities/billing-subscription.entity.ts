@@ -39,6 +39,9 @@ export class BillingSubscription {
   @Column({ type: 'varchar', length: 255, nullable: true })
   stripePriceId: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  stripeSubscriptionItemId: string | null;
+
   @Column({
     type: 'enum',
     enum: BillingSubscriptionStatus,

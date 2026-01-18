@@ -61,6 +61,7 @@ export class BillingSubscriptionService {
     stripeCustomerId: string;
     stripeSubscriptionId?: string | null;
     stripePriceId?: string | null;
+    stripeSubscriptionItemId?: string | null;
     status: BillingSubscriptionStatus;
     currentPeriodStart?: Date | null;
     currentPeriodEnd?: Date | null;
@@ -161,6 +162,7 @@ export class BillingSubscriptionService {
     const updateData: Partial<BillingSubscription> = {
       stripeSubscriptionId: stripeSubscription.id,
       stripePriceId: stripeSubscription.items.data[0]?.price.id || null,
+      stripeSubscriptionItemId: stripeSubscription.items.data[0]?.id || null,
       status,
       currentPeriodStart: (stripeSubscription as any).current_period_start
         ? new Date((stripeSubscription as any).current_period_start * 1000)
@@ -189,6 +191,7 @@ export class BillingSubscriptionService {
         stripeCustomerId: stripeSubscription.customer as string,
         stripeSubscriptionId: updateData.stripeSubscriptionId || null,
         stripePriceId: updateData.stripePriceId || null,
+        stripeSubscriptionItemId: updateData.stripeSubscriptionItemId || null,
         status: updateData.status!,
         currentPeriodStart: updateData.currentPeriodStart || null,
         currentPeriodEnd: updateData.currentPeriodEnd || null,
