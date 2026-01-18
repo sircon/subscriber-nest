@@ -118,3 +118,28 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Use URL constructor and URLSearchParams for building OAuth authorization URLs cleanly
   - Controller-level `@UseGuards(AuthGuard)` applies to all routes in the controller
 ---
+
+## Sun Jan 19 2026 - US-006
+- Created OAuth callback endpoint `GET /esp-connections/oauth/callback/:provider` in EspConnectionController
+- Endpoint accepts query parameters: `code` (authorization code) and `state` (OAuth state)
+- Validates OAuth state using `OAuthStateService.validateState()` - throws BadRequestException for invalid/expired state
+- Exchanges authorization code for access token by calling ESP's token endpoint using HttpService
+- Token exchange includes: grant_type=authorization_code, code, redirect_uri, client_id, client_secret
+- Encrypts access token and refresh token using EncryptionService before storing
+- Stores encrypted tokens, expiry time, and creates EspConnection with OAuth auth method
+- Deletes OAuth state after successful validation using `OAuthStateService.deleteState()`
+- Redirects to frontend success page: `{FRONTEND_URL}/esp-connections/{connectionId}?oauth=success`
+- Handles errors appropriately: BadRequestException for invalid state/missing params, InternalServerErrorException for token exchange failures
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (updated)
+- **Learnings for future iterations:**
+  - OAuth callback endpoints should NOT require authentication (they're called by external OAuth providers)
+  - Use `@Query()` decorator to get query parameters from OAuth callback URLs
+  - HttpService from @nestjs/axios requires `firstValueFrom()` from rxjs to convert Observable to Promise
+  - Token exchange requests use `application/x-www-form-urlencoded` content type with URLSearchParams
+  - OAuth token responses may not always include refresh_token or expires_in - handle with defaults
+  - Calculate token expiry by adding expires_in seconds to current time
+  - Always delete OAuth state after successful use to prevent replay attacks
+  - Redirect to frontend with connection ID and success parameter for user feedback
+  - Note: Connection creation is basic implementation - will be refined in US-012 with proper `createOAuthConnection()` method
+---

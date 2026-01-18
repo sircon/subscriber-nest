@@ -44,9 +44,15 @@ export class CreateOAuthState1768744000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_oauth_states_userId_espType"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_oauth_states_state"`);
-    await queryRunner.query(`ALTER TABLE "oauth_states" DROP CONSTRAINT IF EXISTS "FK_oauth_states_userId"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "public"."IDX_oauth_states_userId_espType"`
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "public"."IDX_oauth_states_state"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "oauth_states" DROP CONSTRAINT IF EXISTS "FK_oauth_states_userId"`
+    );
     await queryRunner.query(`DROP TABLE IF EXISTS "oauth_states"`);
   }
 }

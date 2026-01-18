@@ -1,0 +1,863 @@
+# Ralph Progress Log
+Started: Sun Jan 18 12:24:26 CET 2026
+---
+
+## 2026-01-18 12:25:26 - US-001
+- Created `BillingSubscription` entity with all required fields (id, userId, stripeCustomerId, stripeSubscriptionId, stripePriceId, status enum, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, canceledAt, createdAt, updatedAt)
+- Added `@OneToOne` relationship from `BillingSubscription` to `User` entity
+- Added inverse `@OneToOne` relationship from `User` to `BillingSubscription` entity
+- Registered `BillingSubscription` entity in `AppModule` TypeOrmModule.forFeature array
+- Generated migration `1768735510135-CreateBillingSubscription.ts` which creates the table with proper enum type, unique constraints, and foreign key
+- Files changed:
+  - `apps/backend/src/entities/billing-subscription.entity.ts` (new)
+  - `apps/backend/src/entities/user.entity.ts` (added relationship)
+  - `apps/backend/src/app.module.ts` (registered entity)
+  - `apps/backend/src/migrations/1768735510135-CreateBillingSubscription.ts` (new)
+- **Learnings for future iterations:**
+  - TypeORM OneToOne relationships require `@JoinColumn` on the side that owns the foreign key (BillingSubscription side)
+  - When adding new entities, must register them in `TypeOrmModule.forFeature([...])` in the module
+  - Migration generation requires building the project first (`nest build`) to compile TypeScript
+  - Enum types are automatically created in migrations when using TypeORM enum columns
+  - Unique constraints are automatically added for `@Column({ unique: true })` decorators
+---
+
+## 2026-01-18 12:26:50 - US-002
+- Created `BillingUsage` entity with all required fields (id, userId, billingPeriodStart, billingPeriodEnd, maxSubscriberCount, calculatedAmount with decimal precision 10 scale 2, stripeInvoiceId, status enum, createdAt, updatedAt)
+- Added `@ManyToOne` relationship from `BillingUsage` to `User` entity
+- Added inverse `@OneToMany` relationship from `User` to `BillingUsage` entity
+- Added unique index on `userId` + `billingPeriodStart` using `@Index` decorator to prevent duplicate billing periods per user
+- Registered `BillingUsage` entity in `AppModule` TypeOrmModule.forFeature array
+- Generated migration `1768735595273-CreateBillingUsage.ts` which creates the table with proper enum type, decimal column (numeric(10,2)), unique composite index, and foreign key
+- Files changed:
+  - `apps/backend/src/entities/billing-usage.entity.ts` (new)
+  - `apps/backend/src/entities/user.entity.ts` (added relationship)
+  - `apps/backend/src/app.module.ts` (registered entity)
+  - `apps/backend/src/migrations/1768735595273-CreateBillingUsage.ts` (new)
+- **Learnings for future iterations:**
+  - TypeORM decimal columns use `type: 'decimal'` with `precision` and `scale` options, which generates `numeric(precision, scale)` in PostgreSQL
+  - Composite unique indexes are created using `@Index(['field1', 'field2'], { unique: true })` decorator at the entity class level
+  - TypeORM ManyToOne relationships require `@JoinColumn` on the side that owns the foreign key (BillingUsage side)
+  - Migration generation automatically creates enum types, foreign key constraints, and indexes based on entity decorators
+---
+
+## 2026-01-19 - US-003
+- Installed `stripe` npm package (v20.2.0) in backend
+- Added `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` environment variables to `.env.example`
+- Created `StripeService` with initialization of Stripe client using ConfigService
+- Service validates both Stripe keys are configured on initialization (fail-fast pattern)
+- Service provides `getClient()` method to access Stripe instance and `getWebhookSecret()` method for webhook verification
+- Registered `StripeService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/package.json` (added stripe dependency)
+  - `apps/backend/.env.example` (added Stripe environment variables)
+  - `apps/backend/src/services/stripe.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Stripe API version must match the version supported by the installed stripe package (currently '2025-12-15.clover')
+  - Services that require environment variables should validate them in constructor using fail-fast pattern (throw error if missing)
+  - Use `ConfigService` from `@nestjs/config` to read environment variables (already configured globally in AppModule)
+  - Stripe client initialization requires secret key, webhook secret is stored separately for webhook signature verification
+---
+
+## 2026-01-18 12:29:01 - US-004
+- Added `createCustomer(email: string, userId: string): Promise<Stripe.Customer>` method to `StripeService`
+- Method creates Stripe customer with email and metadata containing userId
+- Method returns Stripe customer object
+- Implemented error handling: catches Stripe API errors and wraps them in `InternalServerErrorException` with descriptive messages
+- Added import for `InternalServerErrorException` from `@nestjs/common`
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added createCustomer method)
+- **Learnings for future iterations:**
+  - Stripe errors are instances of `Stripe.errors.StripeError` and can be caught and handled appropriately
+  - Use `InternalServerErrorException` from `@nestjs/common` for external API errors (following pattern from other services)
+  - Stripe customer metadata is useful for linking Stripe customers to internal user IDs
+  - Always wrap external API calls in try-catch blocks to handle errors gracefully
+---
+
+## 2026-01-19 - US-005
+- Added `STRIPE_PRICE_ID` environment variable to `.env.example` for metered billing price configuration
+- Implemented `createSubscription(customerId: string): Promise<Stripe.Subscription>` method in `StripeService`
+- Method creates Stripe subscription with monthly billing cycle using price ID from environment
+- Subscription uses metered billing (usage-based pricing) via the configured price ID
+- Implemented `cancelSubscription(subscriptionId: string, cancelAtPeriodEnd: boolean): Promise<Stripe.Subscription>` method
+- Method supports both immediate cancellation and cancellation at period end based on `cancelAtPeriodEnd` parameter
+- Implemented `getSubscription(subscriptionId: string): Promise<Stripe.Subscription>` method to retrieve subscription details
+- All methods include proper error handling with `InternalServerErrorException` for Stripe API errors
+- Files changed:
+  - `apps/backend/.env.example` (added STRIPE_PRICE_ID)
+  - `apps/backend/src/services/stripe.service.ts` (added createSubscription, cancelSubscription, getSubscription methods)
+- **Learnings for future iterations:**
+  - Stripe subscriptions for metered billing require a price ID configured in environment variables
+  - For monthly billing, Stripe automatically handles billing cycles - no need to set `billing_cycle_anchor` explicitly
+  - Stripe subscription cancellation can be immediate (`subscriptions.cancel()`) or at period end (`subscriptions.update()` with `cancel_at_period_end: true`)
+  - When creating subscriptions, the price ID must be configured in Stripe Dashboard with `usage_type: 'metered'` for usage-based pricing
+  - Stripe subscription creation only requires `customer` and `items` with `price` - billing cycle is determined by the price configuration
+---
+
+## 2026-01-19 - US-006
+- Created `BillingCalculationService` with `calculateAmount(subscriberCount: number): number` method
+- Implemented tiered pricing logic: $5 for first 10,000 subscribers, then $1 per each additional 10,000 subscribers
+- Method handles edge cases: returns $0 for 0 or negative subscribers, handles very large numbers correctly
+- Method rounds to 2 decimal places to handle floating point precision issues
+- Registered `BillingCalculationService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/services/billing-calculation.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Services that don't require dependencies (like calculation services) can be simple `@Injectable()` classes without constructor injection
+  - When implementing tiered pricing, use `Math.ceil()` to round up to the next tier (e.g., 15,001 subscribers should be charged for 2 additional tiers)
+  - Always handle edge cases (0, negative numbers) explicitly in calculation methods
+  - Round monetary calculations to 2 decimal places to avoid floating point precision issues
+---
+
+## 2026-01-18 12:33:03 - US-007
+- Created `BillingUsageService` with `updateUsage(userId: string, currentSubscriberCount: number): Promise<void>` method
+- Method finds or creates `BillingUsage` record for current billing period (calendar month)
+- Method updates `maxSubscriberCount` if current count is higher than stored max
+- Billing period calculation: uses `getCurrentBillingPeriod()` helper to get first day of month (00:00:00) and last day of month (23:59:59.999)
+- Method calculates billing amount using `BillingCalculationService.calculateAmount()` with max subscriber count
+- Method updates `calculatedAmount` field with calculated amount
+- Registered `BillingUsageService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Calendar month billing periods: use `new Date(year, month, 1, 0, 0, 0, 0)` for start and `new Date(year, month + 1, 0, 23, 59, 59, 999)` for end (last day of month)
+  - When finding billing usage records, query by `userId` and `billingPeriodStart` to leverage the unique index
+  - When updating max subscriber count, only update if current count is higher (track maximum, not current)
+  - Always recalculate `calculatedAmount` after updating `maxSubscriberCount` to keep billing amounts in sync
+  - New billing usage records should be created with `status: BillingUsageStatus.PENDING` (will be updated to 'invoiced' when billed)
+---
+
+## 2026-01-19 - US-008
+- Created `BillingProcessor` that extends BullMQ `WorkerHost` to process monthly billing jobs
+- Added `billing` queue to `AppModule` with retry configuration (3 attempts, exponential backoff)
+- Added `createInvoiceItem()` and `createAndFinalizeInvoice()` methods to `StripeService` for invoice management
+- Created `BillingSchedulerService` that implements `OnModuleInit` to schedule monthly billing job on app startup
+- Scheduled job runs on 1st day of each month at 00:00 UTC using BullMQ repeatable jobs with cron pattern `0 0 1 * *`
+- Processor finds all users with active subscriptions and processes billing for each user
+- For each user: retrieves `BillingUsage` for previous month, creates Stripe invoice item, finalizes invoice, updates usage record with `stripeInvoiceId` and `status: 'invoiced'`, creates new `BillingUsage` record for current month
+- Processor calculates billing period dynamically (previous month) when job runs
+- Error handling: logs errors per user but continues processing other users, updates usage status to 'failed' on invoice errors, re-throws errors for BullMQ retry handling
+- Files changed:
+  - `apps/backend/src/app.module.ts` (added billing queue, registered processor and scheduler service)
+  - `apps/backend/src/services/stripe.service.ts` (added createInvoiceItem, createAndFinalizeInvoice methods)
+  - `apps/backend/src/processors/billing.processor.ts` (new)
+  - `apps/backend/src/services/billing-scheduler.service.ts` (new)
+- **Learnings for future iterations:**
+  - BullMQ repeatable jobs use `repeat: { pattern: 'cron-pattern', tz: 'UTC' }` option when adding jobs
+  - Use `getRepeatableJobs()` to check if a repeatable job already exists before scheduling to avoid duplicates
+  - For monthly billing jobs, calculate billing period dates dynamically in the processor based on when the job runs (not when scheduled)
+  - When processing multiple users in a job, wrap each user's processing in try-catch to continue with other users if one fails
+  - Stripe invoice items require amounts in cents (multiply dollars by 100), invoices are created with `auto_advance: true` to automatically finalize
+  - Use `BillingUsageService.updateUsage()` to create new billing usage records for current month after processing previous month
+  - Check `job.attemptsMade >= maxAttempts` to detect final retry attempt for logging permanent failures
+---
+
+## 2026-01-19 - US-009
+- Created `BillingSubscriptionService` to handle database operations for `BillingSubscription` entity
+- Service provides methods: `findByUserId()`, `findByStripeCustomerId()`, `findByStripeSubscriptionId()`, `create()`, `update()`, `updateByStripeSubscriptionId()`, `syncFromStripe()`, `hasActiveSubscription()`
+- Created `BillingController` with `POST /billing/webhook` endpoint
+- Endpoint verifies Stripe webhook signature using `STRIPE_WEBHOOK_SECRET` and raw body
+- Configured NestJS app to preserve raw body for `/billing/webhook` route using `express.raw({ type: 'application/json' })`
+- Handles webhook events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
+- For subscription events: syncs subscription data from Stripe to `BillingSubscription` entity (status, period dates, cancellation flags)
+- For invoice events: updates `BillingUsage` records with payment status (`PAID` or `FAILED`)
+- Added methods to `BillingUsageService`: `findByStripeInvoiceId()`, `updateStatus()`, `updateStatusByInvoiceId()`
+- Endpoint returns 200 status for successful processing, handles errors gracefully with logging
+- Registered `BillingController` and `BillingSubscriptionService` in `AppModule`
+- Files changed:
+  - `apps/backend/src/services/billing-subscription.service.ts` (new)
+  - `apps/backend/src/services/billing-usage.service.ts` (added invoice status update methods)
+  - `apps/backend/src/controllers/billing.controller.ts` (new)
+  - `apps/backend/src/main.ts` (configured raw body middleware for webhook endpoint)
+  - `apps/backend/src/app.module.ts` (registered controller and service)
+- **Learnings for future iterations:**
+  - Stripe webhook signature verification requires raw body (Buffer), not parsed JSON
+  - Configure NestJS to preserve raw body for webhook routes using `express.raw({ type: 'application/json' })` middleware before JSON parsing
+  - Stripe subscription properties like `current_period_start` and `current_period_end` are Unix timestamps (seconds), need to multiply by 1000 for JavaScript Date
+  - Stripe TypeScript types may not include all properties - use type assertions `(stripeSubscription as any).property` when accessing properties that exist in API but not in types
+  - When syncing Stripe data, try to find existing subscription by Stripe subscription ID first, then by customer ID, then create new if not found
+  - For webhook handlers, always verify signature first, then process events, and return 200 even for unhandled event types (to acknowledge receipt)
+  - Use Logger from `@nestjs/common` for structured logging in controllers
+  - When updating entities from webhooks, handle cases where entity might not exist yet (create vs update logic)
+---
+
+## 2026-01-19 - US-010
+- Added `POST /billing/create-checkout-session` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint checks if user already has a Stripe customer (via `BillingSubscription`), creates new customer if needed
+- Created `createCheckoutSession()` method in `StripeService` to create Stripe Checkout sessions
+- Checkout session configured with success URL: `/dashboard/settings?session_id={CHECKOUT_SESSION_ID}` and cancel URL: `/onboarding/stripe?canceled=true`
+- Checkout session includes customer email from authenticated user
+- Added `FRONTEND_URL` environment variable to `.env.example` for configuring redirect URLs
+- Endpoint returns `{ url: string }` with checkout session URL
+- Proper error handling with logging and `InternalServerErrorException` for Stripe API errors
+- Files changed:
+  - `apps/backend/.env.example` (added FRONTEND_URL)
+  - `apps/backend/src/services/stripe.service.ts` (added createCheckoutSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added createCheckoutSession endpoint)
+- **Learnings for future iterations:**
+  - Stripe Checkout sessions require a price ID configured in environment variables (same as subscriptions)
+  - When creating checkout sessions, use `mode: 'subscription'` for subscription-based checkout
+  - Stripe Checkout success URLs can include `{CHECKOUT_SESSION_ID}` placeholder which Stripe will replace with actual session ID
+  - Always check if user already has a Stripe customer before creating a new one to avoid duplicate customers
+  - When creating a new Stripe customer during checkout, also create or update the `BillingSubscription` record with the customer ID
+  - Use `ConfigService` to read frontend URL from environment for constructing redirect URLs
+  - Stripe Checkout sessions return a `url` property that should be returned to the frontend for redirecting the user
+---
+
+## 2026-01-19 - US-011
+- Added `createPortalSession(customerId: string, returnUrl: string): Promise<Stripe.BillingPortal.Session>` method to `StripeService`
+- Method creates Stripe Customer Portal session using `stripe.billingPortal.sessions.create()` API
+- Added `POST /billing/create-portal-session` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint validates user has active Stripe customer by checking `BillingSubscription` record
+- Endpoint throws `BadRequestException` if user does not have a Stripe customer
+- Portal session return URL configured to `/dashboard/settings` using `FRONTEND_URL` environment variable
+- Endpoint returns `{ url: string }` with portal session URL
+- Proper error handling with logging and appropriate exception types (`BadRequestException`, `InternalServerErrorException`)
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added createPortalSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added createPortalSession endpoint)
+- **Learnings for future iterations:**
+  - Stripe Customer Portal sessions are created using `stripe.billingPortal.sessions.create()` API (not checkout sessions)
+  - Portal sessions require a `customer` ID and `return_url` for redirecting after the user finishes managing their subscription
+  - Always validate that user has a Stripe customer before creating portal session to avoid Stripe API errors
+  - Portal sessions allow users to manage payment methods, view invoices, and cancel subscriptions directly in Stripe's hosted portal
+  - Use `BadRequestException` for client errors (missing customer) and `InternalServerErrorException` for Stripe API errors
+  - Portal session URLs are returned in the same format as checkout session URLs (`{ url: string }`)
+---
+
+## 2026-01-19 - US-012
+- Added `GET /billing/status` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint returns `{ hasActiveSubscription: boolean, subscription: BillingSubscription | null, currentPeriodEnd: Date | null }`
+- `hasActiveSubscription` is true if subscription status is 'active' and not canceled at period end
+- Returns subscription details if exists, null otherwise
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getBillingStatus endpoint and Get import)
+- **Learnings for future iterations:**
+  - GET endpoints in NestJS use `@Get()` decorator (not `@Post()`)
+  - When returning entity objects from endpoints, TypeORM entities are automatically serialized to JSON
+  - The `hasActiveSubscription` logic checks both status === ACTIVE and !cancelAtPeriodEnd to ensure subscription is truly active
+  - AuthGuard automatically returns 401 Unauthorized if authentication fails, no need to handle it explicitly in the endpoint
+  - When checking subscription status, return the full subscription object so frontend can access all subscription details if needed
+---
+
+## 2026-01-18 12:42:22 - US-013
+- Added `GET /billing/usage` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint returns current month's `BillingUsage` record with: `maxSubscriberCount`, `calculatedAmount`, `billingPeriodStart`, `billingPeriodEnd`
+- If no usage record exists for current month, endpoint counts current subscribers across all user's ESP connections and creates a new usage record using `BillingUsageService.updateUsage()`
+- Added `getCurrentUsage(userId: string)` method to `BillingUsageService` to retrieve current month's billing usage
+- Endpoint uses `In()` from TypeORM to query subscribers across multiple ESP connections efficiently
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getCurrentUsage endpoint, injected EspConnection and Subscriber repositories)
+  - `apps/backend/src/services/billing-usage.service.ts` (added getCurrentUsage method)
+- **Learnings for future iterations:**
+  - Use `In()` from TypeORM to query records where a field matches any value in an array (e.g., `where: { espConnectionId: In(connectionIds) }`)
+  - When counting subscribers across multiple ESP connections, first get all connection IDs for the user, then use `In()` to count subscribers
+  - The `BillingUsageService.updateUsage()` method already handles creating new records if they don't exist, so it can be reused for initialization
+  - When returning decimal values from TypeORM entities, convert to number using `Number()` to ensure proper JSON serialization (TypeORM returns decimals as strings)
+  - Always check if usage record exists before creating, to avoid unnecessary database operations
+---
+
+## 2026-01-18 12:43:31 - US-014
+- Added `GET /billing/history` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint accepts optional query parameter `limit` (default: 12) using `@Query('limit')` decorator
+- Endpoint validates limit is a positive number, throws `BadRequestException` if invalid
+- Added `getBillingHistory(userId: string, limit: number = 12)` method to `BillingUsageService` to retrieve past billing usage records
+- Service method queries `BillingUsage` records ordered by `billingPeriodStart` DESC with limit
+- Endpoint returns array of past `BillingUsage` records with: `billingPeriodStart`, `billingPeriodEnd`, `maxSubscriberCount`, `calculatedAmount`, `status`, `stripeInvoiceId`
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getBillingHistory endpoint, added Query import)
+  - `apps/backend/src/services/billing-usage.service.ts` (added getBillingHistory method)
+- **Learnings for future iterations:**
+  - Use `@Query('paramName')` decorator to access query parameters in NestJS controllers
+  - Query parameters are strings by default, need to parse to numbers using `parseInt(value, 10)`
+  - Always validate query parameters (check for NaN, negative values, etc.) before using them
+  - Use `order: { field: 'DESC' }` in TypeORM queries to order results descending
+  - Use `take: limit` in TypeORM queries to limit the number of results returned
+  - When mapping entity results to response DTOs, convert decimal fields using `Number()` for proper JSON serialization
+  - Default parameter values in TypeScript methods (e.g., `limit: number = 12`) provide fallback values if parameter is undefined
+---
+
+## 2026-01-18 12:44:46 - US-015
+- Created `SubscriptionGuard` that implements `CanActivate` interface
+- Guard checks if user has active subscription using `BillingSubscriptionService.findByUserId()`
+- Guard allows access if subscription status is `ACTIVE` and `cancelAtPeriodEnd` is false
+- Guard allows access if subscription is `CANCELED` but `currentPeriodEnd` is in the future (grace period)
+- Guard throws `ForbiddenException` with message "Active subscription required" if subscription is inactive or doesn't exist
+- Applied guard to `POST /esp-connections/:id/sync` endpoint using `@UseGuards(SubscriptionGuard)` decorator
+- Applied guard to `GET /esp-connections/:id/subscribers/export` endpoint using `@UseGuards(SubscriptionGuard)` decorator
+- Registered `SubscriptionGuard` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/guards/subscription.guard.ts` (new)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added SubscriptionGuard import and applied to sync and export endpoints)
+  - `apps/backend/src/app.module.ts` (registered SubscriptionGuard in providers)
+- **Learnings for future iterations:**
+  - Guards that use dependency injection (like `BillingSubscriptionService`) must be registered in module providers
+  - Guards can be applied at the controller level (affects all routes) or at the method level (affects specific routes)
+  - When applying multiple guards, use `@UseGuards(Guard1, Guard2)` - guards execute in order
+  - Guards access the request object via `context.switchToHttp().getRequest()` to get the authenticated user (set by AuthGuard)
+  - For grace period logic, check if subscription is canceled but `currentPeriodEnd` is in the future (allows access during remaining billing period)
+  - Always check if user exists in guard (even though AuthGuard should have set it) as a safety measure
+  - Use `ForbiddenException` from `@nestjs/common` for authorization failures (403 status)
+---
+
+## 2026-01-18 12:46:19 - US-016
+- Updated `SubscriberSyncService.syncSubscribers()` method to track billing usage after successful sync
+- After processing all subscribers, method counts total subscribers across all user's ESP connections using `In()` from TypeORM
+- Method calls `BillingUsageService.updateUsage(userId, totalSubscriberCount)` to update billing usage
+- Billing usage update happens after all subscribers are processed, even if some individual subscribers fail to process
+- Injected `BillingUsageService` and `Subscriber` repository into `SubscriberSyncService` constructor
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (added billing usage tracking)
+- **Learnings for future iterations:**
+  - When updating billing usage after sync, get userId from espConnection and count subscribers across all user's ESP connections
+  - Use `In()` from TypeORM to efficiently count subscribers across multiple ESP connections: `where: { espConnectionId: In(connectionIds) }`
+  - Billing usage update should happen after all subscribers are processed, not during individual subscriber processing
+  - The `BillingUsageService.updateUsage()` method tracks the maximum subscriber count for the current billing period, so it's safe to call after each sync
+---
+
+## 2026-01-18 12:47:48 - US-017
+- Created Stripe onboarding page at `src/app/onboarding/stripe/page.tsx`
+- Page displays heading "Connect your payment method" with description explaining usage-based billing model ($5 for first 10,000 subscribers, then $1 per each additional 10,000 subscribers per month)
+- Added "Connect Stripe" button that calls `POST /billing/create-checkout-session` endpoint
+- On success, redirects user to Stripe Checkout URL using `window.location.href`
+- Handles canceled checkout case: checks for `canceled=true` query parameter and displays message allowing retry
+- Page handles loading and error states with appropriate UI feedback
+- Uses shadcn components (Button, Card with CardHeader, CardTitle, CardDescription, CardContent)
+- Wrapped form component in Suspense boundary to handle `useSearchParams()` requirement
+- Added billing API functions to `src/lib/api.ts`: `createCheckoutSession()`, `createPortalSession()`, `getBillingStatus()`, `getCurrentUsage()`, `getBillingHistory()` with proper TypeScript types
+- Files changed:
+  - `apps/frontend/src/app/onboarding/stripe/page.tsx` (new)
+  - `apps/frontend/src/lib/api.ts` (added billingApi namespace with all billing functions)
+- **Learnings for future iterations:**
+  - When using `useSearchParams()` in client components, wrap the component in a Suspense boundary to avoid build errors
+  - Stripe Checkout redirects are handled by setting `window.location.href` to the checkout URL (full page navigation)
+  - Cancel URLs from Stripe Checkout include query parameters that can be checked with `useSearchParams()`
+  - Billing API functions follow the same pattern as other API namespaces (authApi, espConnectionApi) with token and onUnauthorized callback
+  - When creating API client functions, define TypeScript interfaces for all request/response types at the top of the file
+  - Suspense fallback should match the structure of the actual component for better UX during loading
+---
+
+## 2026-01-19 - US-018
+- Updated `api-key/page.tsx` to redirect to `/onboarding/stripe` after ESP connection creation (instead of completing onboarding immediately)
+- Removed `completeOnboarding` call and `login` context update from API key step
+- Updated `auth.service.ts` `completeOnboarding` method to check for active subscription using `BillingSubscriptionService.hasActiveSubscription()` before marking user as onboarded
+- Method throws `BadRequestException` with message "Active subscription required to complete onboarding" if no active subscription exists
+- Injected `BillingSubscriptionService` into `AuthService` constructor (service already registered in AppModule)
+- Middleware already allows access to `/onboarding/stripe` for authenticated but not onboarded users (route starts with `/onboarding` which is in `onboardingRoutes` array)
+- Removed unused imports (`authApi`, `login` from useAuth) from api-key page
+- Files changed:
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` (updated redirect logic, removed onboarding completion)
+  - `apps/backend/src/auth.service.ts` (added subscription check to completeOnboarding)
+- **Learnings for future iterations:**
+  - When updating onboarding flow, ensure middleware route patterns match (routes starting with `/onboarding` are automatically allowed for authenticated but not onboarded users)
+  - Services must be registered in module providers before they can be injected into other services
+  - Use `BadRequestException` for business logic validation errors (like missing subscription requirement)
+  - When removing functionality from a component, remember to remove unused imports to avoid lint errors
+  - The onboarding completion endpoint should validate all prerequisites (like active subscription) before marking user as onboarded
+---
+
+## 2026-01-19 - US-019
+- Created billing settings page at `apps/frontend/src/app/dashboard/settings/billing/page.tsx`
+- Page displays current month usage card showing max subscriber count, calculated amount, and billing period dates
+- Page displays subscription status card showing subscription status, current period end date, and cancel at period end flag (if applicable)
+- Added "Manage Subscription" and "View Invoices" buttons that open Stripe Customer Portal (both use the same portal session as Stripe doesn't support opening specific sections via API)
+- Implemented billing history table displaying past 12 months with period dates, subscriber count, amount, status, and invoice links
+- Added loading states with skeleton UI and error handling with user-friendly error messages
+- Used shadcn components: Card, Table (with TableHeader, TableBody, TableRow, TableCell, TableHead), and Button
+- Page fetches billing data using `billingApi.getBillingStatus()`, `billingApi.getCurrentUsage()`, and `billingApi.getBillingHistory()` on mount
+- Implemented date formatting using `toLocaleDateString()` and currency formatting using `Intl.NumberFormat`
+- Added status color coding for billing history items (green for paid, blue for invoiced, yellow for pending, red for failed)
+- Invoice links open Stripe dashboard invoices in new tab
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (new)
+- **Learnings for future iterations:**
+  - Use `Promise.all()` to fetch multiple API endpoints in parallel for better performance
+  - Stripe Customer Portal doesn't support opening specific sections (like invoices) directly via API - users navigate within the portal
+  - When displaying billing periods, show both start and end dates for clarity
+  - Use `Intl.NumberFormat` for currency formatting to ensure proper locale-specific formatting
+  - Status enums from backend are typically in snake_case (e.g., 'past_due') - format them for display using string manipulation
+  - Stripe invoice IDs can be used to construct dashboard URLs: `https://dashboard.stripe.com/invoices/{invoice_id}`
+  - Always handle loading and error states in data-fetching components for better UX
+  - Use skeleton loaders that match the structure of the actual content for better perceived performance
+---
+
+## 2026-01-19 - US-020
+- Verified all billing API client functions are already implemented in `apps/frontend/src/lib/api.ts`
+- All required functions present: `getBillingStatus()`, `getCurrentUsage()`, `getBillingHistory(limit?: number)`, `createCheckoutSession()`, `createPortalSession()`
+- All functions include proper TypeScript types (interfaces defined: `BillingStatusResponse`, `CurrentUsageResponse`, `BillingHistoryItem[]`, `CreateCheckoutSessionResponse`, `CreatePortalSessionResponse`)
+- All functions handle authentication tokens (accept `token: string | null` parameter)
+- All functions handle 401 errors (accept `onUnauthorized?: OnUnauthorizedCallback` parameter)
+- Functions follow the same pattern as other API namespaces (authApi, espConnectionApi) using the shared `apiRequest()` helper
+- Typecheck passes: `yarn tsc --noEmit` in frontend directory completes successfully
+- Lint passes: `turbo run lint --filter=frontend` completes successfully
+- Files changed:
+  - No changes needed - functions were already implemented in US-017
+- **Learnings for future iterations:**
+  - When verifying story completion, check if functionality was already implemented in previous stories (billing API functions were added in US-017)
+  - API client functions should follow consistent patterns across all namespaces for maintainability
+  - All API functions should use the shared `apiRequest()` helper to ensure consistent error handling and authentication
+  - TypeScript interfaces for API responses should be defined at the top of the API client file for easy reference
+---
+
+## 2026-01-19 - US-021
+- Added `deleteRequestedAt` (timestamp, nullable) field to `User` entity
+- Added `deletedAt` (timestamp, nullable) field to `User` entity
+- Generated migration `1768737205620-AddAccountDeletionFields.ts` which adds both fields to users table
+- Fixed existing billing migrations to be idempotent (use `IF NOT EXISTS` for tables, `DO $$ BEGIN ... EXCEPTION` blocks for enums and constraints) to handle cases where migrations were partially run
+- Migration executed successfully
+- Files changed:
+  - `apps/backend/src/entities/user.entity.ts` (added deleteRequestedAt and deletedAt fields)
+  - `apps/backend/src/migrations/1768737205620-AddAccountDeletionFields.ts` (new)
+  - `apps/backend/src/migrations/1768735510135-CreateBillingSubscription.ts` (made idempotent)
+  - `apps/backend/src/migrations/1768735595273-CreateBillingUsage.ts` (made idempotent)
+- **Learnings for future iterations:**
+  - When adding nullable timestamp fields to entities, use `@Column({ type: 'timestamp', nullable: true })` decorator
+  - TypeORM generates `TIMESTAMP` columns in PostgreSQL for timestamp fields (nullable by default when nullable: true is set)
+  - When migrations fail due to existing objects (tables, enums, constraints), make migrations idempotent using:
+    - `CREATE TABLE IF NOT EXISTS` for tables
+    - `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` for enums
+    - `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '...') THEN ... END IF; END $$;` for constraints
+  - `CREATE UNIQUE INDEX IF NOT EXISTS` for indexes
+  - This pattern is useful when database state is out of sync with migration tracking table
+---
+
+## 2026-01-18 12:56:15 - US-022
+- Created `AccountController` with `POST /account/delete` endpoint
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint sets `deleteRequestedAt` timestamp on user when deletion is requested
+- Endpoint cancels Stripe subscription immediately (if exists) using `StripeService.cancelSubscription()` with `cancelAtPeriodEnd: false`
+- Created `AccountDeletionProcessor` that extends BullMQ `WorkerHost` to process account deletion jobs
+- Created `AccountDeletionSchedulerService` that implements `OnModuleInit` to schedule daily account deletion job on app startup
+- Scheduled job runs daily at 00:00 UTC using BullMQ repeatable jobs with cron pattern `0 0 * * *`
+- Processor finds all users with `deleteRequestedAt` older than 30 days and processes deletion for each user
+- For each user: cancels Stripe subscription if still active, deletes subscribers (using `In()` for multiple ESP connections), deletes sync history, deletes ESP connections, deletes billing usage records, deletes billing subscription, deletes sessions, hard deletes user (sets `deletedAt` and removes)
+- Processor supports manual runs for specific users via `userId` in job data
+- Error handling: logs errors per user but continues processing other users, re-throws errors for BullMQ retry handling
+- Registered `account-deletion` queue in `AppModule` with retry configuration (3 attempts, exponential backoff)
+- Registered `AccountController`, `AccountDeletionProcessor`, and `AccountDeletionSchedulerService` in `AppModule`
+- Files changed:
+  - `apps/backend/src/controllers/account.controller.ts` (new)
+  - `apps/backend/src/processors/account-deletion.processor.ts` (new)
+  - `apps/backend/src/services/account-deletion-scheduler.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered controller, processor, scheduler, and queue)
+- **Learnings for future iterations:**
+  - When deleting related data, use TypeORM's `In()` operator to efficiently delete records across multiple foreign keys (e.g., subscribers for multiple ESP connections)
+  - For daily scheduled jobs, use cron pattern `0 0 * * *` (daily at 00:00 UTC)
+  - When checking if 30 days have passed, calculate `thirtyDaysAgo` by subtracting 30 days from current date: `new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)`
+  - When canceling Stripe subscriptions during account deletion, check subscription status first to avoid errors on already-canceled subscriptions
+  - Hard deletion of users should set `deletedAt` timestamp before removing the record for audit purposes
+  - Processors can support both scheduled runs (process all eligible records) and manual runs (process specific record via job data)
+  - When deleting cascading data, delete in order: child records first (subscribers, sync history), then parent records (ESP connections), then user-level records (billing, sessions), finally user
+---
+
+## 2026-01-19 - US-023
+- Created account settings page at `apps/frontend/src/app/dashboard/settings/account/page.tsx`
+- Page displays user email (read-only) in Account Information card
+- Page displays account deletion section with warning message explaining 30-day grace period, data export availability, and immediate subscription cancellation
+- Created "Delete Account" button with confirmation dialog
+- Confirmation dialog explains: account will be deleted after 30 days, data can be exported during grace period, subscription will be canceled immediately
+- On confirmation, calls `POST /account/delete` endpoint via `accountApi.deleteAccount()`
+- After deletion request, shows success message: "Account deletion requested. You have 30 days to export your data. Your subscription has been canceled."
+- Page handles loading and error states with appropriate UI feedback
+- Created shadcn Dialog component (`apps/frontend/src/components/ui/dialog.tsx`) for confirmation dialogs
+- Created shadcn Alert component (`apps/frontend/src/components/ui/alert.tsx`) for warning messages
+- Added `accountApi.deleteAccount()` function to API client (`apps/frontend/src/lib/api.ts`)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/account/page.tsx` (new)
+  - `apps/frontend/src/components/ui/dialog.tsx` (new)
+  - `apps/frontend/src/components/ui/alert.tsx` (new)
+  - `apps/frontend/src/lib/api.ts` (added accountApi namespace with deleteAccount function)
+- **Learnings for future iterations:**
+  - When creating Dialog components, use `document.body.style.overflow = 'hidden'` to prevent background scrolling when dialog is open
+  - Dialog components should handle click-outside-to-close by checking if click target is the backdrop element
+  - Alert components can use variant props (default, destructive, warning) for different visual styles
+  - When ESLint complains about unused parameter names in function type definitions, prefix with underscore or use eslint-disable comment
+  - Account deletion flow: user requests deletion → backend sets `deleteRequestedAt` → scheduled job deletes after 30 days
+  - Success messages should clearly explain what happens next (30-day grace period, subscription cancellation, data export availability)
+  - Confirmation dialogs for destructive actions should include detailed explanations of consequences
+---
+
+## 2026-01-19 - US-024
+- Updated `AuthGuard` to check if user has `deleteRequestedAt` set and throw `ForbiddenException` with message "Account deletion in progress. You can export your data for 30 days." if set
+- Guard allows access to export endpoints (URLs containing `/subscribers/export`) during grace period
+- Updated backend auth endpoints (`/auth/me`, `/auth/verify-code`, `/auth/complete-onboarding`) to include `deleteRequestedAt` in user response
+- Updated frontend `User` interface in both `AuthContext.tsx` and `api.ts` to include `deleteRequestedAt: Date | string | null` (string for JSON serialization)
+- Created account deletion notice page at `apps/frontend/src/app/account-deletion/page.tsx`
+- Deletion page displays deletion date, deadline (30 days from request), remaining days, and allows exporting subscriber data in CSV, JSON, or Excel formats
+- Updated middleware to redirect deleted accounts (users with `deleteRequestedAt` set) to `/account-deletion` page, except when already on deletion page or accessing export endpoints
+- Files changed:
+  - `apps/backend/src/guards/auth.guard.ts` (added deleteRequestedAt check with export endpoint exception)
+  - `apps/backend/src/auth.controller.ts` (added deleteRequestedAt to user responses)
+  - `apps/backend/src/auth.service.ts` (added deleteRequestedAt to user responses)
+  - `apps/frontend/src/contexts/AuthContext.tsx` (updated User interface)
+  - `apps/frontend/src/lib/api.ts` (updated User interface)
+  - `apps/frontend/src/middleware.ts` (added redirect logic for deleted accounts)
+  - `apps/frontend/src/app/account-deletion/page.tsx` (new)
+- **Learnings for future iterations:**
+  - When checking for account deletion in guards, allow access to export endpoints by checking if request URL contains the export path pattern
+  - User objects from API responses serialize dates as strings, so User interfaces should accept `Date | string | null` for date fields
+  - Middleware can check user cookie for `deleteRequestedAt` to redirect deleted accounts, but the cookie needs to be updated when user data changes (via AuthContext)
+  - Deletion notice pages should provide clear information about deletion timeline and allow data export during grace period
+  - When updating user response types, update all endpoints that return user objects (`/auth/me`, `/auth/verify-code`, `/auth/complete-onboarding`) to maintain consistency
+  - Export endpoints should remain accessible during account deletion grace period to allow users to export their data
+---
+
+## 2026-01-19 - US-025
+- Created shadcn Tabs component at `apps/frontend/src/components/ui/tabs.tsx` using `@radix-ui/react-tabs`
+- Created settings layout at `apps/frontend/src/app/dashboard/settings/layout.tsx` with navigation tabs
+- Layout includes "Billing" and "Account" tabs that navigate to `/dashboard/settings/billing` and `/dashboard/settings/account` respectively
+- Active tab is highlighted based on current pathname using `usePathname()` hook
+- Navigation uses `useRouter()` to programmatically navigate when tabs change
+- Updated billing and account pages to remove duplicate headers (header now provided by layout)
+- Updated main settings page to redirect to `/dashboard/settings/billing` by default
+- Installed `@radix-ui/react-tabs` package dependency
+- Files changed:
+  - `apps/frontend/package.json` (added @radix-ui/react-tabs dependency)
+  - `apps/frontend/src/components/ui/tabs.tsx` (new)
+  - `apps/frontend/src/app/dashboard/settings/layout.tsx` (new)
+  - `apps/frontend/src/app/dashboard/settings/page.tsx` (updated to redirect to billing)
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (removed duplicate header)
+  - `apps/frontend/src/app/dashboard/settings/account/page.tsx` (removed duplicate header)
+- **Learnings for future iterations:**
+  - Next.js App Router layouts wrap all child routes in the same directory
+  - Use `usePathname()` hook to determine active tab based on current route
+  - Use `useRouter().push()` for programmatic navigation when tabs change
+  - Tabs component from Radix UI requires controlled value and `onValueChange` handler for navigation
+  - When creating layouts, remove duplicate headers from child pages to avoid redundancy
+  - Base route pages can redirect to default child route using `useEffect` and `router.replace()`
+  - shadcn Tabs component follows the same pattern as other UI components (Button, Card, etc.) using Radix UI primitives
+---
+
+## 2026-01-19 - US-026
+- Added `getCheckoutSession(sessionId: string)` method to `StripeService` to retrieve Stripe checkout sessions with subscription expansion
+- Added `POST /billing/verify-checkout-session` endpoint to `BillingController` that verifies checkout session, creates/updates subscription, and completes onboarding if needed
+- Endpoint verifies session is completed and paid, retrieves subscription from Stripe, syncs to `BillingSubscription` entity, and completes onboarding for non-onboarded users
+- Updated frontend billing settings page to check for `session_id` query parameter on load
+- When `session_id` is present, page calls verification endpoint, shows success message, removes `session_id` from URL, and reloads billing data
+- Added `verifyCheckoutSession()` function to billing API client with proper TypeScript types
+- Wrapped billing settings page content in Suspense boundary to support `useSearchParams()` hook
+- Used `useCallback` to memoize functions and prevent unnecessary re-renders
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added getCheckoutSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added verifyCheckoutSession endpoint, injected AuthService)
+  - `apps/frontend/src/lib/api.ts` (added BillingSubscription interface and verifyCheckoutSession function)
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (added session_id handling, success message, Suspense wrapper)
+- **Learnings for future iterations:**
+  - Stripe checkout sessions can be retrieved using `stripe.checkout.sessions.retrieve()` with `expand: ['subscription']` to get subscription details
+  - Checkout session `payment_status` must be 'paid' and `status` must be 'complete' for successful checkout
+  - When handling checkout success, verify session first, then sync subscription data, then complete onboarding if needed
+  - Use `useSearchParams()` from Next.js to read query parameters in client components (requires Suspense boundary)
+  - When using `useSearchParams()` in useEffect dependencies, wrap callback functions in `useCallback` to prevent infinite loops
+  - Success messages should be displayed prominently and removed from URL after processing to avoid re-processing on page refresh
+  - Always reload data after successful checkout verification to show updated subscription status to user
+---
+
+## 2026-01-19 - US-027
+- Created `SubscriptionWarningBanner` component that checks subscription status and displays warning banner for inactive subscriptions
+- Component fetches billing status using `billingApi.getBillingStatus()` on mount
+- Banner displays at top of dashboard with message: "Your subscription is inactive. Please update your payment method to continue syncing and exporting."
+- Banner includes "Manage Subscription" button that navigates to `/dashboard/settings/billing`
+- Banner is dismissible: stores dismissal timestamp in localStorage with key `subscription-warning-dismissed`
+- Banner reappears after 24 hours if subscription is still inactive (checks dismissal timestamp on mount)
+- Integrated banner into dashboard layout (`apps/frontend/src/app/dashboard/layout.tsx`) at top of main content area
+- Uses shadcn Alert component with `variant="warning"` for visual styling
+- Banner only displays when subscription is inactive and not dismissed (or dismissal expired)
+- Files changed:
+  - `apps/frontend/src/components/subscription-warning-banner.tsx` (new)
+  - `apps/frontend/src/app/dashboard/layout.tsx` (added banner import and integration)
+- **Learnings for future iterations:**
+  - When implementing dismissible banners with time-based reappearance, store dismissal timestamp in localStorage and check on component mount
+  - Use separate useEffect hooks: one for checking dismissal status, one for fetching data (prevents unnecessary API calls if dismissed)
+  - localStorage keys should be descriptive and namespaced to avoid conflicts (e.g., `subscription-warning-dismissed`)
+  - When calculating time differences, use `Date.now()` for current timestamp and compare with stored timestamp
+  - Banner components in layouts should be placed at the top of the main content area, before page-specific content
+  - Always check if user is authenticated and has token before making API calls in banner components
+  - Dismissal logic should clear localStorage when expiration period has passed to prevent stale data
+---
+
+## 2026-01-19 - US-028
+- Updated ESP detail page (`apps/frontend/src/app/dashboard/esp/[id]/page.tsx`) to check subscription status on page load
+- Added subscription status state (`hasActiveSubscription`) and loading state (`checkingSubscription`)
+- Added useEffect hook to fetch subscription status using `billingApi.getBillingStatus()` on component mount
+- Disabled "Sync" button when subscription is inactive, with tooltip showing "Active subscription required to sync"
+- Disabled "Export" button when subscription is inactive, with tooltip showing "Active subscription required to export"
+- Buttons show "Checking..." loading state with spinner while subscription status is being checked
+- Wrapped disabled buttons in TooltipProvider and Tooltip components from shadcn UI
+- Used span wrapper pattern for disabled buttons to enable tooltip functionality (disabled buttons don't trigger tooltips directly)
+- Typecheck passes: `yarn tsc --noEmit` completes successfully
+- Lint passes: `turbo run lint --filter=frontend` completes successfully
+- Build passes: `turbo run build --filter=frontend` completes successfully
+- Files changed:
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` (added subscription check, disabled buttons with tooltips)
+- **Learnings for future iterations:**
+  - Disabled buttons in React don't trigger pointer events, so tooltips need to wrap the button in a span element for proper functionality
+  - When checking subscription status, use separate state for loading (`checkingSubscription`) and result (`hasActiveSubscription`) to show appropriate UI states
+  - Default subscription status to `null` initially, then set to `boolean` after check completes (allows distinguishing between "not checked" and "checked, inactive")
+  - TooltipProvider can wrap individual tooltips or multiple tooltips - both patterns work, but wrapping multiple tooltips in one provider is more efficient
+  - When disabling buttons based on subscription status, check `hasActiveSubscription === false` (not just falsy) to avoid disabling during initial loading state
+  - Subscription status check should happen in separate useEffect from main data fetching to avoid blocking page load
+  - Always handle subscription check errors gracefully - default to inactive (fail-safe) if check fails
+---
+
+## 2026-01-19 - US-029
+- Updated SubscriptionWarningBanner component with professional custom styling
+- Replaced Alert variant="warning" with custom div using amber color scheme matching dashboard design system
+- Applied gradient background (from-amber-500/10 via-amber-500/8 to-amber-500/10) with subtle border (border-amber-500/20)
+- Updated "Manage Subscription" button from variant="outline" to variant="default" with primary colors for better contrast and clickability
+- Improved visual hierarchy: added space-y-1.5 for text spacing, gap-3 for button spacing, better padding (p-5)
+- Enhanced button styling with shadow effects (shadow-sm, hover:shadow-md) and transition animations
+- Updated dismiss button styling with amber-themed hover states
+- Maintained all existing functionality: dismissible with localStorage persistence, subscription status checking
+- Removed unused Alert component imports
+- Files changed:
+  - `apps/frontend/src/components/subscription-warning-banner.tsx` (updated styling)
+- **Learnings for future iterations:**
+  - When replacing shadcn component variants with custom styling, use Tailwind utility classes that match the design system color palette
+  - Amber colors (amber-500/10, amber-200, amber-100/90) work well for warning banners in dark themes
+  - Gradient backgrounds (bg-gradient-to-r) with opacity create subtle, professional visual effects
+  - Use backdrop-blur-sm for modern glassmorphism effects on banners
+  - Button variant="default" with primary colors provides better contrast than outline variants for important actions
+  - Always run prettier to fix formatting issues before committing
+  - Custom styled components should maintain the same functionality as the original (dismissible, localStorage, etc.)
+---
+
+## 2026-01-19 - US-030
+- Updated billing settings page "Set Up Subscription" button to call `createCheckoutSession` API endpoint directly instead of linking to `/onboarding/stripe`
+- Added `handleCreateCheckout` function that calls `billingApi.createCheckoutSession()` and redirects to Stripe Checkout URL on success
+- Added loading state (`checkoutLoading`) and error handling for checkout button
+- Button now works for both onboarding flow (not onboarded) and existing users (onboarded)
+- Updated middleware to allow `/onboarding/stripe` access for onboarded users (exception added to redirect logic)
+- After successful checkout, Stripe redirects to `/dashboard/settings/billing?session_id=...` which is handled by existing `handleCheckoutSuccess` logic
+- Removed unused `Link` import from billing settings page
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (updated button to call API, added loading state)
+  - `apps/frontend/src/middleware.ts` (allowed onboarded users to access `/onboarding/stripe`)
+- **Learnings for future iterations:**
+  - When updating buttons to call APIs instead of navigating, add loading states and error handling for better UX
+  - Middleware redirect logic can be updated with exceptions for specific routes (e.g., allow `/onboarding/stripe` for onboarded users)
+  - Existing checkout success handling logic (via `session_id` query parameter) works seamlessly when button calls API directly
+  - Always remove unused imports after refactoring to keep code clean
+  - Prettier formatting issues in other files (like `tailwind.config.ts`) should be fixed to pass lint checks
+---
+
+## 2026-01-19 - US-031
+- Updated `BillingUsageService.getBillingHistory()` method to filter out future billing periods
+- Added `LessThanOrEqual` import from TypeORM to filter records where `billingPeriodStart <= current date`
+- Method now only returns billing usage records for past billing periods (billingPeriodStart <= current date)
+- Maintained existing ordering (DESC by billingPeriodStart) and limit functionality
+- Backend endpoint already uses the service method, so it automatically filters out future periods
+- Frontend billing history table will not display future periods since backend only returns past invoices
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added date filter to getBillingHistory method)
+- **Learnings for future iterations:**
+  - Use TypeORM's `LessThanOrEqual()` operator to filter records by date in queries
+  - When filtering billing history, always exclude future periods to show only past invoices
+  - Date filtering in TypeORM queries uses comparison operators like `LessThanOrEqual(date)` in the where clause
+  - The frontend automatically benefits from backend filtering - no frontend changes needed when backend filters correctly
+---
+
+## 2026-01-19 - US-032
+- Added `STRIPE_METER_ID` environment variable to `.env.example` with comment explaining it's for usage-based billing
+- Updated `StripeService` constructor to read meter ID from `ConfigService`
+- Added validation to ensure meter ID is configured on initialization (fail-fast pattern, throws error if missing)
+- Added `getMeterId()` method to `StripeService` to access the meter ID
+- Stored meter ID as private readonly property for type safety
+- Files changed:
+  - `apps/backend/.env.example` (added STRIPE_METER_ID variable)
+  - `apps/backend/src/services/stripe.service.ts` (added meter ID validation and getter method)
+- **Learnings for future iterations:**
+  - Stripe meters are used for usage-based billing to track and report usage to Stripe
+  - Environment variables for Stripe configuration should be validated in service constructors using fail-fast pattern
+  - Store validated environment variables as private readonly properties for type safety and immutability
+  - Add getter methods for accessing configuration values that are validated on initialization
+  - Follow the same pattern as other Stripe configuration (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) for consistency
+---
+
+## 2026-01-19 - US-033
+- Added `reportUsageToMeter(subscriptionItemId: string, quantity: number, timestamp?: Date): Promise<any>` method to `StripeService`
+- Method creates Stripe usage record using `stripe.subscriptionItems.createUsageRecord()` API
+- Method converts Date timestamp to Unix timestamp (seconds) if provided, otherwise uses current time (undefined)
+- Method uses type assertion `(this.stripe.subscriptionItems as any).createUsageRecord()` since Stripe TypeScript types don't export `UsageRecord` type
+- Method handles Stripe API errors with `InternalServerErrorException` following the same pattern as other Stripe service methods
+- Quantity parameter represents the number of 10k units (already calculated and rounded up by caller)
+- Typecheck passes: `turbo run build --filter=backend` completes successfully
+- Lint passes: `turbo run lint --filter=backend` completes successfully
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added reportUsageToMeter method)
+- **Learnings for future iterations:**
+  - Stripe's TypeScript types may not include all API methods/types (e.g., `UsageRecord` type is not exported)
+  - Use type assertion `(this.stripe.subscriptionItems as any)` when TypeScript types are incomplete but API method exists
+  - Stripe usage records use Unix timestamps in seconds (not milliseconds) - convert Date using `Math.floor(timestamp.getTime() / 1000)`
+  - When timestamp is undefined, Stripe API defaults to current time automatically
+  - Stripe meter usage reporting is done via `subscriptionItems.createUsageRecord()` with subscription item ID and quantity
+  - The meter ID from environment variable is not directly used in `createUsageRecord()` - it's configured on the subscription item when created
+---
+
+## 2026-01-19 - US-034
+- Updated `StripeService.createSubscription()` method to use meter-based pricing instead of price-based pricing
+- Changed from using `STRIPE_PRICE_ID` to using `STRIPE_METER_ID` from environment variable
+- Updated subscription creation to use `price_data` with `meter` field referencing the meter ID
+- Set `usage_type: 'metered'` in `recurring` object for usage-based billing
+- Used type assertion `as any` for `price_data` object since Stripe TypeScript types may not include all meter-related fields
+- Maintained existing error handling pattern with `InternalServerErrorException`
+- Typecheck passes: `turbo run build --filter=backend` completes successfully
+- Lint passes: `turbo run lint --filter=backend` completes successfully
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (updated createSubscription method)
+- **Learnings for future iterations:**
+  - Stripe subscriptions with meters use `price_data` with `meter` field instead of `price` field
+  - When using meters, set `recurring.usage_type: 'metered'` in `price_data` for usage-based billing
+  - Stripe TypeScript types may not include all meter-related fields in `price_data` - use type assertion `as any` when necessary
+  - Meter ID is configured in environment variable (`STRIPE_METER_ID`) and referenced directly in subscription creation
+  - Subscription items with meters automatically track usage and bill based on reported usage records
+---
+
+## 2026-01-19 - US-035
+- Added `subscriberCount` (integer, nullable) field to `SyncHistory` entity
+- Updated `SubscriberSyncProcessor` to count subscribers for the specific ESP connection after successful sync
+- Processor counts subscribers using `subscriberRepository.count()` with `where: { espConnectionId }` filter
+- Subscriber count is stored in `subscriberCount` field of SyncHistory record when sync completes successfully
+- Generated migration `1768743569622-AddSubscriberCountToSyncHistory.ts` which adds nullable integer column to sync_history table
+- Migration executed successfully
+- Files changed:
+  - `apps/backend/src/entities/sync-history.entity.ts` (added subscriberCount field)
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` (added Subscriber repository injection, added subscriber count logic)
+  - `apps/backend/src/migrations/1768743569622-AddSubscriberCountToSyncHistory.ts` (new)
+- **Learnings for future iterations:**
+  - When counting subscribers for a specific ESP connection, use `subscriberRepository.count({ where: { espConnectionId } })` to get accurate count
+  - Subscriber count should be recorded after successful sync completion, not during sync (to ensure all subscribers are processed)
+  - The Subscriber entity is already registered in AppModule TypeOrmModule.forFeature, so it can be injected into processors
+  - Migration generation requires building the project first to compile TypeScript entities
+  - Nullable integer columns in PostgreSQL are created with `ALTER TABLE "table_name" ADD "column_name" integer` (no NOT NULL constraint)
+---
+
+## 2026-01-19 - US-036
+- Created `calculatePerPublicationMaxUsage()` method in `BillingUsageService` to calculate maximum subscriber count per publication during billing period
+- Method queries all ESP connections for the user using `EspConnectionService.findAllByUserId()`
+- For each ESP connection, queries SyncHistory records within the billing period using TypeORM query builder
+- Uses query builder with date range filters: `startedAt >= billingPeriodStart` and `startedAt < billingPeriodEnd`
+- Only considers successful syncs (status = 'success') using `SyncHistoryStatus.SUCCESS` filter
+- Finds maximum `subscriberCount` from sync history records for each ESP connection
+- If no sync history exists or max is 0, uses current subscriber count as fallback via `subscriberRepository.count()`
+- Returns Map with ESP connection ID as key and max subscriber count as value
+- Injected required dependencies: `EspConnectionService`, `SyncHistory` repository, and `Subscriber` repository into `BillingUsageService`
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added calculatePerPublicationMaxUsage method, injected dependencies)
+- **Learnings for future iterations:**
+  - When querying with date ranges in TypeORM, use query builder (`createQueryBuilder()`) instead of simple `find()` when you need multiple conditions on the same field
+  - Query builder allows chaining `.andWhere()` clauses for complex date range queries (e.g., `startedAt >= startDate AND startedAt < endDate`)
+  - When finding maximum values from an array, filter out null/zero values first before using `Math.max()` to avoid errors
+  - Use `Map<string, number>` for key-value pairs where keys are entity IDs (more efficient than objects for this use case)
+  - When injecting multiple repositories into a service, all entities must be registered in `TypeOrmModule.forFeature()` in the module
+  - Services can inject other services (like `EspConnectionService`) if they're registered in the same module's providers array
+  - Fallback logic (using current subscriber count when no sync history exists) ensures billing calculations work even for new ESP connections
+---
+
+## 2026-01-19 - US-037
+- Created `calculateMeterUsage(perPublicationMax: Map<string, number>): number` method in `BillingUsageService`
+- Method sums all values from the per-publication max Map using a for...of loop
+- Converts total subscriber count to units of 10,000 by dividing by 10,000
+- Always rounds up using `Math.ceil()` to ensure proper billing (e.g., 25,000 = 2.5 → 3, 20,000 = 2.0 → 2, 15,000 = 1.5 → 2)
+- Returns integer representing number of 10k units for Stripe meter reporting
+- Handles edge case: returns 0 units for 0 subscribers
+- Method is synchronous and doesn't require database access, making it efficient for meter usage calculations
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (added calculateMeterUsage method)
+- **Learnings for future iterations:**
+  - When calculating meter usage, always round up using `Math.ceil()` to ensure users are charged for partial units (e.g., 15,001 subscribers = 2 units, not 1)
+  - Stripe meters use units of 10,000 subscribers, so divide total subscriber count by 10,000 and round up
+  - The method takes a Map from `calculatePerPublicationMaxUsage()` as input, which provides per-publication maximums
+  - Sum all values from the Map before converting to units to get total subscriber count across all publications
+  - Edge case handling (0 subscribers = 0 units) prevents division by zero issues and ensures correct billing
+  - Synchronous methods that don't require database access are more efficient for calculation purposes
+---
+
+## 2026-01-19 14:44:42 - US-039
+- Added `stripeSubscriptionItemId` (string, nullable) field to `BillingSubscription` entity
+- Generated migration `1768743851825-AddStripeSubscriptionItemId.ts` which adds nullable varchar(255) column to billing_subscriptions table
+- Made migration idempotent using `DO $$ BEGIN IF NOT EXISTS ... END IF; END $$;` pattern to check if column exists before adding
+- Updated `BillingSubscriptionService.syncFromStripe()` method to extract subscription item ID from `stripeSubscription.items.data[0]?.id`
+- Updated `create()` method signature to accept `stripeSubscriptionItemId` parameter
+- Webhook handlers automatically store subscription item ID since they use `syncFromStripe()` method
+- Files changed:
+  - `apps/backend/src/entities/billing-subscription.entity.ts` (added stripeSubscriptionItemId field)
+  - `apps/backend/src/services/billing-subscription.service.ts` (updated syncFromStripe and create methods)
+  - `apps/backend/src/migrations/1768743851825-AddStripeSubscriptionItemId.ts` (new)
+- **Learnings for future iterations:**
+  - Stripe subscription items are accessed via `subscription.items.data[0]` array (subscriptions can have multiple items, but we use the first one)
+  - Subscription item ID is needed to report usage to Stripe meters via `subscriptionItems.createUsageRecord()` API
+  - When adding nullable fields to existing entities, make migrations idempotent to handle cases where migrations were partially run
+  - Use `information_schema.columns` to check if a column exists before adding it in migrations: `SELECT 1 FROM information_schema.columns WHERE table_name = 'table_name' AND column_name = 'column_name'`
+  - The `syncFromStripe()` method is used by both webhook handlers and checkout verification, so updating it ensures all subscription creation/update paths store the subscription item ID
+  - Subscription item ID is extracted from the first item in the subscription's items array, which is the standard pattern for single-item subscriptions
+---
+
+## 2026-01-19 - US-038
+- Updated `SubscriberSyncService.syncSubscribers()` method to report usage to Stripe meter after successful sync
+- After billing usage update, calculates per-publication max usage for current billing period using `BillingUsageService.calculatePerPublicationMaxUsage()`
+- Sums the maximums from all publications and converts to 10k units (rounded up) using `BillingUsageService.calculateMeterUsage()`
+- Gets user's active subscription and subscription item ID from `BillingSubscriptionService.findByUserId()`
+- Calls `StripeService.reportUsageToMeter()` with subscription item ID and calculated quantity
+- Handles errors gracefully: logs errors but doesn't fail sync if meter reporting fails (wrapped in try-catch)
+- Only reports usage if subscription exists, has subscription item ID, and meter usage units > 0
+- Injected `BillingSubscriptionService` and `StripeService` into `SubscriberSyncService` constructor
+- Added Logger for structured logging of meter reporting operations
+- Files changed:
+  - `apps/backend/src/services/subscriber-sync.service.ts` (added meter reporting logic, injected services)
+- **Learnings for future iterations:**
+  - When reporting usage to Stripe meters, always check if subscription and subscription item ID exist before reporting
+  - Meter reporting should not fail the sync operation - wrap in try-catch and log errors gracefully
+  - Calculate billing period dates dynamically in the sync service (using current month) to match the period used for per-publication calculations
+  - Use Logger.debug() for informational messages (like skipping meter reporting) and Logger.error() for actual errors
+  - The per-publication max usage calculation uses SyncHistory records, so it works correctly even if called immediately after sync (processor records subscriber count after sync completes)
+  - Only report usage if meterUsageUnits > 0 to avoid unnecessary API calls to Stripe
+---
+
+## 2026-01-19 - US-040
+- Simplified `BillingProcessor` to remove invoice creation logic since Stripe handles metered billing invoicing automatically
+- Removed all invoice creation code: `createInvoiceItem()`, `createAndFinalizeInvoice()` calls, and invoice status updates
+- Updated processor to only create new `BillingUsage` records for current month for historical tracking purposes
+- Removed unused dependencies: `User` repository, `BillingUsage` repository, and `StripeService` from processor constructor
+- Simplified `processUserBillingUsage()` method to only count subscribers and create usage records
+- Updated `BillingSchedulerService` comments to reflect that job only tracks usage records (not invoicing)
+- Kept the scheduler service since we still need to create usage records for historical purposes
+- Files changed:
+  - `apps/backend/src/processors/billing.processor.ts` (simplified, removed invoice logic)
+  - `apps/backend/src/services/billing-scheduler.service.ts` (updated comments)
+- **Learnings for future iterations:**
+  - With Stripe metered billing, invoicing is handled automatically by Stripe based on usage records reported via `reportUsageToMeter()`
+  - Monthly billing jobs should only track usage records for historical purposes, not create invoices
+  - Stripe webhook handlers (from US-009) already update `BillingUsage` records with invoice IDs when invoices are paid
+  - When simplifying processors, remove unused repository injections and service dependencies to keep code clean
+  - Keep scheduler services even if job logic is simplified - they're still needed to schedule the simplified job
+  - Metered billing eliminates the need for manual invoice creation - Stripe handles everything automatically at the end of each billing period
+---
+
+## 2026-01-18 14:50:01 - US-041
+- Updated `BillingUsageService.updateUsage()` to calculate per-publication max usage instead of using total maximum
+- Method now calls `calculatePerPublicationMaxUsage()` to get maximum subscriber count per ESP connection for current billing period
+- Sums all per-publication maximums to get total subscriber count
+- Stores total sum of per-publication maximums in `maxSubscriberCount` field (updates if calculated total is higher than stored max)
+- Maintains backward compatibility: method signature unchanged, `currentSubscriberCount` parameter kept but not used (documented in JSDoc)
+- Calculates `calculatedAmount` based on the sum of per-publication maximums using `BillingCalculationService`
+- Total usage in 10k units can be calculated on-demand using existing `calculateMeterUsage()` method for display purposes
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (updated updateUsage method)
+- **Learnings for future iterations:**
+  - Per-publication billing tracks maximum subscriber count per ESP connection separately, then sums them for total billing
+  - This approach ensures accurate billing when users have multiple publications with different subscriber counts
+  - The `calculatePerPublicationMaxUsage()` method uses SyncHistory records to find maximum subscriber count per publication during billing period
+  - When updating existing billing usage records, only update `maxSubscriberCount` if the new calculated total is higher (tracks maximum during period)
+  - Backward compatibility can be maintained by keeping method signatures unchanged while updating internal logic
+  - The `calculateMeterUsage()` method is available for calculating 10k units on-demand when needed for display purposes
+---
