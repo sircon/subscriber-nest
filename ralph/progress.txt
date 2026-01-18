@@ -216,3 +216,25 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Typecheck errors for guards/decorators are expected until US-010 is completed
   - Use `yarn lint --filter=api` to verify code style after copying services
 ---
+
+## 2026-01-18 15:35 - US-010
+- Copied all 2 guard files from `apps/backend/src/guards/` to `apps/api/src/guards/`:
+  - auth.guard.ts
+  - subscription.guard.ts
+- Copied `CurrentUser` decorator from `apps/backend/src/decorators/` to `apps/api/src/decorators/`:
+  - current-user.decorator.ts
+- All guards and decorators already use shared package imports (`@subscriber-nest/shared/entities`) - no updates needed
+- `SubscriptionGuard` imports `BillingSubscriptionService` from `../services/billing-subscription.service` (already in API service from US-009)
+- Controllers already have correct import paths (`../guards/` and `../decorators/`) - no updates needed
+- Files changed:
+  - Created `apps/api/src/guards/auth.guard.ts`
+  - Created `apps/api/src/guards/subscription.guard.ts`
+  - Created `apps/api/src/decorators/current-user.decorator.ts`
+- **Learnings for future iterations:**
+  - Guards and decorators copied from backend already use shared package imports (from previous stories), so no import updates needed
+  - Guards that depend on services (like `SubscriptionGuard` using `BillingSubscriptionService`) should import from the API service's services directory
+  - Controllers already have correct import paths for guards and decorators, so no controller updates needed
+  - All entity imports correctly use `@subscriber-nest/shared/entities` paths
+  - Use `turbo run build --filter=api` and `turbo run lint --filter=api` to verify compilation and code style
+  - Guards use `@InjectRepository` for TypeORM repositories, which will need to be configured in AppModule (US-011)
+---
