@@ -502,8 +502,8 @@
         "Typecheck passes for frontend"
       ],
       "priority": 32,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added automatic sync trigger after onboarding. Errors are handled gracefully without blocking onboarding completion."
     }
   ]
 }

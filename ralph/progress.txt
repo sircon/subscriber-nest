@@ -867,3 +867,20 @@ Started: Sat Jan 17 2026
   - The triggerSync endpoint returns updated connection object, eliminating need for separate GET request after sync
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-18 - US-032
+- Added automatic sync trigger after ESP connection creation during onboarding
+- Updated onboarding API key form to capture connection ID and trigger sync
+- Sync errors handled gracefully without blocking onboarding completion
+- Files changed:
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Updated handleSubmit to capture connection ID, call triggerSync, handle errors gracefully
+- **Learnings for future iterations:**
+  - Non-blocking error handling pattern: wrap optional operations in try-catch, log errors but don't throw
+  - User experience improvement: automatically trigger sync on onboarding so users don't have to do it manually
+  - Graceful degradation: if auto-sync fails, user can still complete onboarding and manually trigger sync later
+  - Connection ID capture: store the response from createConnection to use for subsequent operations
+  - Flow sequencing: create connection → complete onboarding → update auth context → trigger sync → redirect
+  - Console.error for logging failures that don't affect user flow but should be visible in dev tools
+  - The button text "Syncing..." is accurate for both connection creation and sync trigger
+  - All quality checks (typecheck, lint, build) passed successfully
+---
