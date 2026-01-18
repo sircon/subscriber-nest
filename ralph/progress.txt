@@ -257,3 +257,19 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace api typecheck` and `turbo run build --filter=api` to verify TypeORM configuration
   - TypeORM autoLoadEntities: true automatically discovers entities, but forFeature() is still needed for repository injection
 ---
+
+## 2026-01-19 - US-012
+- Configured BullMQ in API service with `BullModule.forRoot()` using Redis connection from environment variables (REDIS_HOST, REDIS_PORT, REDIS_PASSWORD)
+- Registered all three queues using `BullModule.registerQueue()`: subscriber-sync, billing, and account-deletion
+- All queues configured with default job options (3 attempts, exponential backoff with 2000ms delay)
+- No queue processors registered (API service only acts as producer, not consumer)
+- Files changed:
+  - `apps/api/src/app.module.ts` - Added BullModule import and configuration
+- **Learnings for future iterations:**
+  - BullMQ configuration in API service matches backend structure (same Redis connection settings, same queue names)
+  - API service only needs `BullModule.forRoot()` and `BullModule.registerQueue()` - no processors needed
+  - Controllers can use `@InjectQueue('queue-name')` to inject queue instances for adding jobs
+  - All three queues (subscriber-sync, billing, account-deletion) are registered even if only subscriber-sync is currently used
+  - Redis connection uses environment variables with defaults (localhost:6379, no password)
+  - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify BullMQ configuration
+---
