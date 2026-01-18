@@ -18,9 +18,11 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EspConnectionService } from '../services/esp-connection.service';
 import { SyncHistoryService } from '../services/sync-history.service';
+import { SubscriberService } from '../services/subscriber.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
 import { SyncHistory } from '../entities/sync-history.entity';
+import { Subscriber } from '../entities/subscriber.entity';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -31,6 +33,7 @@ export class EspConnectionController {
   constructor(
     private readonly espConnectionService: EspConnectionService,
     private readonly syncHistoryService: SyncHistoryService,
+    private readonly subscriberService: SubscriberService,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue,
   ) { }
@@ -211,6 +214,57 @@ export class EspConnectionController {
       // Handle other errors as 500
       throw new InternalServerErrorException(
         'Failed to retrieve sync history',
+      );
+    }
+  }
+
+  @Get(':id/subscribers')
+  async getSubscribers(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ): Promise<{
+    data: Omit<Subscriber, 'encryptedEmail'>[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    try {
+      // Validate ESP connection exists and belongs to user
+      await this.espConnectionService.findById(id, user.id);
+
+      // Parse pagination parameters (defaults: page=1, limit=50)
+      const parsedPage = page ? parseInt(page, 10) : 1;
+      const parsedLimit = limit ? parseInt(limit, 10) : 50;
+
+      // Fetch paginated subscribers
+      const result = await this.subscriberService.findByEspConnectionPaginated(
+        id,
+        parsedPage,
+        parsedLimit,
+        status,
+      );
+
+      return result;
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection',
+        );
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve subscribers',
       );
     }
   }
