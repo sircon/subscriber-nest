@@ -32,6 +32,8 @@ import { BillingUsage } from './entities/billing-usage.entity';
 import { StripeService } from './services/stripe.service';
 import { BillingCalculationService } from './services/billing-calculation.service';
 import { BillingUsageService } from './services/billing-usage.service';
+import { BillingProcessor } from './processors/billing.processor';
+import { BillingSchedulerService } from './services/billing-scheduler.service';
 
 @Module({
   imports: [
@@ -74,6 +76,16 @@ import { BillingUsageService } from './services/billing-usage.service';
         },
       },
     }),
+    BullModule.registerQueue({
+      name: 'billing',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
   ],
   controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController],
   providers: [
@@ -93,6 +105,8 @@ import { BillingUsageService } from './services/billing-usage.service';
     StripeService,
     BillingCalculationService,
     BillingUsageService,
+    BillingProcessor,
+    BillingSchedulerService,
   ],
   exports: [EmailService],
 })

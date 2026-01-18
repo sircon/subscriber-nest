@@ -173,4 +173,75 @@ export class StripeService {
       );
     }
   }
+
+  /**
+   * Create a Stripe invoice item for a customer
+   * @param customerId - Stripe customer ID
+   * @param amount - Amount in dollars (will be converted to cents)
+   * @param description - Description of the invoice item
+   * @returns Stripe invoice item object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async createInvoiceItem(
+    customerId: string,
+    amount: number,
+    description: string,
+  ): Promise<Stripe.InvoiceItem> {
+    try {
+      // Convert dollars to cents for Stripe
+      const amountInCents = Math.round(amount * 100);
+
+      const invoiceItem = await this.stripe.invoiceItems.create({
+        customer: customerId,
+        amount: amountInCents,
+        currency: 'usd',
+        description,
+      });
+
+      return invoiceItem;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to create Stripe invoice item: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error creating Stripe invoice item: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Create and finalize a Stripe invoice for a customer
+   * @param customerId - Stripe customer ID
+   * @returns Stripe invoice object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async createAndFinalizeInvoice(customerId: string): Promise<Stripe.Invoice> {
+    try {
+      // Create invoice (this will include all pending invoice items)
+      const invoice = await this.stripe.invoices.create({
+        customer: customerId,
+        auto_advance: true, // Automatically finalize and attempt payment
+      });
+
+      // Finalize the invoice
+      const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(invoice.id);
+
+      return finalizedInvoice;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to create and finalize Stripe invoice: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error creating and finalizing Stripe invoice: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
 }

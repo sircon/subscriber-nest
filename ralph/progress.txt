@@ -109,3 +109,47 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Always handle edge cases (0, negative numbers) explicitly in calculation methods
   - Round monetary calculations to 2 decimal places to avoid floating point precision issues
 ---
+
+## 2026-01-18 12:33:03 - US-007
+- Created `BillingUsageService` with `updateUsage(userId: string, currentSubscriberCount: number): Promise<void>` method
+- Method finds or creates `BillingUsage` record for current billing period (calendar month)
+- Method updates `maxSubscriberCount` if current count is higher than stored max
+- Billing period calculation: uses `getCurrentBillingPeriod()` helper to get first day of month (00:00:00) and last day of month (23:59:59.999)
+- Method calculates billing amount using `BillingCalculationService.calculateAmount()` with max subscriber count
+- Method updates `calculatedAmount` field with calculated amount
+- Registered `BillingUsageService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Calendar month billing periods: use `new Date(year, month, 1, 0, 0, 0, 0)` for start and `new Date(year, month + 1, 0, 23, 59, 59, 999)` for end (last day of month)
+  - When finding billing usage records, query by `userId` and `billingPeriodStart` to leverage the unique index
+  - When updating max subscriber count, only update if current count is higher (track maximum, not current)
+  - Always recalculate `calculatedAmount` after updating `maxSubscriberCount` to keep billing amounts in sync
+  - New billing usage records should be created with `status: BillingUsageStatus.PENDING` (will be updated to 'invoiced' when billed)
+---
+
+## 2026-01-19 - US-008
+- Created `BillingProcessor` that extends BullMQ `WorkerHost` to process monthly billing jobs
+- Added `billing` queue to `AppModule` with retry configuration (3 attempts, exponential backoff)
+- Added `createInvoiceItem()` and `createAndFinalizeInvoice()` methods to `StripeService` for invoice management
+- Created `BillingSchedulerService` that implements `OnModuleInit` to schedule monthly billing job on app startup
+- Scheduled job runs on 1st day of each month at 00:00 UTC using BullMQ repeatable jobs with cron pattern `0 0 1 * *`
+- Processor finds all users with active subscriptions and processes billing for each user
+- For each user: retrieves `BillingUsage` for previous month, creates Stripe invoice item, finalizes invoice, updates usage record with `stripeInvoiceId` and `status: 'invoiced'`, creates new `BillingUsage` record for current month
+- Processor calculates billing period dynamically (previous month) when job runs
+- Error handling: logs errors per user but continues processing other users, updates usage status to 'failed' on invoice errors, re-throws errors for BullMQ retry handling
+- Files changed:
+  - `apps/backend/src/app.module.ts` (added billing queue, registered processor and scheduler service)
+  - `apps/backend/src/services/stripe.service.ts` (added createInvoiceItem, createAndFinalizeInvoice methods)
+  - `apps/backend/src/processors/billing.processor.ts` (new)
+  - `apps/backend/src/services/billing-scheduler.service.ts` (new)
+- **Learnings for future iterations:**
+  - BullMQ repeatable jobs use `repeat: { pattern: 'cron-pattern', tz: 'UTC' }` option when adding jobs
+  - Use `getRepeatableJobs()` to check if a repeatable job already exists before scheduling to avoid duplicates
+  - For monthly billing jobs, calculate billing period dates dynamically in the processor based on when the job runs (not when scheduled)
+  - When processing multiple users in a job, wrap each user's processing in try-catch to continue with other users if one fails
+  - Stripe invoice items require amounts in cents (multiply dollars by 100), invoices are created with `auto_advance: true` to automatically finalize
+  - Use `BillingUsageService.updateUsage()` to create new billing usage records for current month after processing previous month
+  - Check `job.attemptsMade >= maxAttempts` to detect final retry attempt for logging permanent failures
+---
