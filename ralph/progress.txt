@@ -471,3 +471,21 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace @subscriber-nest/shared typecheck` and `turbo run build --filter=@subscriber-nest/shared` to verify event compilation
   - Event classes don't need any decorators or special configuration - just plain classes
 ---
+
+## 2026-01-18 15:52 - US-023
+- Installed `@nestjs/event-emitter@3.0.1` package in both `apps/api` and `apps/worker`
+- Added `EventEmitterModule.forRoot()` import to API service AppModule
+- Added `EventEmitterModule.forRoot()` import to worker service AppModule
+- Event emitter module is now configured and ready for event-based communication between services
+- Files changed:
+  - `apps/api/package.json` - Added @nestjs/event-emitter dependency
+  - `apps/worker/package.json` - Added @nestjs/event-emitter dependency
+  - `apps/api/src/app.module.ts` - Added EventEmitterModule import and configuration
+  - `apps/worker/src/app.module.ts` - Added EventEmitterModule import and configuration
+- **Learnings for future iterations:**
+  - `@nestjs/event-emitter@3.0.1` is compatible with NestJS 11 (peer dependency warnings are expected but don't affect functionality)
+  - `EventEmitterModule.forRoot()` must be imported in AppModule imports array to enable event publishing and listening
+  - Event emitter module initialization is simple - just add `EventEmitterModule.forRoot()` to imports (no additional configuration needed for basic usage)
+  - Services can now use `EventEmitter2` (injected via constructor) to publish events and `@OnEvent()` decorator to listen to events
+  - Use `yarn workspace api typecheck`, `yarn workspace worker typecheck`, `turbo run lint --filter=api --filter=worker`, and `turbo run build --filter=api --filter=worker` to verify event emitter configuration
+---

@@ -21,6 +21,7 @@
     "@nestjs/common": "^11.1.12",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.1.12",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/platform-express": "^11.1.12",
     "@nestjs/typeorm": "^11.0.0",
     "@react-email/components": "^1.0.4",
