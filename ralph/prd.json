@@ -1,16 +1,15 @@
 {
   "project": "SubscriberNest",
-  "branchName": "ralph/auth-onboarding-flow",
-  "description": "Authentication and Onboarding Flow - Email-based auth with ESP connection setup",
+  "branchName": "ralph/esp-subscriber-sync",
+  "description": "ESP Subscriber Sync System - Connect to Email Service Providers (ESPs) like Beehiiv, validate API credentials, and sync subscriber data into our database using a queue-based architecture with BullMQ and Redis",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create User and Session entities",
-      "description": "As a developer, I need database entities to store user accounts, email verification codes, and active sessions so authentication data persists.",
+      "title": "Create ESP Connection Entity and Migration",
+      "description": "As a developer, I need database tables to store ESP connections and their encrypted credentials so the system can persist connection information.",
       "acceptanceCriteria": [
-        "Create User entity with fields: id, email (unique), isOnboarded (boolean, default false), createdAt, updatedAt",
-        "Create VerificationCode entity with fields: id, email, code (6-digit string), expiresAt (timestamp), used (boolean, default false), createdAt",
-        "Create Session entity with fields: id, userId (foreign key to User), token (unique string), expiresAt (timestamp), createdAt",
+        "Create `EspConnection` entity with fields: `id`, `userId`, `espType` (enum: 'beehiiv', etc.), `encryptedApiKey`, `publicationId`, `status` (enum: 'active', 'invalid', 'error'), `lastValidatedAt`, `createdAt`, `updatedAt`",
+        "Create `Subscriber` entity with fields: `id`, `espConnectionId` (FK), `externalId` (ESP's subscriber ID), `encryptedEmail`, `maskedEmail`, `status` (enum: 'active', 'unsubscribed', 'bounced', etc.), `firstName`, `lastName`, `subscribedAt`, `unsubscribedAt`, `metadata` (JSONB for ESP-specific fields), `createdAt`, `updatedAt`",
         "Generate and run migration successfully",
         "Typecheck passes"
       ],
@@ -20,12 +19,12 @@
     },
     {
       "id": "US-002",
-      "title": "Create ESP Connection entity",
-      "description": "As a developer, I need to store ESP connection details (provider type and API key) so users can connect multiple ESPs.",
+      "title": "Create Encryption Service",
+      "description": "As a developer, I need a service to encrypt and decrypt sensitive data (API keys and email addresses) so they can be stored securely in the database.",
       "acceptanceCriteria": [
-        "Create EspConnection entity with fields: id, userId (foreign key to User), provider (enum: 'kit', 'beehiiv', 'mailchimp', etc.), apiKey (encrypted string), isActive (boolean, default true), createdAt, updatedAt",
-        "Add relationship: User has many EspConnections",
-        "Generate and run migration successfully",
+        "Create `EncryptionService` with methods: `encrypt(plaintext: string): string` and `decrypt(ciphertext: string): string`",
+        "Use AES-256 encryption with a key from environment variable `ENCRYPTION_KEY`",
+        "Handle encryption/decryption errors gracefully",
         "Typecheck passes"
       ],
       "priority": 2,
@@ -34,13 +33,11 @@
     },
     {
       "id": "US-003",
-      "title": "Set up Resend email service",
-      "description": "As a developer, I need Resend configured in the backend to send verification emails.",
+      "title": "Create Email Masking Utility",
+      "description": "As a developer, I need a utility function to create masked email addresses (e.g., `m****@gmail.com`) for display purposes while keeping the original encrypted.",
       "acceptanceCriteria": [
-        "Install @resend/node package",
-        "Add RESEND_API_KEY to backend .env.example and document it",
-        "Create EmailService with method to send verification code emails",
-        "Service uses Resend API to send emails",
+        "Create utility function `maskEmail(email: string): string` that masks the local part (before @) but keeps domain visible",
+        "Handles edge cases: single character emails, very short emails, invalid formats",
         "Typecheck passes"
       ],
       "priority": 3,
@@ -49,14 +46,11 @@
     },
     {
       "id": "US-004",
-      "title": "Create react-email verification code template",
-      "description": "As a developer, I need a professional email template for verification codes using react-email.",
+      "title": "Create Abstract ESP Interface",
+      "description": "As a developer, I need an abstract interface that defines the contract for ESP integrations so we can support multiple ESPs with a consistent pattern.",
       "acceptanceCriteria": [
-        "Install react-email and @react-email/components packages",
-        "Create email template component in apps/backend/src/emails/verification-code-email.tsx",
-        "Template displays 6-digit code prominently",
-        "Template includes branding and clear instructions",
-        "Template renders to HTML correctly",
+        "Create `IEspConnector` interface with methods: `validateApiKey(apiKey: string, publicationId?: string): Promise<boolean>`, `fetchPublications(apiKey: string): Promise<Publication[]>`, `fetchSubscribers(apiKey: string, publicationId: string): Promise<SubscriberData[]>`",
+        "Create `Publication` and `SubscriberData` DTOs/interfaces",
         "Typecheck passes"
       ],
       "priority": 4,
@@ -65,16 +59,14 @@
     },
     {
       "id": "US-005",
-      "title": "Generate and send verification code",
-      "description": "As a user, I want to request a verification code by entering my email so I can log in.",
+      "title": "Implement Beehiiv ESP Connector",
+      "description": "As a developer, I need a concrete implementation of the ESP connector for Beehiiv so we can connect to Beehiiv accounts.",
       "acceptanceCriteria": [
-        "Create POST /auth/send-code endpoint that accepts { email: string }",
-        "Endpoint generates random 6-digit numeric code",
-        "Endpoint stores code in database with 10-minute expiration",
-        "Endpoint enforces rate limit: max 3 codes per email per hour",
-        "Endpoint sends email via Resend using react-email template",
-        "Returns { success: true } on success",
-        "Returns appropriate error if rate limited",
+        "Create `BeehiivConnector` class implementing `IEspConnector`",
+        "`validateApiKey` calls `GET https://api.beehiiv.com/v2/publications` with Bearer token, returns true if status 200 and publication exists",
+        "`fetchPublications` calls Beehiiv API and returns list of publications",
+        "`fetchSubscribers` calls `GET https://api.beehiiv.com/v2/publications/:publicationId/subscriptions` with pagination, returns all subscribers",
+        "Handles API errors (401, 403, 429, 500) appropriately",
         "Typecheck passes"
       ],
       "priority": 5,
@@ -82,18 +74,13 @@
       "notes": ""
     },
     {
-      "id": "US-006",
-      "title": "Verify code and create session",
-      "description": "As a user, I want to enter my verification code to log in and create a session.",
+      "id": "US-013",
+      "title": "Create Subscriber Repository and Service",
+      "description": "As a developer, I need a service to manage subscriber data in the database so we can query and update subscribers.",
       "acceptanceCriteria": [
-        "Create POST /auth/verify-code endpoint that accepts { email: string, code: string }",
-        "Endpoint validates code exists, matches email, is not expired, and not used",
-        "If user doesn't exist, create new User with isOnboarded: false",
-        "If user exists, use existing user",
-        "Mark verification code as used",
-        "Create new Session with unique token and expiration (e.g., 30 days)",
-        "Return { token: string, user: { id, email, isOnboarded } }",
-        "Return appropriate errors for invalid/expired/used codes",
+        "Create `SubscriberService` with methods: `findByEspConnection(espConnectionId: string): Promise<Subscriber[]>`, `upsertSubscriber(data: CreateSubscriberDto): Promise<Subscriber>`",
+        "`upsertSubscriber` uses `externalId` + `espConnectionId` as unique key",
+        "Updates existing subscriber if found, creates new if not",
         "Typecheck passes"
       ],
       "priority": 6,
@@ -101,15 +88,15 @@
       "notes": ""
     },
     {
-      "id": "US-007",
-      "title": "Session validation middleware",
-      "description": "As a developer, I need middleware to validate session tokens on protected routes.",
+      "id": "US-006",
+      "title": "Create ESP Connection Service",
+      "description": "As a developer, I need a service to manage ESP connections, including validating API keys and storing encrypted credentials.",
       "acceptanceCriteria": [
-        "Create AuthGuard that validates session token from request headers",
-        "Guard checks token exists in database and is not expired",
-        "Guard attaches user object to request",
-        "Guard can be applied to controllers/routes via @UseGuards(AuthGuard)",
-        "Returns 401 if token invalid or missing",
+        "Create `EspConnectionService` with method `createConnection(userId: string, espType: string, apiKey: string, publicationId: string): Promise<EspConnection>`",
+        "Method validates API key using appropriate ESP connector before saving",
+        "Encrypts API key using `EncryptionService` before storing",
+        "Sets `status` to 'active' if validation succeeds, throws error if validation fails",
+        "Sets `lastValidatedAt` timestamp",
         "Typecheck passes"
       ],
       "priority": 7,
@@ -117,13 +104,16 @@
       "notes": ""
     },
     {
-      "id": "US-008",
-      "title": "Get current user endpoint",
-      "description": "As a frontend developer, I need an endpoint to check if user is authenticated and get their status.",
+      "id": "US-007",
+      "title": "Create ESP Connection Controller",
+      "description": "As a user, I want to connect my ESP account via API so I can start syncing subscribers.",
       "acceptanceCriteria": [
-        "Create GET /auth/me endpoint protected by AuthGuard",
-        "Returns { user: { id, email, isOnboarded } }",
-        "Returns 401 if not authenticated",
+        "Create `EspConnectionController` with `POST /api/esp-connections` endpoint",
+        "Endpoint accepts `{ espType: string, apiKey: string, publicationId: string }`",
+        "Validates request body (required fields, valid ESP type)",
+        "Uses `EspConnectionService` to create connection",
+        "Returns connection record (without encrypted API key) on success",
+        "Returns appropriate error responses (400, 401, 500)",
         "Typecheck passes"
       ],
       "priority": 8,
@@ -131,13 +121,14 @@
       "notes": ""
     },
     {
-      "id": "US-009",
-      "title": "Logout endpoint",
-      "description": "As a user, I want to log out so my session is invalidated.",
+      "id": "US-008",
+      "title": "Install and Configure BullMQ",
+      "description": "As a developer, I need BullMQ and Redis configured so we can process background jobs for subscriber syncing.",
       "acceptanceCriteria": [
-        "Create POST /auth/logout endpoint protected by AuthGuard",
-        "Endpoint deletes session from database",
-        "Returns { success: true }",
+        "Install `@nestjs/bullmq`, `bullmq`, and `ioredis` packages",
+        "Add Redis connection configuration to `AppModule` using `BullModule.forRoot()`",
+        "Configure Redis connection from environment variables (`REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`)",
+        "Create `subscriber-sync` queue using `BullModule.registerQueue()`",
         "Typecheck passes"
       ],
       "priority": 9,
@@ -145,31 +136,27 @@
       "notes": ""
     },
     {
-      "id": "US-010",
-      "title": "Create ESP connection endpoint",
-      "description": "As a user, I want to save my ESP provider and API key during onboarding.",
+      "id": "US-012",
+      "title": "Configure Queue Job Retry Policy",
+      "description": "As a developer, I need automatic retries with exponential backoff for failed sync jobs so transient errors don't cause permanent failures.",
       "acceptanceCriteria": [
-        "Create POST /esp-connections endpoint protected by AuthGuard",
-        "Accepts { provider: string, apiKey: string }",
-        "Validates provider is in allowed list",
-        "Encrypts API key before storing (use environment variable for encryption key)",
-        "Creates EspConnection linked to current user",
-        "Returns { id, provider, createdAt } (without API key)",
-        "Typecheck passes",
-        "TODO: Add API key validation when user clicks 'Sync subscribers to vault' (skip for now)"
+        "Configure queue job options with `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }`",
+        "Failed jobs are automatically retried up to 3 times with increasing delays (2s, 4s, 8s)",
+        "After 3 failed attempts, job is marked as failed and logged",
+        "Typecheck passes"
       ],
       "priority": 10,
       "passes": true,
-      "notes": "TODO: API key validation deferred"
+      "notes": ""
     },
     {
-      "id": "US-011",
-      "title": "Mark user as onboarded endpoint",
-      "description": "As a user, after completing onboarding I want my account marked as onboarded.",
+      "id": "US-014",
+      "title": "Map Beehiiv Subscriber Data to Our Schema",
+      "description": "As a developer, I need to map Beehiiv API subscriber response to our database schema so we store all available information.",
       "acceptanceCriteria": [
-        "Create POST /auth/complete-onboarding endpoint protected by AuthGuard",
-        "Endpoint sets user's isOnboarded to true",
-        "Returns { success: true, user: { id, email, isOnboarded: true } }",
+        "Map Beehiiv subscriber fields: `email` → encrypted + masked, `status` → our status enum, `created_at` → `subscribedAt`, `first_name` → `firstName`, `last_name` → `lastName`",
+        "Store all other Beehiiv fields (tags, custom fields, etc.) in `metadata` JSONB column",
+        "Handle missing/null fields gracefully",
         "Typecheck passes"
       ],
       "priority": 11,
@@ -177,13 +164,16 @@
       "notes": ""
     },
     {
-      "id": "US-012",
-      "title": "Get user ESP connections endpoint",
-      "description": "As a user, I want to see my connected ESPs.",
+      "id": "US-010",
+      "title": "Create Subscriber Sync Service",
+      "description": "As a developer, I need a service to orchestrate subscriber syncing, including encrypting emails and storing subscriber data.",
       "acceptanceCriteria": [
-        "Create GET /esp-connections endpoint protected by AuthGuard",
-        "Returns array of user's ESP connections (without API keys)",
-        "Returns [{ id, provider, isActive, createdAt }, ...]",
+        "Create `SubscriberSyncService` with method `syncSubscribers(espConnectionId: string): Promise<void>`",
+        "Method fetches subscribers using ESP connector",
+        "For each subscriber: encrypts email, creates masked email, maps ESP data to our schema",
+        "Stores subscribers in database (upsert by `externalId` + `espConnectionId`)",
+        "Stores ESP-specific fields in `metadata` JSONB column",
+        "Handles errors and throws appropriate exceptions",
         "Typecheck passes"
       ],
       "priority": 12,
@@ -191,38 +181,33 @@
       "notes": ""
     },
     {
-      "id": "US-013",
-      "title": "Login page UI",
-      "description": "As a user, I want a login page where I can enter my email to receive a verification code.",
+      "id": "US-009",
+      "title": "Create Subscriber Sync Queue Processor",
+      "description": "As a developer, I need a queue processor that handles subscriber sync jobs so syncing happens asynchronously without blocking the API.",
       "acceptanceCriteria": [
-        "Create src/app/login/page.tsx with email input form",
-        "Form uses shadcn Input and Button components",
-        "Form calls POST /auth/send-code on submit",
-        "Shows loading state while sending",
-        "Shows success message after code sent",
-        "Shows error message if request fails",
-        "Redirects to /verify-code with email in query params after success",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Create `SubscriberSyncProcessor` class with `@Processor('subscriber-sync')` decorator",
+        "Create `@Process('sync-publication')` handler method that accepts job data: `{ espConnectionId: string }`",
+        "Handler retrieves ESP connection from database, decrypts API key",
+        "Handler uses appropriate ESP connector to fetch all subscribers",
+        "Handler processes subscribers in batches and saves to database",
+        "Handler updates ESP connection `lastSyncedAt` timestamp on success",
+        "Typecheck passes"
       ],
       "priority": 13,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-014",
-      "title": "Verify code page UI",
-      "description": "As a user, I want a page to enter my verification code after requesting it.",
+      "id": "US-011",
+      "title": "Add Queue Job Producer for Manual Sync",
+      "description": "As a user, I want to trigger a manual subscriber sync via API so I can refresh my subscriber list on demand.",
       "acceptanceCriteria": [
-        "Create src/app/verify-code/page.tsx with 6-digit code input",
-        "Page reads email from query params",
-        "Uses shadcn Input component (or code input component)",
-        "Form calls POST /auth/verify-code on submit",
-        "Shows loading state while verifying",
-        "On success, stores token and redirects based on isOnboarded: If isOnboarded: false → redirect to /onboarding, If isOnboarded: true → redirect to /dashboard",
-        "Shows error message if code invalid/expired",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add `POST /api/esp-connections/:id/sync` endpoint to `EspConnectionController`",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Endpoint adds job to `subscriber-sync` queue with `{ espConnectionId: string }` data",
+        "Returns job ID and status immediately (doesn't wait for sync to complete)",
+        "Returns appropriate error responses (404 if connection not found, 403 if not owner)",
+        "Typecheck passes"
       ],
       "priority": 14,
       "passes": true,
@@ -230,16 +215,15 @@
     },
     {
       "id": "US-015",
-      "title": "Onboarding provider selection page",
-      "description": "As a new user, I want to select my email service provider during onboarding.",
+      "title": "Add ESP Connection Status Endpoint",
+      "description": "As a user, I want to check the status of my ESP connection and see when it was last synced.",
       "acceptanceCriteria": [
-        "Create src/app/onboarding/page.tsx with provider selection UI",
-        "Shows list of providers: Kit, beehiiv, Mailchimp, and others (use cards or buttons)",
-        "Uses shadcn Card or Button components for provider options",
-        "Each provider shows name and optional logo/icon",
-        "On selection, stores provider choice and redirects to /onboarding/api-key?provider={provider}",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add `GET /api/esp-connections/:id` endpoint to `EspConnectionController`",
+        "Returns connection details including: `id`, `espType`, `publicationId`, `status`, `lastValidatedAt`, `lastSyncedAt`, `createdAt`",
+        "Does NOT return encrypted API key",
+        "Validates user owns the connection (returns 403 if not)",
+        "Returns 404 if connection not found",
+        "Typecheck passes"
       ],
       "priority": 15,
       "passes": true,
@@ -247,91 +231,185 @@
     },
     {
       "id": "US-016",
-      "title": "Onboarding API key entry page",
-      "description": "As a new user, I want to enter my ESP API key to complete onboarding.",
+      "title": "Merge Main Branch into Current Branch",
+      "description": "As a developer, I need to merge the main branch (containing auth and onboarding features) into the current ESP sync branch to integrate all features.",
       "acceptanceCriteria": [
-        "Create src/app/onboarding/api-key/page.tsx with API key input form",
-        "Page reads provider from query params",
-        "Shows selected provider name",
-        "Form has API key input (password type for security)",
-        "Form has 'Sync subscribers to vault' CTA button",
-        "On submit, calls POST /esp-connections to save connection",
-        "After saving, calls POST /auth/complete-onboarding",
-        "On success, redirects to /dashboard",
-        "Shows loading and error states",
-        "Uses shadcn components (Input, Button, Card)",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Run `git merge main` to merge main branch into current branch",
+        "Identify all merge conflicts in files",
+        "Document all conflicts found (entities, controllers, services, modules, migrations)",
+        "Typecheck passes (may have errors that will be resolved in subsequent stories)"
       ],
       "priority": 16,
       "passes": true,
-      "notes": "TODO: API key validation deferred"
+      "notes": "Conflicts documented: EspConnection entity, AppModule, main.ts, package.json, yarn.lock, ralph files. Duplicate files: esp-connection.controller.ts, esp-connection.service.ts, encryption.service.ts (both in src/ and src/services/src/controllers/)"
     },
     {
       "id": "US-017",
-      "title": "Authentication context and hooks",
-      "description": "As a frontend developer, I need React context and hooks to manage auth state across the app.",
+      "title": "Resolve EspConnection Entity Conflicts",
+      "description": "As a developer, I need to merge the EspConnection entity schemas from both branches, combining auth/onboarding fields with ESP sync fields.",
       "acceptanceCriteria": [
-        "Create src/contexts/AuthContext.tsx with provider",
-        "Context stores: user, token, loading, isAuthenticated",
-        "Context provides: login(token, user), logout(), checkAuth()",
-        "Create useAuth() hook that returns context values",
-        "On mount, checks GET /auth/me to restore session",
-        "Stores token in httpOnly cookie or secure storage",
+        "Merge EspConnection entity to include all fields: `id`, `userId` (FK to User), `espType` (enum), `encryptedApiKey`, `publicationId`, `status` (enum: 'active', 'invalid', 'error'), `lastValidatedAt`, `lastSyncedAt`, `createdAt`, `updatedAt`",
+        "Add `@ManyToOne(() => User)` relationship with `@JoinColumn()` to User entity",
+        "Ensure `espType` enum matches ESP sync requirements (beehiiv, etc.)",
+        "Ensure `status` enum includes all states: 'active', 'invalid', 'error'",
+        "Keep `encryptedApiKey` (not `apiKey`) and `publicationId` from ESP sync branch",
+        "Keep `lastSyncedAt` from ESP sync branch",
+        "Create migration to update EspConnection table schema if needed",
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-018",
-      "title": "Protected route middleware",
-      "description": "As a developer, I need middleware to protect routes and redirect unauthenticated users.",
+      "title": "Add User Entity and Authentication Entities",
+      "description": "As a developer, I need to add User, Session, and VerificationCode entities from the auth branch to support authentication.",
       "acceptanceCriteria": [
-        "Create src/middleware.ts (Next.js middleware)",
-        "Middleware checks for auth token/session",
-        "If not authenticated and trying to access protected route, redirect to /login",
-        "If authenticated but isOnboarded: false and not on onboarding pages, redirect to /onboarding",
-        "Allows access to /login and /verify-code without auth",
-        "Allows access to /onboarding/* if authenticated but not onboarded",
+        "Create `User` entity with fields: `id` (UUID), `email` (unique), `isOnboarded` (boolean, default false), `createdAt`, `updatedAt`",
+        "Create `Session` entity with fields: `id` (UUID), `userId` (FK to User), `token` (unique string), `expiresAt` (timestamp), `createdAt`",
+        "Create `VerificationCode` entity with fields: `id` (UUID), `email`, `code` (6-digit string), `expiresAt` (timestamp), `used` (boolean, default false), `createdAt`",
+        "Add `@OneToMany(() => EspConnection)` relationship on User entity",
+        "Create migration for User, Session, and VerificationCode tables",
+        "Ensure all foreign key relationships are properly defined",
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-019",
-      "title": "Dashboard page (placeholder)",
-      "description": "As a user, I want to see a dashboard after completing onboarding.",
+      "title": "Integrate AuthGuard into ESP Connection Endpoints",
+      "description": "As a developer, I need to replace placeholder userId logic with real authentication using AuthGuard from the auth branch.",
       "acceptanceCriteria": [
-        "Create src/app/dashboard/page.tsx as protected route",
-        "Page shows welcome message with user email",
-        "Page shows connected ESP(s) from GET /esp-connections",
-        "Uses shadcn components for layout",
-        "Page is only accessible if authenticated and onboarded",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Import and apply `@UseGuards(AuthGuard)` to all `EspConnectionController` endpoints",
+        "Remove all `TODO: Get userId from authentication context` placeholder comments",
+        "Extract `userId` from authenticated user context (e.g., `req.user.id`) instead of using placeholder",
+        "Update `POST /api/esp-connections` to use authenticated user's ID",
+        "Update `GET /api/esp-connections/:id` to use authenticated user's ID for ownership validation",
+        "Update `POST /api/esp-connections/:id/sync` to use authenticated user's ID for ownership validation",
+        "Ensure all endpoints return 401 if not authenticated",
+        "Typecheck passes"
       ],
       "priority": 19,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-020",
-      "title": "API client with auth",
-      "description": "As a frontend developer, I need an API client that automatically includes auth tokens.",
+      "title": "Merge AppModule Configurations",
+      "description": "As a developer, I need to merge AppModule configurations from both branches, combining auth modules with ESP sync modules.",
       "acceptanceCriteria": [
-        "Create src/lib/api.ts with API client functions",
-        "Client reads NEXT_PUBLIC_API_URL from environment",
-        "All requests include auth token in headers (from AuthContext)",
-        "Handles 401 errors by clearing auth and redirecting to login",
-        "Provides typed functions for all auth and ESP endpoints",
+        "Import AuthModule, AuthService, AuthController, AuthGuard from auth branch",
+        "Import EmailService and email-related modules from auth branch",
+        "Keep BullMQ and Redis configuration from ESP sync branch",
+        "Keep ESP sync services and processors from ESP sync branch",
+        "Register all entities (User, Session, VerificationCode, EspConnection, Subscriber) in TypeOrmModule.forFeature()",
+        "Register all controllers (AuthController, EspConnectionController) in controllers array",
+        "Register all services and providers in providers array",
+        "Ensure no duplicate imports or conflicting configurations",
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Resolve Encryption Service Conflicts",
+      "description": "As a developer, I need to ensure the EncryptionService is shared between auth and ESP sync features without duplication.",
+      "acceptanceCriteria": [
+        "Verify EncryptionService exists and is properly configured",
+        "Ensure both auth (for API keys) and ESP sync (for API keys and emails) use the same EncryptionService instance",
+        "Verify ENCRYPTION_KEY environment variable is documented in both .env.example files",
+        "Remove any duplicate EncryptionService implementations if found",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Resolve Migration Conflicts",
+      "description": "As a developer, I need to resolve any migration conflicts and ensure all database schema changes are properly sequenced.",
+      "acceptanceCriteria": [
+        "Review all migrations from both branches",
+        "Merge or reorder migrations to ensure proper sequence (User/Session/VerificationCode before EspConnection)",
+        "Update EspConnection migration if schema was changed during merge",
+        "Ensure all enum types are created correctly (handle existing types gracefully)",
+        "Run all migrations successfully on a clean database",
+        "Verify all foreign key relationships are created correctly",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Update ESP Connection Service to Use User Entity",
+      "description": "As a developer, I need to update EspConnectionService to work with the User entity relationship instead of plain userId strings.",
+      "acceptanceCriteria": [
+        "Update `createConnection` method to accept User entity or userId string (maintain backward compatibility if needed)",
+        "Ensure `findById` method validates ownership using User relationship",
+        "Update all service methods to work with User entity relationships",
+        "Ensure foreign key constraints are respected",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Verify Frontend Integration",
+      "description": "As a developer, I need to ensure the frontend auth/onboarding flow works with the merged backend ESP sync endpoints.",
+      "acceptanceCriteria": [
+        "Verify frontend auth pages (login, verify-code, onboarding) exist and work",
+        "Verify onboarding flow can create ESP connections using merged endpoints",
+        "Verify ESP connection endpoints are accessible after authentication",
+        "Verify dashboard can display ESP connections and trigger syncs",
+        "Test complete flow: login → onboarding → create ESP connection → trigger sync",
+        "All frontend pages load without errors",
+        "Typecheck passes for frontend"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Update API Endpoints to Match Auth Branch Conventions",
+      "description": "As a developer, I need to ensure ESP connection endpoints follow the same API conventions as auth endpoints (route prefixes, response formats).",
+      "acceptanceCriteria": [
+        "Verify ESP connection endpoints use consistent route prefixes (e.g., `/api/esp-connections` matches `/api/auth/*` pattern)",
+        "Ensure response formats match auth endpoint patterns",
+        "Ensure error responses use consistent format and status codes",
+        "Update any endpoint paths if needed to match conventions",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Run Integration Tests and Verify All Features",
+      "description": "As a developer, I need to verify that all merged features work together: auth, onboarding, ESP connections, and subscriber syncing.",
+      "acceptanceCriteria": [
+        "Test complete user flow: send verification code → verify code → create session → complete onboarding → create ESP connection → trigger sync",
+        "Verify authentication protects all ESP connection endpoints",
+        "Verify ESP connections are properly linked to authenticated users",
+        "Verify subscriber sync jobs work with authenticated user's connections",
+        "Verify all database relationships work correctly (User → EspConnection → Subscriber)",
+        "Run backend typecheck and ensure no errors",
+        "Run frontend typecheck and ensure no errors",
+        "Document any remaining issues or limitations"
+      ],
+      "priority": 26,
+      "passes": false,
       "notes": ""
     }
   ]

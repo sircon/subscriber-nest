@@ -405,3 +405,40 @@ Started: Sat Jan 17 2026
   - API client functions are organized into namespaces (authApi, espConnectionApi) for better organization
   - All quality checks (typecheck, lint, build) passed successfully
 ---
+
+## 2026-01-18 - US-016
+- Successfully merged main branch (auth and onboarding features) into ralph/esp-subscriber-sync branch
+- Identified and documented all merge conflicts in 8 files
+- Resolved conflicts by merging both versions where appropriate
+- Files with conflicts resolved:
+  - `apps/backend/src/entities/esp-connection.entity.ts` - Merged EspConnection entity to include both User relationship (from main) and all ESP sync fields (encryptedApiKey, publicationId, status, lastValidatedAt, lastSyncedAt)
+  - `apps/backend/src/app.module.ts` - Merged imports and providers from both branches (auth services + ESP sync services + BullMQ)
+  - `apps/backend/src/main.ts` - Combined CORS configuration with credentials and ValidationPipe
+  - `apps/backend/package.json` - Merged all dependencies from both branches
+  - `ralph/.last-branch`, `ralph/prd.json`, `ralph/progress.txt` - Used main branch versions
+  - `yarn.lock` - Used main branch version (will be regenerated)
+- Duplicate files identified (to be resolved in US-017-US-026):
+  - `src/esp-connection.controller.ts` (from main - simple version)
+  - `src/controllers/esp-connection.controller.ts` (from ESP sync - full-featured version)
+  - `src/esp-connection.service.ts` (from main - basic version)
+  - `src/services/esp-connection.service.ts` (from ESP sync - complete version with validation)
+  - `src/encryption.service.ts` (from main)
+  - `src/services/encryption.service.ts` (from ESP sync)
+- TypeScript compilation errors present (expected, will be resolved in subsequent stories):
+  - EspProvider vs EspType enum mismatch
+  - provider vs espType field name mismatch
+  - apiKey vs encryptedApiKey field name mismatch
+  - isActive vs status field mismatch
+  - Import path conflicts between duplicate files
+- **Learnings for future iterations:**
+  - When merging branches with parallel development, expect entity schema conflicts
+  - The main branch had simpler versions of ESP connection code (for onboarding UI)
+  - The ESP sync branch has more complete, production-ready versions with encryption, validation, and queue processing
+  - Subsequent stories will resolve these conflicts by:
+    1. Keeping the ESP sync branch versions (more complete)
+    2. Updating the entity to match both schemas
+    3. Removing duplicate files from main branch
+    4. Fixing all import paths
+  - Git merge strategy: preserve both sides initially, then resolve systematically in dedicated stories
+  - The merged entity includes User relationship (needed for auth) and all ESP sync fields (needed for sync functionality)
+---
