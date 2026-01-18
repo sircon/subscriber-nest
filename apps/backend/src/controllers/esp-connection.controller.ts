@@ -10,6 +10,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   UseGuards,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -113,7 +114,14 @@ export class EspConnectionController {
   }> {
     try {
       // Validate ESP connection exists and belongs to user
-      await this.espConnectionService.findById(id, user.id);
+      const connection = await this.espConnectionService.findById(id, user.id);
+
+      // Check if connection is already syncing
+      if (connection.syncStatus === EspSyncStatus.SYNCING) {
+        throw new ConflictException(
+          'A sync is already in progress for this ESP connection',
+        );
+      }
 
       // Mark connection as syncing before adding to queue
       const updatedConnection = await this.espConnectionService.updateSyncStatus(
@@ -145,6 +153,11 @@ export class EspConnectionController {
         throw new ForbiddenException(
           'You do not have permission to sync this ESP connection',
         );
+      }
+
+      // Handle ConflictException (409 - sync already in progress)
+      if (error instanceof ConflictException) {
+        throw error;
       }
 
       // Handle other errors as 500
