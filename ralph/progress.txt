@@ -510,3 +510,23 @@ All 17 user stories have been successfully implemented and are passing:
 
 The SubscriberNest dashboard is now fully functional with comprehensive features for managing ESP connections, viewing subscribers, syncing data, and exporting subscriber lists.
 ---
+
+## 2026-01-19 09:30 - US-018
+- Improved selected ESP connection design in sidebar to have distinct visual appearance
+- Updated selected state styling to use left border indicator (border-l-4 border-primary) instead of button-like appearance
+- Selected items now use subtle background (bg-primary/10) with primary text color
+- Removed hover effect on active items to prevent button-like interaction
+- Updated publication ID text color to match primary color when active (text-primary/70)
+- Selected state clearly distinguishable from unselected items (unselected items only have hover:bg-accent)
+- Design matches dashboard aesthetic with primary color theme
+- Selected state persists correctly when navigating to ESP detail page (pathname-based detection unchanged)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Updated ESP connection item styling
+- **Learnings for future iterations:**
+  - Use left border (border-l-4) as visual indicator for selected navigation items (common pattern)
+  - Primary color with opacity (bg-primary/10) provides subtle background without being too bold
+  - Remove hover states on active items to prevent confusion (active items shouldn't look interactive)
+  - Use primary color variants (text-primary, text-primary/70) for consistent theming
+  - Conditional className with cn() utility allows clean conditional styling
+  - Selected navigation items should look like "selected state" not "button ready to click"
+---

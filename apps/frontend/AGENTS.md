@@ -58,6 +58,7 @@ All subscriber, sync, and export behavior depends on the backend API. Point `NEX
 - **Loading states**: Match the skeleton loading state to the final layout structure (e.g., 3 cards + table) for better UX.
 - **Relative time formatting**: For "last sync" timestamps, use relative time ("5 mins ago") for recent events and fall back to full date/time for older events.
 - **Error handling**: Use silent error handling (return empty array) for individual items in aggregated lists to prevent one failure from breaking the entire dashboard.
+- **Sidebar navigation**: Selected navigation items use left border indicator (`border-l-4 border-primary`) with subtle background (`bg-primary/10`) and primary text color. Remove hover states on active items to prevent button-like appearance. Use `pathname === '/dashboard/esp/${id}'` to detect active state.
 
 ## API client patterns
 
