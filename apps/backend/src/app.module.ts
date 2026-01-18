@@ -44,6 +44,7 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
 import { OAuthStateService } from './services/oauth-state.service';
 import { OAuthStateCleanupProcessor } from './processors/oauth-state-cleanup.processor';
 import { OAuthStateSchedulerService } from './services/oauth-state-scheduler.service';
+import { OAuthConfigService } from './services/oauth-config.service';
 
 @Module({
   imports: [
@@ -153,6 +154,7 @@ import { OAuthStateSchedulerService } from './services/oauth-state-scheduler.ser
     OAuthStateService,
     OAuthStateCleanupProcessor,
     OAuthStateSchedulerService,
+    OAuthConfigService,
   ],
   exports: [EmailService],
 })

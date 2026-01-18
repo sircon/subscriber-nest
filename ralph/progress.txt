@@ -79,3 +79,21 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Always register new queues in `BullModule.registerQueue()` and processors/services in `providers` array
   - Cron pattern "0 * * * *" means "every hour at minute 0"
 ---
+
+## [Date/Time] - US-004
+- Created OAuthConfigService to manage OAuth configuration for Kit and Mailchimp
+- Service reads OAuth config from environment variables (client ID, client secret, authorization URL, token URL, scopes)
+- Validates all required config values are present on initialization (throws error if missing)
+- Implements `getConfig(espType: EspType): OAuthConfig` method that returns configuration for specified ESP
+- Supports Kit and Mailchimp OAuth configurations
+- Registered service in app.module.ts providers array
+- Files changed:
+  - `apps/backend/src/services/oauth-config.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+- **Learnings for future iterations:**
+  - ConfigService is available globally via `ConfigModule.forRoot({ isGlobal: true })`
+  - Access environment variables using `this.configService.get<string>('ENV_VAR_NAME')`
+  - Validation in constructor throws error on initialization if required values are missing (fail-fast pattern)
+  - Service throws descriptive errors indicating which environment variables are missing
+  - OAuthConfig interface exported for use by other services
+---
