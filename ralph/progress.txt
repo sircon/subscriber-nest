@@ -460,3 +460,26 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Always register new connectors in app.module.ts providers and inject into both EspConnectionService and SubscriberSyncService
   - Update getConnector() switch statements in both services to include new connector types
 ---
+
+## Sun Jan 19 2026 - US-021
+- Verified Mailchimp OAuth support is fully implemented in frontend
+- Onboarding page (`src/app/onboarding/page.tsx`) already shows "Connect with OAuth" button for Mailchimp (supportsOAuth check includes 'mailchimp')
+- Onboarding API key page (`src/app/onboarding/api-key/page.tsx`) already shows OAuth button for Mailchimp when provider supports OAuth
+- "New ESP Connection" page (`src/app/dashboard/esp/new/page.tsx`) already supports OAuth for Mailchimp (supportsOAuth check includes 'mailchimp')
+- All pages call `initiateOAuth()` with 'mailchimp' as valid provider
+- Backend OAuth endpoints already support 'mailchimp' provider (initiate and callback)
+- API client (`src/lib/api.ts`) already accepts 'mailchimp' as valid provider in `initiateOAuth()` function
+- All acceptance criteria met: OAuth buttons shown, correct endpoint called, redirects handled, errors handled, typecheck passes
+- Files verified (no changes needed - implementation was already complete):
+  - `apps/frontend/src/app/onboarding/page.tsx` (Mailchimp OAuth support present)
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` (Mailchimp OAuth support present)
+  - `apps/frontend/src/app/dashboard/esp/new/page.tsx` (Mailchimp OAuth support present)
+  - `apps/frontend/src/lib/api.ts` (Mailchimp provider support present)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (Mailchimp OAuth endpoints present)
+- **Learnings for future iterations:**
+  - Mailchimp OAuth support was already implemented alongside Kit OAuth in US-016, but story was marked incomplete
+  - When verifying stories, check if implementation was done in previous stories (Kit and Mailchimp OAuth were implemented together)
+  - All OAuth providers that support OAuth use the same frontend pattern: check `supportsOAuth` boolean, show OAuth button, call `initiateOAuth()` with provider name
+  - Backend OAuth endpoints handle both 'kit' and 'mailchimp' providers using the same code path
+  - Typecheck and lint both pass for Mailchimp OAuth implementation
+---
