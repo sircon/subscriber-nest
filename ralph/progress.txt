@@ -642,3 +642,33 @@ Started: Sat Jan 17 2026
   - This design is more flexible - service doesn't need full User entity, just the id
   - Ownership validation via string comparison is efficient and doesn't require loading related entities
 ---
+
+## 2026-01-18 - US-025
+- Updated ESP connection endpoints to match auth branch API conventions
+- Route prefix standardization:
+  - Changed from `@Controller('api/esp-connections')` to `@Controller('esp-connections')`
+  - Auth routes: `/auth/*` (send-code, verify-code, me, logout, complete-onboarding)
+  - ESP connection routes: `/esp-connections/*` (was `/api/esp-connections/*`)
+  - No global API prefix configured in main.ts, so controllers define full routes
+- Response format consistency verified:
+  - Both controllers return plain TypeScript objects with specific fields
+  - Auth: Returns objects like `{ success: true }`, `{ token: string, user: {...} }`
+  - ESP connections: Returns EspConnection objects with `encryptedApiKey` excluded
+  - Both use explicit return types for type safety
+- Error response consistency verified:
+  - 400 BadRequestException: Validation errors, invalid input
+  - 401 UnauthorizedException: Authentication failures (from AuthGuard)
+  - 403 ForbiddenException: Authorization failures (user doesn't own resource)
+  - 404 NotFoundException: Resource not found
+  - 500 InternalServerErrorException: Server errors
+  - Both controllers follow same error handling patterns
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Updated route prefix
+- **Learnings for future iterations:**
+  - Controllers in NestJS define their full route path (no global API prefix in this app)
+  - Consistent route patterns across controllers improve API usability
+  - The pattern: `/resource-name/*` without `/api` prefix (matches REST conventions)
+  - Response format consistency: return plain objects, use explicit return types
+  - Error handling consistency: use standard NestJS exceptions with appropriate HTTP status codes
+  - Frontend API client will need to be updated to use new `/esp-connections/*` routes
+---

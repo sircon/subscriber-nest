@@ -391,8 +391,8 @@
         "Typecheck passes"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Updated controller route from /api/esp-connections to /esp-connections to match /auth pattern. Response formats already consistent."
     },
     {
       "id": "US-026",
