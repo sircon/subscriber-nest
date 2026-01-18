@@ -92,6 +92,29 @@ export interface SyncHistory {
   createdAt: string;
 }
 
+export interface Subscriber {
+  id: string;
+  espConnectionId: string;
+  externalId: string;
+  maskedEmail: string;
+  status: 'active' | 'unsubscribed' | 'bounced';
+  firstName: string | null;
+  lastName: string | null;
+  subscribedAt: string | null;
+  unsubscribedAt: string | null;
+  metadata: Record<string, any> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedSubscribers {
+  data: Subscriber[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Error handling callback type
 type OnUnauthorizedCallback = () => void;
 
@@ -289,6 +312,51 @@ export const espConnectionApi = {
   ): Promise<SyncHistory[]> => {
     const url = `/esp-connections/${connectionId}/sync-history${limit ? `?limit=${limit}` : ''}`;
     return apiRequest<SyncHistory[]>(
+      url,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get single ESP connection by ID
+   */
+  getConnection: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<EspConnection> => {
+    return apiRequest<EspConnection>(
+      `/esp-connections/${connectionId}`,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get paginated subscribers for ESP connection
+   */
+  getSubscribers: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    page?: number,
+    limit?: number,
+    status?: string,
+  ): Promise<PaginatedSubscribers> => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (status) params.append('status', status);
+    
+    const url = `/esp-connections/${connectionId}/subscribers${params.toString() ? `?${params.toString()}` : ''}`;
+    return apiRequest<PaginatedSubscribers>(
       url,
       {
         method: 'GET',
