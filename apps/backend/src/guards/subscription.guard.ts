@@ -5,12 +5,15 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
-import { BillingSubscription, BillingSubscriptionStatus } from '../entities/billing-subscription.entity';
+import {
+  BillingSubscription,
+  BillingSubscriptionStatus,
+} from '../entities/billing-subscription.entity';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
   constructor(
-    private readonly billingSubscriptionService: BillingSubscriptionService,
+    private readonly billingSubscriptionService: BillingSubscriptionService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -22,7 +25,9 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     // Get user's subscription
-    const subscription = await this.billingSubscriptionService.findByUserId(user.id);
+    const subscription = await this.billingSubscriptionService.findByUserId(
+      user.id
+    );
 
     // If no subscription exists, deny access
     if (!subscription) {
@@ -30,10 +35,13 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     // Check if subscription is active (status is ACTIVE and not canceled at period end)
-    const isActive = subscription.status === BillingSubscriptionStatus.ACTIVE && !subscription.cancelAtPeriodEnd;
+    const isActive =
+      subscription.status === BillingSubscriptionStatus.ACTIVE &&
+      !subscription.cancelAtPeriodEnd;
 
     // Check if subscription is canceled but still in grace period (currentPeriodEnd is in the future)
-    const isInGracePeriod = subscription.status === BillingSubscriptionStatus.CANCELED &&
+    const isInGracePeriod =
+      subscription.status === BillingSubscriptionStatus.CANCELED &&
       subscription.currentPeriodEnd &&
       subscription.currentPeriodEnd > new Date();
 

@@ -7,7 +7,7 @@ import { SyncHistory } from '../entities/sync-history.entity';
 export class SyncHistoryService {
   constructor(
     @InjectRepository(SyncHistory)
-    private syncHistoryRepository: Repository<SyncHistory>,
+    private syncHistoryRepository: Repository<SyncHistory>
   ) {}
 
   /**
@@ -18,7 +18,7 @@ export class SyncHistoryService {
    */
   async findByEspConnection(
     espConnectionId: string,
-    limit: number = 50,
+    limit: number = 50
   ): Promise<SyncHistory[]> {
     return this.syncHistoryRepository.find({
       where: { espConnectionId },

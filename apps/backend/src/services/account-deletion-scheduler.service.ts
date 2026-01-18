@@ -12,7 +12,7 @@ export class AccountDeletionSchedulerService implements OnModuleInit {
 
   constructor(
     @InjectQueue('account-deletion')
-    private accountDeletionQueue: Queue<AccountDeletionJobData>,
+    private accountDeletionQueue: Queue<AccountDeletionJobData>
   ) {}
 
   /**
@@ -22,9 +22,10 @@ export class AccountDeletionSchedulerService implements OnModuleInit {
   async onModuleInit() {
     try {
       // Check if repeatable job already exists
-      const repeatableJobs = await this.accountDeletionQueue.getRepeatableJobs();
+      const repeatableJobs =
+        await this.accountDeletionQueue.getRepeatableJobs();
       const existingJob = repeatableJobs.find(
-        (job) => job.name === 'account-deletion',
+        (job) => job.name === 'account-deletion'
       );
 
       if (existingJob) {
@@ -43,16 +44,16 @@ export class AccountDeletionSchedulerService implements OnModuleInit {
             tz: 'UTC',
           },
           jobId: 'account-deletion-recurring',
-        },
+        }
       );
 
       this.logger.log(
-        'Scheduled account deletion job to run daily at 00:00 UTC',
+        'Scheduled account deletion job to run daily at 00:00 UTC'
       );
     } catch (error: any) {
       this.logger.error(
         `Failed to schedule account deletion job: ${error.message}`,
-        error.stack,
+        error.stack
       );
       // Don't throw - allow app to start even if scheduling fails
       // The job can be manually scheduled later

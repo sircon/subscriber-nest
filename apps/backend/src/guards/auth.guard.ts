@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -70,10 +70,10 @@ export class AuthGuard implements CanActivate {
       // Allow access to export endpoints during grace period
       const url = request.url || '';
       const isExportEndpoint = url.includes('/subscribers/export');
-      
+
       if (!isExportEndpoint) {
         throw new ForbiddenException(
-          'Account deletion in progress. You can export your data for 30 days.',
+          'Account deletion in progress. You can export your data for 30 days.'
         );
       }
     }

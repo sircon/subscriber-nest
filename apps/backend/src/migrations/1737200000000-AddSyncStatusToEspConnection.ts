@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddSyncStatusToEspConnection1737200000000
-  implements MigrationInterface
-{
+export class AddSyncStatusToEspConnection1737200000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create esp_sync_status_enum type
     await queryRunner.query(`
@@ -15,7 +13,9 @@ export class AddSyncStatusToEspConnection1737200000000
 
     // Check if column exists before adding
     const table = await queryRunner.getTable('esp_connections');
-    const columnExists = table?.columns.find((col) => col.name === 'syncStatus');
+    const columnExists = table?.columns.find(
+      (col) => col.name === 'syncStatus'
+    );
 
     if (!columnExists) {
       // Add syncStatus column to esp_connections table
@@ -25,7 +25,7 @@ export class AddSyncStatusToEspConnection1737200000000
           name: 'syncStatus',
           type: 'esp_sync_status_enum',
           default: "'idle'",
-        }),
+        })
       );
     }
   }

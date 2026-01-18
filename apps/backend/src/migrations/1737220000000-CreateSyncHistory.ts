@@ -1,4 +1,9 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+} from 'typeorm';
 
 export class CreateSyncHistory1737220000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -56,7 +61,7 @@ export class CreateSyncHistory1737220000000 implements MigrationInterface {
           },
         ],
       }),
-      true,
+      true
     );
 
     // Add foreign key constraint
@@ -67,7 +72,7 @@ export class CreateSyncHistory1737220000000 implements MigrationInterface {
         referencedColumnNames: ['id'],
         referencedTableName: 'esp_connections',
         onDelete: 'CASCADE',
-      }),
+      })
     );
   }
 

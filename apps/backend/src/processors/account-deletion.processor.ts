@@ -43,7 +43,7 @@ export class AccountDeletionProcessor extends WorkerHost {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     private stripeService: StripeService,
-    private billingSubscriptionService: BillingSubscriptionService,
+    private billingSubscriptionService: BillingSubscriptionService
   ) {
     super();
   }
@@ -75,7 +75,9 @@ export class AccountDeletionProcessor extends WorkerHost {
         });
 
         if (!user || !user.deleteRequestedAt) {
-          this.logger.warn(`User ${job.data.userId} not found or deletion not requested`);
+          this.logger.warn(
+            `User ${job.data.userId} not found or deletion not requested`
+          );
           return;
         }
 
@@ -85,7 +87,7 @@ export class AccountDeletionProcessor extends WorkerHost {
 
         if (user.deleteRequestedAt > thirtyDaysAgo) {
           this.logger.warn(
-            `User ${job.data.userId} deletion requested less than 30 days ago. Skipping.`,
+            `User ${job.data.userId} deletion requested less than 30 days ago. Skipping.`
           );
           return;
         }
@@ -113,7 +115,7 @@ export class AccountDeletionProcessor extends WorkerHost {
           // Log error but continue processing other users
           this.logger.error(
             `Failed to delete user ${user.id}: ${error.message}`,
-            error.stack,
+            error.stack
           );
           // Continue with next user instead of failing entire job
         }
@@ -123,7 +125,7 @@ export class AccountDeletionProcessor extends WorkerHost {
     } catch (error: any) {
       this.logger.error(
         `Failed to process account deletion job ${job.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Check if this is the final attempt (after all retries)
@@ -132,7 +134,7 @@ export class AccountDeletionProcessor extends WorkerHost {
 
       if (isFinalAttempt) {
         this.logger.error(
-          `Account deletion job ${job.id} failed after all retries. Manual intervention may be required.`,
+          `Account deletion job ${job.id} failed after all retries. Manual intervention may be required.`
         );
       }
 
@@ -151,21 +153,28 @@ export class AccountDeletionProcessor extends WorkerHost {
     this.logger.log(`Deleting all data for user ${userId}`);
 
     // 1. Cancel Stripe subscription if still active
-    const subscription = await this.billingSubscriptionService.findByUserId(userId);
+    const subscription =
+      await this.billingSubscriptionService.findByUserId(userId);
     if (subscription && subscription.stripeSubscriptionId) {
       try {
         // Check if subscription is still active in Stripe
         const stripeSubscription = await this.stripeService.getSubscription(
-          subscription.stripeSubscriptionId,
+          subscription.stripeSubscriptionId
         );
-        if (stripeSubscription.status === 'active' || stripeSubscription.status === 'trialing') {
-          await this.stripeService.cancelSubscription(subscription.stripeSubscriptionId, false);
+        if (
+          stripeSubscription.status === 'active' ||
+          stripeSubscription.status === 'trialing'
+        ) {
+          await this.stripeService.cancelSubscription(
+            subscription.stripeSubscriptionId,
+            false
+          );
           this.logger.log(`Canceled Stripe subscription for user ${userId}`);
         }
       } catch (error: any) {
         // Log error but continue with deletion
         this.logger.warn(
-          `Failed to cancel Stripe subscription for user ${userId}: ${error.message}`,
+          `Failed to cancel Stripe subscription for user ${userId}: ${error.message}`
         );
       }
     }
@@ -216,6 +225,8 @@ export class AccountDeletionProcessor extends WorkerHost {
     });
     await this.userRepository.remove(user);
 
-    this.logger.log(`Successfully deleted user ${userId} and all associated data`);
+    this.logger.log(
+      `Successfully deleted user ${userId} and all associated data`
+    );
   }
 }

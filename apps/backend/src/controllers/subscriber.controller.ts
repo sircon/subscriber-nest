@@ -23,14 +23,14 @@ export class SubscriberController {
   constructor(
     @InjectRepository(Subscriber)
     private readonly subscriberRepository: Repository<Subscriber>,
-    private readonly encryptionService: EncryptionService,
+    private readonly encryptionService: EncryptionService
   ) {}
 
   @Post(':id/unmask')
   @HttpCode(HttpStatus.OK)
   async unmaskEmail(
     @Param('id') id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<{ email: string }> {
     try {
       // Find subscriber with espConnection relation to validate ownership
@@ -47,13 +47,13 @@ export class SubscriberController {
       // Validate that the subscriber's ESP connection belongs to the requesting user
       if (subscriber.espConnection.userId !== user.id) {
         throw new ForbiddenException(
-          'You do not have permission to access this subscriber',
+          'You do not have permission to access this subscriber'
         );
       }
 
       // Decrypt the email using EncryptionService
       const decryptedEmail = this.encryptionService.decrypt(
-        subscriber.encryptedEmail,
+        subscriber.encryptedEmail
       );
 
       return { email: decryptedEmail };
@@ -68,7 +68,7 @@ export class SubscriberController {
 
       // Handle decryption errors or other unexpected errors as 500
       throw new InternalServerErrorException(
-        'Failed to unmask subscriber email',
+        'Failed to unmask subscriber email'
       );
     }
   }

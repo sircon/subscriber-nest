@@ -8,7 +8,7 @@ import { CreateSubscriberDto } from '../dto/create-subscriber.dto';
 export class SubscriberService {
   constructor(
     @InjectRepository(Subscriber)
-    private subscriberRepository: Repository<Subscriber>,
+    private subscriberRepository: Repository<Subscriber>
   ) {}
 
   /**
@@ -61,7 +61,7 @@ export class SubscriberService {
     espConnectionId: string,
     page: number = 1,
     limit: number = 50,
-    status?: string,
+    status?: string
   ): Promise<{
     data: Omit<Subscriber, 'encryptedEmail'>[];
     total: number;

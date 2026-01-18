@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { EspConnection, EspType } from '../entities/esp-connection.entity';
@@ -24,7 +28,7 @@ export class SubscriberSyncService {
     private beehiivConnector: BeehiivConnector,
     private subscriberMapperService: SubscriberMapperService,
     private subscriberService: SubscriberService,
-    private billingUsageService: BillingUsageService,
+    private billingUsageService: BillingUsageService
   ) {}
 
   /**
@@ -38,7 +42,9 @@ export class SubscriberSyncService {
       case EspType.BEEHIIV:
         return this.beehiivConnector;
       default:
-        throw new InternalServerErrorException(`Unsupported ESP type: ${espType}`);
+        throw new InternalServerErrorException(
+          `Unsupported ESP type: ${espType}`
+        );
     }
   }
 
@@ -61,27 +67,35 @@ export class SubscriberSyncService {
     });
 
     if (!espConnection) {
-      throw new NotFoundException(`ESP connection not found: ${espConnectionId}`);
+      throw new NotFoundException(
+        `ESP connection not found: ${espConnectionId}`
+      );
     }
 
     try {
       // Decrypt the API key
-      const apiKey = this.encryptionService.decrypt(espConnection.encryptedApiKey);
+      const apiKey = this.encryptionService.decrypt(
+        espConnection.encryptedApiKey
+      );
 
       // Get the appropriate ESP connector
       const connector = this.getConnector(espConnection.espType);
 
       // Fetch subscribers from ESP
-      const subscribers = await connector.fetchSubscribers(apiKey, espConnection.publicationId);
+      const subscribers = await connector.fetchSubscribers(
+        apiKey,
+        espConnection.publicationId
+      );
 
       // Process each subscriber: map and upsert
       for (const subscriberData of subscribers) {
         try {
           // Map ESP subscriber data to our database schema
-          const createSubscriberDto = this.subscriberMapperService.mapToCreateSubscriberDto(
-            subscriberData,
-            espConnectionId,
-          );
+          const createSubscriberDto =
+            this.subscriberMapperService.mapToCreateSubscriberDto(
+              subscriberData,
+              espConnectionId
+            );
 
           // Upsert subscriber (create if not exists, update if exists)
           await this.subscriberService.upsertSubscriber(createSubscriberDto);
@@ -89,7 +103,7 @@ export class SubscriberSyncService {
           // Log error for individual subscriber but continue processing others
           console.error(
             `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}:`,
-            error.message,
+            error.message
           );
           // Continue processing other subscribers even if one fails
         }
@@ -127,7 +141,7 @@ export class SubscriberSyncService {
 
       // Wrap other errors in InternalServerErrorException
       throw new InternalServerErrorException(
-        `Failed to sync subscribers for connection ${espConnectionId}: ${error.message}`,
+        `Failed to sync subscribers for connection ${espConnectionId}: ${error.message}`
       );
     }
   }

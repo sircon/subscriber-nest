@@ -25,12 +25,12 @@ export class SubscriberExportService {
    * @returns Array of subscribers with decrypted emails and flattened metadata
    */
   private prepareSubscribersForExport(
-    subscribers: Subscriber[],
+    subscribers: Subscriber[]
   ): ExportedSubscriber[] {
     return subscribers.map((subscriber) => {
       // Decrypt email
       const decryptedEmail = this.encryptionService.decrypt(
-        subscriber.encryptedEmail,
+        subscriber.encryptedEmail
       );
 
       // Flatten metadata into the main object

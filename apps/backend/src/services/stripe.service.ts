@@ -8,7 +8,9 @@ export class StripeService {
 
   constructor(private configService: ConfigService) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET'
+    );
 
     if (!secretKey) {
       throw new Error('STRIPE_SECRET_KEY environment variable is required');
@@ -46,7 +48,10 @@ export class StripeService {
    * @returns Stripe customer object
    * @throws InternalServerErrorException if Stripe API call fails
    */
-  async createCustomer(email: string, userId: string): Promise<Stripe.Customer> {
+  async createCustomer(
+    email: string,
+    userId: string
+  ): Promise<Stripe.Customer> {
     try {
       const customer = await this.stripe.customers.create({
         email,
@@ -60,12 +65,12 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create Stripe customer: ${error.message}`,
+          `Failed to create Stripe customer: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating Stripe customer: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating Stripe customer: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -81,7 +86,7 @@ export class StripeService {
       const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
       if (!priceId) {
         throw new InternalServerErrorException(
-          'STRIPE_PRICE_ID environment variable is required to create subscriptions',
+          'STRIPE_PRICE_ID environment variable is required to create subscriptions'
         );
       }
 
@@ -99,7 +104,7 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create Stripe subscription: ${error.message}`,
+          `Failed to create Stripe subscription: ${error.message}`
         );
       }
       // Handle unexpected errors (including our own InternalServerErrorException)
@@ -108,7 +113,7 @@ export class StripeService {
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating Stripe subscription: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating Stripe subscription: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -122,30 +127,34 @@ export class StripeService {
    */
   async cancelSubscription(
     subscriptionId: string,
-    cancelAtPeriodEnd: boolean,
+    cancelAtPeriodEnd: boolean
   ): Promise<Stripe.Subscription> {
     try {
       if (cancelAtPeriodEnd) {
         // Cancel at period end - update subscription to cancel at period end
-        const subscription = await this.stripe.subscriptions.update(subscriptionId, {
-          cancel_at_period_end: true,
-        });
+        const subscription = await this.stripe.subscriptions.update(
+          subscriptionId,
+          {
+            cancel_at_period_end: true,
+          }
+        );
         return subscription;
       } else {
         // Cancel immediately
-        const subscription = await this.stripe.subscriptions.cancel(subscriptionId);
+        const subscription =
+          await this.stripe.subscriptions.cancel(subscriptionId);
         return subscription;
       }
     } catch (error: any) {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to cancel Stripe subscription: ${error.message}`,
+          `Failed to cancel Stripe subscription: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error canceling Stripe subscription: ${error.message || 'Unknown error'}`,
+        `Unexpected error canceling Stripe subscription: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -158,18 +167,19 @@ export class StripeService {
    */
   async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     try {
-      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription =
+        await this.stripe.subscriptions.retrieve(subscriptionId);
       return subscription;
     } catch (error: any) {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to get Stripe subscription: ${error.message}`,
+          `Failed to get Stripe subscription: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error getting Stripe subscription: ${error.message || 'Unknown error'}`,
+        `Unexpected error getting Stripe subscription: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -185,7 +195,7 @@ export class StripeService {
   async createInvoiceItem(
     customerId: string,
     amount: number,
-    description: string,
+    description: string
   ): Promise<Stripe.InvoiceItem> {
     try {
       // Convert dollars to cents for Stripe
@@ -203,12 +213,12 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create Stripe invoice item: ${error.message}`,
+          `Failed to create Stripe invoice item: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating Stripe invoice item: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating Stripe invoice item: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -228,19 +238,21 @@ export class StripeService {
       });
 
       // Finalize the invoice
-      const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(invoice.id);
+      const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(
+        invoice.id
+      );
 
       return finalizedInvoice;
     } catch (error: any) {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create and finalize Stripe invoice: ${error.message}`,
+          `Failed to create and finalize Stripe invoice: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating and finalizing Stripe invoice: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating and finalizing Stripe invoice: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -258,13 +270,13 @@ export class StripeService {
     customerId: string,
     customerEmail: string,
     successUrl: string,
-    cancelUrl: string,
+    cancelUrl: string
   ): Promise<Stripe.Checkout.Session> {
     try {
       const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
       if (!priceId) {
         throw new InternalServerErrorException(
-          'STRIPE_PRICE_ID environment variable is required to create checkout sessions',
+          'STRIPE_PRICE_ID environment variable is required to create checkout sessions'
         );
       }
 
@@ -293,7 +305,7 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create Stripe checkout session: ${error.message}`,
+          `Failed to create Stripe checkout session: ${error.message}`
         );
       }
       // Handle unexpected errors (including our own InternalServerErrorException)
@@ -302,7 +314,7 @@ export class StripeService {
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating Stripe checkout session: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating Stripe checkout session: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -316,7 +328,7 @@ export class StripeService {
    */
   async createPortalSession(
     customerId: string,
-    returnUrl: string,
+    returnUrl: string
   ): Promise<Stripe.BillingPortal.Session> {
     try {
       const session = await this.stripe.billingPortal.sessions.create({
@@ -329,12 +341,12 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to create Stripe portal session: ${error.message}`,
+          `Failed to create Stripe portal session: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error creating Stripe portal session: ${error.message || 'Unknown error'}`,
+        `Unexpected error creating Stripe portal session: ${error.message || 'Unknown error'}`
       );
     }
   }
@@ -345,7 +357,9 @@ export class StripeService {
    * @returns Stripe checkout session object
    * @throws InternalServerErrorException if Stripe API call fails
    */
-  async getCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+  async getCheckoutSession(
+    sessionId: string
+  ): Promise<Stripe.Checkout.Session> {
     try {
       const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
         expand: ['subscription'],
@@ -356,12 +370,12 @@ export class StripeService {
       // Handle Stripe API errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new InternalServerErrorException(
-          `Failed to retrieve Stripe checkout session: ${error.message}`,
+          `Failed to retrieve Stripe checkout session: ${error.message}`
         );
       }
       // Handle unexpected errors
       throw new InternalServerErrorException(
-        `Unexpected error retrieving Stripe checkout session: ${error.message || 'Unknown error'}`,
+        `Unexpected error retrieving Stripe checkout session: ${error.message || 'Unknown error'}`
       );
     }
   }

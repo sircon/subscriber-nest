@@ -26,5 +26,8 @@ export interface IEspConnector {
    * @param publicationId - The publication ID to fetch subscribers for
    * @returns Promise<SubscriberData[]> - List of subscribers
    */
-  fetchSubscribers(apiKey: string, publicationId: string): Promise<SubscriberData[]>;
+  fetchSubscribers(
+    apiKey: string,
+    publicationId: string
+  ): Promise<SubscriberData[]>;
 }

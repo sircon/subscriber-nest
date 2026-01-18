@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get, UseGuards, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Headers,
+} from '@nestjs/common';
 import { IsEmail, IsString, Length } from 'class-validator';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
@@ -29,17 +36,28 @@ export class AuthController {
   }
 
   @Post('verify-code')
-  async verifyCode(
-    @Body() body: VerifyCodeDto,
-  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
+  async verifyCode(@Body() body: VerifyCodeDto): Promise<{
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     return this.authService.verifyCode(body.email, body.code);
   }
 
   @Get('me')
   @UseGuards(AuthGuard)
-  async getCurrentUser(
-    @CurrentUser() user: User,
-  ): Promise<{ user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
+  async getCurrentUser(@CurrentUser() user: User): Promise<{
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     return {
       user: {
         id: user.id,
@@ -52,7 +70,9 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(AuthGuard)
-  async logout(@Headers('authorization') authHeader: string): Promise<{ success: true }> {
+  async logout(
+    @Headers('authorization') authHeader: string
+  ): Promise<{ success: true }> {
     // Extract token from "Bearer <token>" format
     const token = authHeader?.split(' ')[1];
     if (!token) {
@@ -64,9 +84,15 @@ export class AuthController {
 
   @Post('complete-onboarding')
   @UseGuards(AuthGuard)
-  async completeOnboarding(
-    @CurrentUser() user: User,
-  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
+  async completeOnboarding(@CurrentUser() user: User): Promise<{
+    success: true;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     return this.authService.completeOnboarding(user.id);
   }
 }

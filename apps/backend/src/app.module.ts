@@ -103,7 +103,15 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
       },
     }),
   ],
-  controllers: [AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController, AccountController],
+  controllers: [
+    AppController,
+    AuthController,
+    EspConnectionController,
+    SubscriberController,
+    DashboardController,
+    BillingController,
+    AccountController,
+  ],
   providers: [
     AppService,
     EncryptionService,

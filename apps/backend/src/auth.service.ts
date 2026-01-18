@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { VerificationCode } from './entities/verification-code.entity';
@@ -18,7 +22,7 @@ export class AuthService {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     private emailService: EmailService,
-    private billingSubscriptionService: BillingSubscriptionService,
+    private billingSubscriptionService: BillingSubscriptionService
   ) {}
 
   /**
@@ -42,7 +46,7 @@ export class AuthService {
 
     if (recentCodes >= 3) {
       throw new BadRequestException(
-        'Too many verification codes requested. Please try again later.',
+        'Too many verification codes requested. Please try again later.'
       );
     }
   }
@@ -99,8 +103,16 @@ export class AuthService {
    */
   async verifyCode(
     email: string,
-    code: string,
-  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
+    code: string
+  ): Promise<{
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     // Find verification code
     const verificationCode = await this.verificationCodeRepository.findOne({
       where: { email, code },
@@ -112,7 +124,9 @@ export class AuthService {
 
     // Check if code is already used
     if (verificationCode.used) {
-      throw new UnauthorizedException('Verification code has already been used');
+      throw new UnauthorizedException(
+        'Verification code has already been used'
+      );
     }
 
     // Check if code is expired
@@ -176,9 +190,15 @@ export class AuthService {
   /**
    * Mark user as onboarded (requires active subscription)
    */
-  async completeOnboarding(
-    userId: string,
-  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt: Date | null } }> {
+  async completeOnboarding(userId: string): Promise<{
+    success: true;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -186,9 +206,12 @@ export class AuthService {
     }
 
     // Check if user has active subscription
-    const hasActiveSubscription = await this.billingSubscriptionService.hasActiveSubscription(userId);
+    const hasActiveSubscription =
+      await this.billingSubscriptionService.hasActiveSubscription(userId);
     if (!hasActiveSubscription) {
-      throw new BadRequestException('Active subscription required to complete onboarding');
+      throw new BadRequestException(
+        'Active subscription required to complete onboarding'
+      );
     }
 
     user.isOnboarded = true;

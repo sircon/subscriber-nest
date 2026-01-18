@@ -22,9 +22,15 @@ import { Queue } from 'bullmq';
 import { EspConnectionService } from '../services/esp-connection.service';
 import { SyncHistoryService } from '../services/sync-history.service';
 import { SubscriberService } from '../services/subscriber.service';
-import { SubscriberExportService, ExportFormat } from '../services/subscriber-export.service';
+import {
+  SubscriberExportService,
+  ExportFormat,
+} from '../services/subscriber-export.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
-import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
+import {
+  EspConnection,
+  EspSyncStatus,
+} from '../entities/esp-connection.entity';
 import { SyncHistory } from '../entities/sync-history.entity';
 import { Subscriber } from '../entities/subscriber.entity';
 import { AuthGuard } from '../guards/auth.guard';
@@ -41,21 +47,23 @@ export class EspConnectionController {
     private readonly subscriberService: SubscriberService,
     private readonly subscriberExportService: SubscriberExportService,
     @InjectQueue('subscriber-sync')
-    private readonly subscriberSyncQueue: Queue,
-  ) { }
+    private readonly subscriberSyncQueue: Queue
+  ) {}
 
   @Get()
   async listConnections(
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Omit<EspConnection, 'encryptedApiKey'>[]> {
-    const connections = await this.espConnectionService.findAllByUserId(user.id);
+    const connections = await this.espConnectionService.findAllByUserId(
+      user.id
+    );
     return connections.map(({ encryptedApiKey, ...connection }) => connection);
   }
 
   @Get(':id')
   async getConnection(
     @Param('id') id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Omit<EspConnection, 'encryptedApiKey'>> {
     try {
       // Find connection and validate ownership
@@ -73,13 +81,13 @@ export class EspConnectionController {
       // Handle BadRequestException (403 - ownership validation failed)
       if (error instanceof BadRequestException) {
         throw new ForbiddenException(
-          'You do not have permission to access this ESP connection',
+          'You do not have permission to access this ESP connection'
         );
       }
 
       // Handle other errors as 500
       throw new InternalServerErrorException(
-        'Failed to retrieve ESP connection',
+        'Failed to retrieve ESP connection'
       );
     }
   }
@@ -88,14 +96,14 @@ export class EspConnectionController {
   @HttpCode(HttpStatus.CREATED)
   async createConnection(
     @Body() createEspConnectionDto: CreateEspConnectionDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Omit<EspConnection, 'encryptedApiKey'>> {
     try {
       const connection = await this.espConnectionService.createConnection(
         user.id,
         createEspConnectionDto.espType,
         createEspConnectionDto.apiKey,
-        createEspConnectionDto.publicationId,
+        createEspConnectionDto.publicationId
       );
 
       // Return connection without encrypted API key
@@ -108,9 +116,7 @@ export class EspConnectionController {
       }
 
       // Handle other errors as 500
-      throw new InternalServerErrorException(
-        'Failed to create ESP connection',
-      );
+      throw new InternalServerErrorException('Failed to create ESP connection');
     }
   }
 
@@ -119,7 +125,7 @@ export class EspConnectionController {
   @HttpCode(HttpStatus.ACCEPTED)
   async triggerSync(
     @Param('id') id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<{
     jobId: string;
     status: string;
@@ -133,15 +139,16 @@ export class EspConnectionController {
       // Check if connection is already syncing
       if (connection.syncStatus === EspSyncStatus.SYNCING) {
         throw new ConflictException(
-          'A sync is already in progress for this ESP connection',
+          'A sync is already in progress for this ESP connection'
         );
       }
 
       // Mark connection as syncing before adding to queue
-      const updatedConnection = await this.espConnectionService.updateSyncStatus(
-        id,
-        EspSyncStatus.SYNCING,
-      );
+      const updatedConnection =
+        await this.espConnectionService.updateSyncStatus(
+          id,
+          EspSyncStatus.SYNCING
+        );
 
       // Add job to queue
       const job = await this.subscriberSyncQueue.add('sync-publication', {
@@ -165,7 +172,7 @@ export class EspConnectionController {
       // Handle BadRequestException (403 - ownership validation failed)
       if (error instanceof BadRequestException) {
         throw new ForbiddenException(
-          'You do not have permission to sync this ESP connection',
+          'You do not have permission to sync this ESP connection'
         );
       }
 
@@ -176,7 +183,7 @@ export class EspConnectionController {
 
       // Handle other errors as 500
       throw new InternalServerErrorException(
-        'Failed to trigger subscriber sync',
+        'Failed to trigger subscriber sync'
       );
     }
   }
@@ -185,7 +192,7 @@ export class EspConnectionController {
   async getSyncHistory(
     @Param('id') id: string,
     @CurrentUser() user: User,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ): Promise<Omit<SyncHistory, 'espConnection'>[]> {
     try {
       // Validate ESP connection exists and belongs to user
@@ -197,7 +204,7 @@ export class EspConnectionController {
       // Fetch sync history records
       const syncHistory = await this.syncHistoryService.findByEspConnection(
         id,
-        parsedLimit,
+        parsedLimit
       );
 
       // Remove espConnection relation to avoid exposing sensitive data
@@ -214,14 +221,12 @@ export class EspConnectionController {
       // Handle BadRequestException (403 - ownership validation failed)
       if (error instanceof BadRequestException) {
         throw new ForbiddenException(
-          'You do not have permission to access this ESP connection',
+          'You do not have permission to access this ESP connection'
         );
       }
 
       // Handle other errors as 500
-      throw new InternalServerErrorException(
-        'Failed to retrieve sync history',
-      );
+      throw new InternalServerErrorException('Failed to retrieve sync history');
     }
   }
 
@@ -231,7 +236,7 @@ export class EspConnectionController {
     @CurrentUser() user: User,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('status') status?: string,
+    @Query('status') status?: string
   ): Promise<{
     data: Omit<Subscriber, 'encryptedEmail'>[];
     total: number;
@@ -252,7 +257,7 @@ export class EspConnectionController {
         id,
         parsedPage,
         parsedLimit,
-        status,
+        status
       );
 
       return result;
@@ -265,14 +270,12 @@ export class EspConnectionController {
       // Handle BadRequestException (403 - ownership validation failed)
       if (error instanceof BadRequestException) {
         throw new ForbiddenException(
-          'You do not have permission to access this ESP connection',
+          'You do not have permission to access this ESP connection'
         );
       }
 
       // Handle other errors as 500
-      throw new InternalServerErrorException(
-        'Failed to retrieve subscribers',
-      );
+      throw new InternalServerErrorException('Failed to retrieve subscribers');
     }
   }
 
@@ -282,7 +285,7 @@ export class EspConnectionController {
     @Param('id') id: string,
     @CurrentUser() user: User,
     @Query('format') format?: string,
-    @Res({ passthrough: true }) response?: Response,
+    @Res({ passthrough: true }) response?: Response
   ): Promise<StreamableFile | { data: any }> {
     try {
       // Validate ESP connection exists and belongs to user
@@ -292,7 +295,7 @@ export class EspConnectionController {
       const exportFormat = (format || 'csv').toLowerCase() as ExportFormat;
       if (!['csv', 'json', 'xlsx'].includes(exportFormat)) {
         throw new BadRequestException(
-          'Invalid format. Must be one of: csv, json, xlsx',
+          'Invalid format. Must be one of: csv, json, xlsx'
         );
       }
 
@@ -306,7 +309,8 @@ export class EspConnectionController {
       // Export based on format
       switch (exportFormat) {
         case 'csv': {
-          const csvContent = this.subscriberExportService.exportAsCSV(subscribers);
+          const csvContent =
+            this.subscriberExportService.exportAsCSV(subscribers);
           const buffer = Buffer.from(csvContent, 'utf-8');
 
           response?.set({
@@ -318,7 +322,8 @@ export class EspConnectionController {
         }
 
         case 'json': {
-          const jsonContent = this.subscriberExportService.exportAsJSON(subscribers);
+          const jsonContent =
+            this.subscriberExportService.exportAsJSON(subscribers);
           const buffer = Buffer.from(jsonContent, 'utf-8');
 
           response?.set({
@@ -330,9 +335,8 @@ export class EspConnectionController {
         }
 
         case 'xlsx': {
-          const excelBuffer = await this.subscriberExportService.exportAsExcel(
-            subscribers,
-          );
+          const excelBuffer =
+            await this.subscriberExportService.exportAsExcel(subscribers);
 
           response?.set({
             'Content-Type':
@@ -357,7 +361,7 @@ export class EspConnectionController {
         // Check if it's an ownership error
         if (error.message.includes('permission')) {
           throw new ForbiddenException(
-            'You do not have permission to access this ESP connection',
+            'You do not have permission to access this ESP connection'
           );
         }
         // Otherwise, it's a format validation error
@@ -365,9 +369,7 @@ export class EspConnectionController {
       }
 
       // Handle other errors as 500
-      throw new InternalServerErrorException(
-        'Failed to export subscribers',
-      );
+      throw new InternalServerErrorException('Failed to export subscribers');
     }
   }
 }

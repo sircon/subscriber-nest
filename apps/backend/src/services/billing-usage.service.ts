@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { BillingUsage, BillingUsageStatus } from '../entities/billing-usage.entity';
+import { Repository, LessThanOrEqual } from 'typeorm';
+import {
+  BillingUsage,
+  BillingUsageStatus,
+} from '../entities/billing-usage.entity';
 import { BillingCalculationService } from './billing-calculation.service';
 
 @Injectable()
@@ -9,7 +12,7 @@ export class BillingUsageService {
   constructor(
     @InjectRepository(BillingUsage)
     private billingUsageRepository: Repository<BillingUsage>,
-    private billingCalculationService: BillingCalculationService,
+    private billingCalculationService: BillingCalculationService
   ) {}
 
   /**
@@ -36,7 +39,10 @@ export class BillingUsageService {
    * @param currentSubscriberCount - The current subscriber count for the user
    * @returns Promise that resolves when usage is updated
    */
-  async updateUsage(userId: string, currentSubscriberCount: number): Promise<void> {
+  async updateUsage(
+    userId: string,
+    currentSubscriberCount: number
+  ): Promise<void> {
     const { start, end } = this.getCurrentBillingPeriod();
 
     // Find existing billing usage record for current period
@@ -65,7 +71,7 @@ export class BillingUsageService {
 
     // Calculate billing amount using BillingCalculationService
     const calculatedAmount = this.billingCalculationService.calculateAmount(
-      billingUsage.maxSubscriberCount,
+      billingUsage.maxSubscriberCount
     );
 
     // Update calculatedAmount field
@@ -80,7 +86,9 @@ export class BillingUsageService {
    * @param stripeInvoiceId - The Stripe invoice ID
    * @returns Billing usage record or null if not found
    */
-  async findByStripeInvoiceId(stripeInvoiceId: string): Promise<BillingUsage | null> {
+  async findByStripeInvoiceId(
+    stripeInvoiceId: string
+  ): Promise<BillingUsage | null> {
     return this.billingUsageRepository.findOne({
       where: { stripeInvoiceId },
     });
@@ -96,7 +104,7 @@ export class BillingUsageService {
   async updateStatus(
     id: string,
     status: BillingUsageStatus,
-    stripeInvoiceId?: string | null,
+    stripeInvoiceId?: string | null
   ): Promise<BillingUsage> {
     const usage = await this.billingUsageRepository.findOne({
       where: { id },
@@ -122,7 +130,7 @@ export class BillingUsageService {
    */
   async updateStatusByInvoiceId(
     stripeInvoiceId: string,
-    status: BillingUsageStatus,
+    status: BillingUsageStatus
   ): Promise<BillingUsage | null> {
     const usage = await this.findByStripeInvoiceId(stripeInvoiceId);
     if (!usage) {
@@ -154,10 +162,19 @@ export class BillingUsageService {
    * @param userId - The ID of the user
    * @param limit - Maximum number of records to return (default: 12)
    * @returns Array of billing usage records ordered by billingPeriodStart DESC
+   * Only returns past billing periods (billingPeriodStart <= current date)
    */
-  async getBillingHistory(userId: string, limit: number = 12): Promise<BillingUsage[]> {
+  async getBillingHistory(
+    userId: string,
+    limit: number = 12
+  ): Promise<BillingUsage[]> {
+    const now = new Date();
+
     return this.billingUsageRepository.find({
-      where: { userId },
+      where: {
+        userId,
+        billingPeriodStart: LessThanOrEqual(now),
+      },
       order: { billingPeriodStart: 'DESC' },
       take: limit,
     });

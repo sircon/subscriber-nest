@@ -3,8 +3,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
-import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
-import { SyncHistory, SyncHistoryStatus } from '../entities/sync-history.entity';
+import {
+  EspConnection,
+  EspSyncStatus,
+} from '../entities/esp-connection.entity';
+import {
+  SyncHistory,
+  SyncHistoryStatus,
+} from '../entities/sync-history.entity';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
 
 export interface SyncPublicationJobData {
@@ -24,7 +30,7 @@ export class SubscriberSyncProcessor extends WorkerHost {
     private espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(SyncHistory)
     private syncHistoryRepository: Repository<SyncHistory>,
-    private subscriberSyncService: SubscriberSyncService,
+    private subscriberSyncService: SubscriberSyncService
   ) {
     super();
   }
@@ -52,7 +58,7 @@ export class SubscriberSyncProcessor extends WorkerHost {
     const { espConnectionId } = job.data;
 
     this.logger.log(
-      `Processing sync job ${job.id} for ESP connection ${espConnectionId}`,
+      `Processing sync job ${job.id} for ESP connection ${espConnectionId}`
     );
 
     // Create sync history record at start with optimistic 'success' status
@@ -72,33 +78,33 @@ export class SubscriberSyncProcessor extends WorkerHost {
       // Update lastSyncedAt timestamp and syncStatus to 'synced' on success
       await this.espConnectionRepository.update(
         { id: espConnectionId },
-        { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED },
+        { lastSyncedAt: new Date(), syncStatus: EspSyncStatus.SYNCED }
       );
 
       // Update sync history with completedAt timestamp
       await this.syncHistoryRepository.update(
         { id: syncHistory.id },
-        { completedAt: new Date() },
+        { completedAt: new Date() }
       );
 
       this.logger.log(
-        `Successfully synced subscribers for ESP connection ${espConnectionId}`,
+        `Successfully synced subscribers for ESP connection ${espConnectionId}`
       );
     } catch (error: any) {
       this.logger.error(
         `Failed to sync subscribers for ESP connection ${espConnectionId}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Update syncStatus to 'error' on failure
       try {
         await this.espConnectionRepository.update(
           { id: espConnectionId },
-          { syncStatus: EspSyncStatus.ERROR },
+          { syncStatus: EspSyncStatus.ERROR }
         );
       } catch (updateError: any) {
         this.logger.error(
-          `Failed to update syncStatus to 'error' for ESP connection ${espConnectionId}: ${updateError.message}`,
+          `Failed to update syncStatus to 'error' for ESP connection ${espConnectionId}: ${updateError.message}`
         );
       }
 
@@ -115,11 +121,11 @@ export class SubscriberSyncProcessor extends WorkerHost {
               status: SyncHistoryStatus.FAILED,
               completedAt: new Date(),
               errorMessage: error.message,
-            },
+            }
           );
         } catch (updateError: any) {
           this.logger.error(
-            `Failed to update sync history to 'failed' for ESP connection ${espConnectionId}: ${updateError.message}`,
+            `Failed to update sync history to 'failed' for ESP connection ${espConnectionId}: ${updateError.message}`
           );
         }
       }

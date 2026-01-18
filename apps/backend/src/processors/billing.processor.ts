@@ -4,8 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
 import { User } from '../entities/user.entity';
-import { BillingSubscription, BillingSubscriptionStatus } from '../entities/billing-subscription.entity';
-import { BillingUsage, BillingUsageStatus } from '../entities/billing-usage.entity';
+import {
+  BillingSubscription,
+  BillingSubscriptionStatus,
+} from '../entities/billing-subscription.entity';
+import {
+  BillingUsage,
+  BillingUsageStatus,
+} from '../entities/billing-usage.entity';
 import { Subscriber } from '../entities/subscriber.entity';
 import { EspConnection } from '../entities/esp-connection.entity';
 import { StripeService } from '../services/stripe.service';
@@ -37,7 +43,7 @@ export class BillingProcessor extends WorkerHost {
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
     private stripeService: StripeService,
-    private billingUsageService: BillingUsageService,
+    private billingUsageService: BillingUsageService
   ) {
     super();
   }
@@ -82,29 +88,37 @@ export class BillingProcessor extends WorkerHost {
     }
 
     this.logger.log(
-      `Processing monthly billing job ${job.id} for period ${billingPeriodStart.toISOString()} to ${billingPeriodEnd.toISOString()}`,
+      `Processing monthly billing job ${job.id} for period ${billingPeriodStart.toISOString()} to ${billingPeriodEnd.toISOString()}`
     );
 
     try {
       // Find all users with active subscriptions
-      const activeSubscriptions = await this.billingSubscriptionRepository.find({
-        where: {
-          status: BillingSubscriptionStatus.ACTIVE,
-        },
-        relations: ['user'],
-      });
+      const activeSubscriptions = await this.billingSubscriptionRepository.find(
+        {
+          where: {
+            status: BillingSubscriptionStatus.ACTIVE,
+          },
+          relations: ['user'],
+        }
+      );
 
-      this.logger.log(`Found ${activeSubscriptions.length} active subscriptions to process`);
+      this.logger.log(
+        `Found ${activeSubscriptions.length} active subscriptions to process`
+      );
 
       // Process each user's billing
       for (const subscription of activeSubscriptions) {
         try {
-          await this.processUserBilling(subscription, billingPeriodStart, billingPeriodEnd);
+          await this.processUserBilling(
+            subscription,
+            billingPeriodStart,
+            billingPeriodEnd
+          );
         } catch (error: any) {
           // Log error but continue processing other users
           this.logger.error(
             `Failed to process billing for user ${subscription.userId}: ${error.message}`,
-            error.stack,
+            error.stack
           );
           // Continue with next user instead of failing entire job
         }
@@ -114,7 +128,7 @@ export class BillingProcessor extends WorkerHost {
     } catch (error: any) {
       this.logger.error(
         `Failed to process monthly billing job ${job.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Check if this is the final attempt (after all retries)
@@ -123,7 +137,7 @@ export class BillingProcessor extends WorkerHost {
 
       if (isFinalAttempt) {
         this.logger.error(
-          `Monthly billing job ${job.id} failed after all retries. Manual intervention may be required.`,
+          `Monthly billing job ${job.id} failed after all retries. Manual intervention may be required.`
         );
       }
 
@@ -141,7 +155,7 @@ export class BillingProcessor extends WorkerHost {
   private async processUserBilling(
     subscription: BillingSubscription,
     billingPeriodStart: Date,
-    billingPeriodEnd: Date,
+    billingPeriodEnd: Date
   ): Promise<void> {
     const userId = subscription.userId;
     const customerId = subscription.stripeCustomerId;
@@ -158,7 +172,7 @@ export class BillingProcessor extends WorkerHost {
 
     if (!previousMonthUsage) {
       this.logger.warn(
-        `No billing usage record found for user ${userId} for period ${billingPeriodStart.toISOString()}. Skipping.`,
+        `No billing usage record found for user ${userId} for period ${billingPeriodStart.toISOString()}. Skipping.`
       );
       return;
     }
@@ -166,23 +180,24 @@ export class BillingProcessor extends WorkerHost {
     // Skip if already invoiced
     if (previousMonthUsage.status === BillingUsageStatus.INVOICED) {
       this.logger.log(
-        `Billing usage for user ${userId} already invoiced. Skipping.`,
+        `Billing usage for user ${userId} already invoiced. Skipping.`
       );
       return;
     }
 
     // Create Stripe invoice item with calculated amount
     const description = `Subscriber billing for ${billingPeriodStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} (${previousMonthUsage.maxSubscriberCount} subscribers)`;
-    
+
     try {
       await this.stripeService.createInvoiceItem(
         customerId,
         previousMonthUsage.calculatedAmount,
-        description,
+        description
       );
 
       // Finalize Stripe invoice and charge customer
-      const invoice = await this.stripeService.createAndFinalizeInvoice(customerId);
+      const invoice =
+        await this.stripeService.createAndFinalizeInvoice(customerId);
 
       // Update BillingUsage record with stripeInvoiceId and status: 'invoiced'
       await this.billingUsageRepository.update(
@@ -190,11 +205,11 @@ export class BillingProcessor extends WorkerHost {
         {
           stripeInvoiceId: invoice.id,
           status: BillingUsageStatus.INVOICED,
-        },
+        }
       );
 
       this.logger.log(
-        `Successfully invoiced user ${userId} for period ${billingPeriodStart.toISOString()}. Invoice: ${invoice.id}`,
+        `Successfully invoiced user ${userId} for period ${billingPeriodStart.toISOString()}. Invoice: ${invoice.id}`
       );
     } catch (error: any) {
       // Update status to 'failed' if invoice creation fails
@@ -202,7 +217,7 @@ export class BillingProcessor extends WorkerHost {
         { id: previousMonthUsage.id },
         {
           status: BillingUsageStatus.FAILED,
-        },
+        }
       );
       throw error;
     }
@@ -227,7 +242,7 @@ export class BillingProcessor extends WorkerHost {
     await this.billingUsageService.updateUsage(userId, currentSubscriberCount);
 
     this.logger.log(
-      `Created new billing usage record for user ${userId} for current month with ${currentSubscriberCount} subscribers`,
+      `Created new billing usage record for user ${userId} for current month with ${currentSubscriberCount} subscribers`
     );
   }
 }

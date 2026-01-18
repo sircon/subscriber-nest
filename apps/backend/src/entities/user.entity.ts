@@ -31,7 +31,10 @@ export class User {
   @OneToMany(() => EspConnection, (espConnection) => espConnection.user)
   espConnections: EspConnection[];
 
-  @OneToOne(() => BillingSubscription, (billingSubscription) => billingSubscription.user)
+  @OneToOne(
+    () => BillingSubscription,
+    (billingSubscription) => billingSubscription.user
+  )
   billingSubscription: BillingSubscription;
 
   @OneToMany(() => BillingUsage, (billingUsage) => billingUsage.user)

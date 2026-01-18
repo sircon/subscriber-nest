@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BillingSubscription, BillingSubscriptionStatus } from '../entities/billing-subscription.entity';
+import {
+  BillingSubscription,
+  BillingSubscriptionStatus,
+} from '../entities/billing-subscription.entity';
 import Stripe from 'stripe';
 
 @Injectable()
 export class BillingSubscriptionService {
   constructor(
     @InjectRepository(BillingSubscription)
-    private billingSubscriptionRepository: Repository<BillingSubscription>,
+    private billingSubscriptionRepository: Repository<BillingSubscription>
   ) {}
 
   /**
@@ -27,7 +30,9 @@ export class BillingSubscriptionService {
    * @param stripeCustomerId - The Stripe customer ID
    * @returns Billing subscription or null if not found
    */
-  async findByStripeCustomerId(stripeCustomerId: string): Promise<BillingSubscription | null> {
+  async findByStripeCustomerId(
+    stripeCustomerId: string
+  ): Promise<BillingSubscription | null> {
     return this.billingSubscriptionRepository.findOne({
       where: { stripeCustomerId },
     });
@@ -38,7 +43,9 @@ export class BillingSubscriptionService {
    * @param stripeSubscriptionId - The Stripe subscription ID
    * @returns Billing subscription or null if not found
    */
-  async findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<BillingSubscription | null> {
+  async findByStripeSubscriptionId(
+    stripeSubscriptionId: string
+  ): Promise<BillingSubscription | null> {
     return this.billingSubscriptionRepository.findOne({
       where: { stripeSubscriptionId },
     });
@@ -71,13 +78,18 @@ export class BillingSubscriptionService {
    * @returns Updated billing subscription
    * @throws NotFoundException if subscription not found
    */
-  async update(id: string, data: Partial<BillingSubscription>): Promise<BillingSubscription> {
+  async update(
+    id: string,
+    data: Partial<BillingSubscription>
+  ): Promise<BillingSubscription> {
     const subscription = await this.billingSubscriptionRepository.findOne({
       where: { id },
     });
 
     if (!subscription) {
-      throw new NotFoundException(`Billing subscription with ID ${id} not found`);
+      throw new NotFoundException(
+        `Billing subscription with ID ${id} not found`
+      );
     }
 
     Object.assign(subscription, data);
@@ -93,14 +105,16 @@ export class BillingSubscriptionService {
    */
   async updateByStripeSubscriptionId(
     stripeSubscriptionId: string,
-    data: Partial<BillingSubscription>,
+    data: Partial<BillingSubscription>
   ): Promise<BillingSubscription> {
     const subscription = await this.billingSubscriptionRepository.findOne({
       where: { stripeSubscriptionId },
     });
 
     if (!subscription) {
-      throw new NotFoundException(`Billing subscription with Stripe subscription ID ${stripeSubscriptionId} not found`);
+      throw new NotFoundException(
+        `Billing subscription with Stripe subscription ID ${stripeSubscriptionId} not found`
+      );
     }
 
     Object.assign(subscription, data);
@@ -115,7 +129,7 @@ export class BillingSubscriptionService {
    */
   async syncFromStripe(
     stripeSubscription: Stripe.Subscription,
-    userId?: string,
+    userId?: string
   ): Promise<BillingSubscription> {
     // Map Stripe status to our enum
     const statusMap: Record<string, BillingSubscriptionStatus> = {
@@ -127,14 +141,20 @@ export class BillingSubscriptionService {
       incomplete_expired: BillingSubscriptionStatus.INCOMPLETE_EXPIRED,
     };
 
-    const status = statusMap[stripeSubscription.status] || BillingSubscriptionStatus.INCOMPLETE;
+    const status =
+      statusMap[stripeSubscription.status] ||
+      BillingSubscriptionStatus.INCOMPLETE;
 
     // Find existing subscription by Stripe subscription ID
-    let subscription = await this.findByStripeSubscriptionId(stripeSubscription.id);
+    let subscription = await this.findByStripeSubscriptionId(
+      stripeSubscription.id
+    );
 
     // If not found, try to find by customer ID
     if (!subscription) {
-      subscription = await this.findByStripeCustomerId(stripeSubscription.customer as string);
+      subscription = await this.findByStripeCustomerId(
+        stripeSubscription.customer as string
+      );
     }
 
     // Prepare update data
@@ -148,7 +168,8 @@ export class BillingSubscriptionService {
       currentPeriodEnd: (stripeSubscription as any).current_period_end
         ? new Date((stripeSubscription as any).current_period_end * 1000)
         : null,
-      cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
+      cancelAtPeriodEnd:
+        (stripeSubscription as any).cancel_at_period_end || false,
       canceledAt: (stripeSubscription as any).canceled_at
         ? new Date((stripeSubscription as any).canceled_at * 1000)
         : null,

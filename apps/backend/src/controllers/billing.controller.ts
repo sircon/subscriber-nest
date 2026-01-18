@@ -46,14 +46,14 @@ export class BillingController {
     @InjectRepository(EspConnection)
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(Subscriber)
-    private readonly subscriberRepository: Repository<Subscriber>,
-  ) { }
+    private readonly subscriberRepository: Repository<Subscriber>
+  ) {}
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Req() req: Request,
-    @Headers('stripe-signature') signature: string,
+    @Headers('stripe-signature') signature: string
   ): Promise<{ received: boolean }> {
     try {
       // Verify webhook signature
@@ -66,21 +66,25 @@ export class BillingController {
       // Get raw body for signature verification
       const rawBody = req.body as Buffer;
       if (!rawBody) {
-        this.logger.error('Raw body is required for webhook signature verification');
+        this.logger.error(
+          'Raw body is required for webhook signature verification'
+        );
         throw new BadRequestException('Raw body is required');
       }
 
       // Verify webhook signature
       let event: Stripe.Event;
       try {
-        event = this.stripeService.getClient().webhooks.constructEvent(
-          rawBody,
-          signature,
-          webhookSecret,
-        );
+        event = this.stripeService
+          .getClient()
+          .webhooks.constructEvent(rawBody, signature, webhookSecret);
       } catch (error: any) {
-        this.logger.error(`Webhook signature verification failed: ${error.message}`);
-        throw new BadRequestException(`Webhook signature verification failed: ${error.message}`);
+        this.logger.error(
+          `Webhook signature verification failed: ${error.message}`
+        );
+        throw new BadRequestException(
+          `Webhook signature verification failed: ${error.message}`
+        );
       }
 
       // Handle the event
@@ -88,15 +92,21 @@ export class BillingController {
 
       switch (event.type) {
         case 'customer.subscription.created':
-          await this.handleSubscriptionCreated(event.data.object as Stripe.Subscription);
+          await this.handleSubscriptionCreated(
+            event.data.object as Stripe.Subscription
+          );
           break;
 
         case 'customer.subscription.updated':
-          await this.handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+          await this.handleSubscriptionUpdated(
+            event.data.object as Stripe.Subscription
+          );
           break;
 
         case 'customer.subscription.deleted':
-          await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+          await this.handleSubscriptionDeleted(
+            event.data.object as Stripe.Subscription
+          );
           break;
 
         case 'invoice.paid':
@@ -104,7 +114,9 @@ export class BillingController {
           break;
 
         case 'invoice.payment_failed':
-          await this.handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+          await this.handleInvoicePaymentFailed(
+            event.data.object as Stripe.Invoice
+          );
           break;
 
         default:
@@ -113,7 +125,10 @@ export class BillingController {
 
       return { received: true };
     } catch (error: any) {
-      this.logger.error(`Error processing webhook: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error processing webhook: ${error.message}`,
+        error.stack
+      );
 
       // Re-throw known exceptions
       if (
@@ -124,53 +139,69 @@ export class BillingController {
       }
 
       // Wrap unknown errors
-      throw new InternalServerErrorException(`Failed to process webhook: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to process webhook: ${error.message}`
+      );
     }
   }
 
   /**
    * Handle customer.subscription.created event
    */
-  private async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionCreated(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
     try {
-      this.logger.log(`Processing subscription.created for subscription: ${stripeSubscription.id}`);
+      this.logger.log(
+        `Processing subscription.created for subscription: ${stripeSubscription.id}`
+      );
 
       // Get customer ID and find user
       const customerId = stripeSubscription.customer as string;
-      const existingSubscription = await this.billingSubscriptionService.findByStripeCustomerId(
-        customerId,
-      );
+      const existingSubscription =
+        await this.billingSubscriptionService.findByStripeCustomerId(
+          customerId
+        );
 
       if (existingSubscription) {
         // Update existing subscription
         await this.billingSubscriptionService.syncFromStripe(
           stripeSubscription,
-          existingSubscription.userId,
+          existingSubscription.userId
         );
-        this.logger.log(`Updated subscription for user: ${existingSubscription.userId}`);
+        this.logger.log(
+          `Updated subscription for user: ${existingSubscription.userId}`
+        );
       } else {
         // Try to get userId from customer metadata
-        const customer = await this.stripeService.getClient().customers.retrieve(customerId);
+        const customer = await this.stripeService
+          .getClient()
+          .customers.retrieve(customerId);
         if (customer.deleted) {
-          this.logger.warn(`Customer ${customerId} is deleted, cannot create subscription`);
+          this.logger.warn(
+            `Customer ${customerId} is deleted, cannot create subscription`
+          );
           return;
         }
 
         const userId = (customer as Stripe.Customer).metadata?.userId;
         if (!userId) {
           this.logger.warn(
-            `Customer ${customerId} does not have userId in metadata, cannot create subscription`,
+            `Customer ${customerId} does not have userId in metadata, cannot create subscription`
           );
           return;
         }
 
-        await this.billingSubscriptionService.syncFromStripe(stripeSubscription, userId);
+        await this.billingSubscriptionService.syncFromStripe(
+          stripeSubscription,
+          userId
+        );
         this.logger.log(`Created subscription for user: ${userId}`);
       }
     } catch (error: any) {
       this.logger.error(
         `Error handling subscription.created: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw error;
     }
@@ -179,59 +210,76 @@ export class BillingController {
   /**
    * Handle customer.subscription.updated event
    */
-  private async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionUpdated(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
     try {
-      this.logger.log(`Processing subscription.updated for subscription: ${stripeSubscription.id}`);
+      this.logger.log(
+        `Processing subscription.updated for subscription: ${stripeSubscription.id}`
+      );
 
       // Find existing subscription
-      const existingSubscription = await this.billingSubscriptionService.findByStripeSubscriptionId(
-        stripeSubscription.id,
-      );
+      const existingSubscription =
+        await this.billingSubscriptionService.findByStripeSubscriptionId(
+          stripeSubscription.id
+        );
 
       if (existingSubscription) {
         // Update existing subscription
         await this.billingSubscriptionService.syncFromStripe(
           stripeSubscription,
-          existingSubscription.userId,
+          existingSubscription.userId
         );
-        this.logger.log(`Updated subscription for user: ${existingSubscription.userId}`);
+        this.logger.log(
+          `Updated subscription for user: ${existingSubscription.userId}`
+        );
       } else {
         // Try to find by customer ID
         const customerId = stripeSubscription.customer as string;
-        const subscriptionByCustomer = await this.billingSubscriptionService.findByStripeCustomerId(
-          customerId,
-        );
+        const subscriptionByCustomer =
+          await this.billingSubscriptionService.findByStripeCustomerId(
+            customerId
+          );
 
         if (subscriptionByCustomer) {
           await this.billingSubscriptionService.syncFromStripe(
             stripeSubscription,
-            subscriptionByCustomer.userId,
+            subscriptionByCustomer.userId
           );
-          this.logger.log(`Updated subscription for user: ${subscriptionByCustomer.userId}`);
+          this.logger.log(
+            `Updated subscription for user: ${subscriptionByCustomer.userId}`
+          );
         } else {
           // Try to get userId from customer metadata
-          const customer = await this.stripeService.getClient().customers.retrieve(customerId);
+          const customer = await this.stripeService
+            .getClient()
+            .customers.retrieve(customerId);
           if (customer.deleted) {
-            this.logger.warn(`Customer ${customerId} is deleted, cannot update subscription`);
+            this.logger.warn(
+              `Customer ${customerId} is deleted, cannot update subscription`
+            );
             return;
           }
 
           const userId = (customer as Stripe.Customer).metadata?.userId;
           if (!userId) {
             this.logger.warn(
-              `Customer ${customerId} does not have userId in metadata, cannot update subscription`,
+              `Customer ${customerId} does not have userId in metadata, cannot update subscription`
             );
             return;
           }
 
-          await this.billingSubscriptionService.syncFromStripe(stripeSubscription, userId);
+          await this.billingSubscriptionService.syncFromStripe(
+            stripeSubscription,
+            userId
+          );
           this.logger.log(`Created subscription for user: ${userId}`);
         }
       }
     } catch (error: any) {
       this.logger.error(
         `Error handling subscription.updated: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw error;
     }
@@ -240,14 +288,19 @@ export class BillingController {
   /**
    * Handle customer.subscription.deleted event
    */
-  private async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionDeleted(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
     try {
-      this.logger.log(`Processing subscription.deleted for subscription: ${stripeSubscription.id}`);
+      this.logger.log(
+        `Processing subscription.deleted for subscription: ${stripeSubscription.id}`
+      );
 
       // Find existing subscription
-      const existingSubscription = await this.billingSubscriptionService.findByStripeSubscriptionId(
-        stripeSubscription.id,
-      );
+      const existingSubscription =
+        await this.billingSubscriptionService.findByStripeSubscriptionId(
+          stripeSubscription.id
+        );
 
       if (existingSubscription) {
         // Update subscription status to canceled
@@ -256,16 +309,18 @@ export class BillingController {
           canceledAt: new Date(),
           cancelAtPeriodEnd: false,
         });
-        this.logger.log(`Marked subscription as canceled for user: ${existingSubscription.userId}`);
+        this.logger.log(
+          `Marked subscription as canceled for user: ${existingSubscription.userId}`
+        );
       } else {
         this.logger.warn(
-          `Subscription ${stripeSubscription.id} not found in database, cannot mark as deleted`,
+          `Subscription ${stripeSubscription.id} not found in database, cannot mark as deleted`
         );
       }
     } catch (error: any) {
       this.logger.error(
         `Error handling subscription.deleted: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw error;
     }
@@ -280,19 +335,27 @@ export class BillingController {
 
       // Update billing usage record if it exists
       if (invoice.id) {
-        const billingUsage = await this.billingUsageService.updateStatusByInvoiceId(
-          invoice.id,
-          BillingUsageStatus.PAID,
-        );
+        const billingUsage =
+          await this.billingUsageService.updateStatusByInvoiceId(
+            invoice.id,
+            BillingUsageStatus.PAID
+          );
 
         if (billingUsage) {
-          this.logger.log(`Updated billing usage status to PAID for invoice: ${invoice.id}`);
+          this.logger.log(
+            `Updated billing usage status to PAID for invoice: ${invoice.id}`
+          );
         } else {
-          this.logger.warn(`Billing usage record not found for invoice: ${invoice.id}`);
+          this.logger.warn(
+            `Billing usage record not found for invoice: ${invoice.id}`
+          );
         }
       }
     } catch (error: any) {
-      this.logger.error(`Error handling invoice.paid: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error handling invoice.paid: ${error.message}`,
+        error.stack
+      );
       throw error;
     }
   }
@@ -300,27 +363,36 @@ export class BillingController {
   /**
    * Handle invoice.payment_failed event
    */
-  private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaymentFailed(
+    invoice: Stripe.Invoice
+  ): Promise<void> {
     try {
-      this.logger.log(`Processing invoice.payment_failed for invoice: ${invoice.id}`);
+      this.logger.log(
+        `Processing invoice.payment_failed for invoice: ${invoice.id}`
+      );
 
       // Update billing usage record if it exists
       if (invoice.id) {
-        const billingUsage = await this.billingUsageService.updateStatusByInvoiceId(
-          invoice.id,
-          BillingUsageStatus.FAILED,
-        );
+        const billingUsage =
+          await this.billingUsageService.updateStatusByInvoiceId(
+            invoice.id,
+            BillingUsageStatus.FAILED
+          );
 
         if (billingUsage) {
-          this.logger.log(`Updated billing usage status to FAILED for invoice: ${invoice.id}`);
+          this.logger.log(
+            `Updated billing usage status to FAILED for invoice: ${invoice.id}`
+          );
         } else {
-          this.logger.warn(`Billing usage record not found for invoice: ${invoice.id}`);
+          this.logger.warn(
+            `Billing usage record not found for invoice: ${invoice.id}`
+          );
         }
       }
     } catch (error: any) {
       this.logger.error(
         `Error handling invoice.payment_failed: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw error;
     }
@@ -333,19 +405,24 @@ export class BillingController {
   @Post('create-checkout-session')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async createCheckoutSession(@CurrentUser() user: User): Promise<{ url: string }> {
+  async createCheckoutSession(
+    @CurrentUser() user: User
+  ): Promise<{ url: string }> {
     try {
       this.logger.log(`Creating checkout session for user: ${user.id}`);
 
       // Get frontend URL from environment
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
 
       // Build success and cancel URLs
       const successUrl = `${frontendUrl}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${frontendUrl}/onboarding/stripe?canceled=true`;
 
       // Check if user already has a Stripe customer
-      let existingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+      let existingSubscription =
+        await this.billingSubscriptionService.findByUserId(user.id);
       let customerId: string;
 
       if (existingSubscription && existingSubscription.stripeCustomerId) {
@@ -355,14 +432,20 @@ export class BillingController {
       } else {
         // Create new Stripe customer
         this.logger.log(`Creating new Stripe customer for user: ${user.id}`);
-        const customer = await this.stripeService.createCustomer(user.email, user.id);
+        const customer = await this.stripeService.createCustomer(
+          user.email,
+          user.id
+        );
         customerId = customer.id;
 
         // Create or update billing subscription record with customer ID
         if (existingSubscription) {
-          await this.billingSubscriptionService.update(existingSubscription.id, {
-            stripeCustomerId: customerId,
-          });
+          await this.billingSubscriptionService.update(
+            existingSubscription.id,
+            {
+              stripeCustomerId: customerId,
+            }
+          );
         } else {
           await this.billingSubscriptionService.create({
             userId: user.id,
@@ -377,16 +460,18 @@ export class BillingController {
         customerId,
         user.email,
         successUrl,
-        cancelUrl,
+        cancelUrl
       );
 
-      this.logger.log(`Created checkout session: ${session.id} for user: ${user.id}`);
+      this.logger.log(
+        `Created checkout session: ${session.id} for user: ${user.id}`
+      );
 
       return { url: session.url || '' };
     } catch (error: any) {
       this.logger.error(
         `Error creating checkout session for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Re-throw known exceptions
@@ -396,7 +481,7 @@ export class BillingController {
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to create checkout session: ${error.message}`,
+        `Failed to create checkout session: ${error.message}`
       );
     }
   }
@@ -408,36 +493,45 @@ export class BillingController {
   @Post('create-portal-session')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async createPortalSession(@CurrentUser() user: User): Promise<{ url: string }> {
+  async createPortalSession(
+    @CurrentUser() user: User
+  ): Promise<{ url: string }> {
     try {
       this.logger.log(`Creating portal session for user: ${user.id}`);
 
       // Get frontend URL from environment
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
 
       // Build return URL
       const returnUrl = `${frontendUrl}/dashboard/settings`;
 
       // Check if user has a Stripe customer
-      const existingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+      const existingSubscription =
+        await this.billingSubscriptionService.findByUserId(user.id);
 
       if (!existingSubscription || !existingSubscription.stripeCustomerId) {
-        throw new BadRequestException('User does not have an active Stripe customer');
+        throw new BadRequestException(
+          'User does not have an active Stripe customer'
+        );
       }
 
       // Create portal session
       const session = await this.stripeService.createPortalSession(
         existingSubscription.stripeCustomerId,
-        returnUrl,
+        returnUrl
       );
 
-      this.logger.log(`Created portal session: ${session.id} for user: ${user.id}`);
+      this.logger.log(
+        `Created portal session: ${session.id} for user: ${user.id}`
+      );
 
       return { url: session.url || '' };
     } catch (error: any) {
       this.logger.error(
         `Error creating portal session for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Re-throw known exceptions
@@ -450,7 +544,7 @@ export class BillingController {
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to create portal session: ${error.message}`,
+        `Failed to create portal session: ${error.message}`
       );
     }
   }
@@ -461,16 +555,16 @@ export class BillingController {
    */
   @Get('status')
   @UseGuards(AuthGuard)
-  async getBillingStatus(
-    @CurrentUser() user: User,
-  ): Promise<{
+  async getBillingStatus(@CurrentUser() user: User): Promise<{
     hasActiveSubscription: boolean;
     subscription: BillingSubscription | null;
     currentPeriodEnd: Date | null;
   }> {
     try {
       // Find subscription for user
-      const subscription = await this.billingSubscriptionService.findByUserId(user.id);
+      const subscription = await this.billingSubscriptionService.findByUserId(
+        user.id
+      );
 
       if (!subscription) {
         return {
@@ -494,12 +588,12 @@ export class BillingController {
     } catch (error: any) {
       this.logger.error(
         `Error getting billing status for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to get billing status: ${error.message}`,
+        `Failed to get billing status: ${error.message}`
       );
     }
   }
@@ -510,9 +604,7 @@ export class BillingController {
    */
   @Get('usage')
   @UseGuards(AuthGuard)
-  async getCurrentUsage(
-    @CurrentUser() user: User,
-  ): Promise<{
+  async getCurrentUsage(@CurrentUser() user: User): Promise<{
     maxSubscriberCount: number;
     calculatedAmount: number;
     billingPeriodStart: Date;
@@ -520,7 +612,9 @@ export class BillingController {
   }> {
     try {
       // Get current month's billing usage
-      let billingUsage = await this.billingUsageService.getCurrentUsage(user.id);
+      let billingUsage = await this.billingUsageService.getCurrentUsage(
+        user.id
+      );
 
       // If no usage record exists for current month, create one with current subscriber count
       if (!billingUsage) {
@@ -543,14 +637,19 @@ export class BillingController {
         }
 
         // Create usage record using updateUsage method (which handles creation)
-        await this.billingUsageService.updateUsage(user.id, currentSubscriberCount);
+        await this.billingUsageService.updateUsage(
+          user.id,
+          currentSubscriberCount
+        );
 
         // Fetch the newly created record
         billingUsage = await this.billingUsageService.getCurrentUsage(user.id);
       }
 
       if (!billingUsage) {
-        throw new InternalServerErrorException('Failed to create or retrieve billing usage');
+        throw new InternalServerErrorException(
+          'Failed to create or retrieve billing usage'
+        );
       }
 
       return {
@@ -562,7 +661,7 @@ export class BillingController {
     } catch (error: any) {
       this.logger.error(
         `Error getting current usage for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Re-throw known exceptions
@@ -572,7 +671,7 @@ export class BillingController {
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to get current usage: ${error.message}`,
+        `Failed to get current usage: ${error.message}`
       );
     }
   }
@@ -585,7 +684,7 @@ export class BillingController {
   @UseGuards(AuthGuard)
   async getBillingHistory(
     @CurrentUser() user: User,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ): Promise<
     Array<{
       billingPeriodStart: Date;
@@ -608,7 +707,7 @@ export class BillingController {
       // Get billing history from service
       const billingHistory = await this.billingUsageService.getBillingHistory(
         user.id,
-        limitNumber,
+        limitNumber
       );
 
       // Map to response format
@@ -623,7 +722,7 @@ export class BillingController {
     } catch (error: any) {
       this.logger.error(
         `Error getting billing history for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Re-throw known exceptions
@@ -636,7 +735,7 @@ export class BillingController {
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to get billing history: ${error.message}`,
+        `Failed to get billing history: ${error.message}`
       );
     }
   }
@@ -650,52 +749,67 @@ export class BillingController {
   @HttpCode(HttpStatus.OK)
   async verifyCheckoutSession(
     @CurrentUser() user: User,
-    @Body() body: { sessionId: string },
+    @Body() body: { sessionId: string }
   ): Promise<{ success: true; subscription: BillingSubscription }> {
     try {
-      this.logger.log(`Verifying checkout session ${body.sessionId} for user: ${user.id}`);
+      this.logger.log(
+        `Verifying checkout session ${body.sessionId} for user: ${user.id}`
+      );
 
       // Retrieve checkout session from Stripe
-      const session = await this.stripeService.getCheckoutSession(body.sessionId);
+      const session = await this.stripeService.getCheckoutSession(
+        body.sessionId
+      );
 
       // Verify session is completed and paid
       if (session.payment_status !== 'paid') {
         throw new BadRequestException(
-          `Checkout session payment status is ${session.payment_status}, expected 'paid'`,
+          `Checkout session payment status is ${session.payment_status}, expected 'paid'`
         );
       }
 
       if (session.status !== 'complete') {
         throw new BadRequestException(
-          `Checkout session status is ${session.status}, expected 'complete'`,
+          `Checkout session status is ${session.status}, expected 'complete'`
         );
       }
 
       // Get subscription from session
       const subscriptionId = session.subscription;
       if (!subscriptionId || typeof subscriptionId !== 'string') {
-        throw new BadRequestException('Checkout session does not have a subscription');
+        throw new BadRequestException(
+          'Checkout session does not have a subscription'
+        );
       }
 
       // Retrieve subscription from Stripe
-      const stripeSubscription = await this.stripeService.getSubscription(subscriptionId);
+      const stripeSubscription =
+        await this.stripeService.getSubscription(subscriptionId);
 
       // Create or update billing subscription
-      let billingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+      let billingSubscription =
+        await this.billingSubscriptionService.findByUserId(user.id);
 
       if (billingSubscription) {
         // Update existing subscription
-        await this.billingSubscriptionService.syncFromStripe(stripeSubscription, user.id);
-        billingSubscription = await this.billingSubscriptionService.findByUserId(user.id);
+        await this.billingSubscriptionService.syncFromStripe(
+          stripeSubscription,
+          user.id
+        );
+        billingSubscription =
+          await this.billingSubscriptionService.findByUserId(user.id);
         if (!billingSubscription) {
-          throw new InternalServerErrorException('Failed to update billing subscription');
+          throw new InternalServerErrorException(
+            'Failed to update billing subscription'
+          );
         }
       } else {
         // Create new subscription
-        billingSubscription = await this.billingSubscriptionService.syncFromStripe(
-          stripeSubscription,
-          user.id,
-        );
+        billingSubscription =
+          await this.billingSubscriptionService.syncFromStripe(
+            stripeSubscription,
+            user.id
+          );
       }
 
       // Complete onboarding if user is not onboarded
@@ -706,13 +820,13 @@ export class BillingController {
         } catch (error: any) {
           // Log error but don't fail the request - subscription is already created
           this.logger.warn(
-            `Failed to complete onboarding for user ${user.id}: ${error.message}`,
+            `Failed to complete onboarding for user ${user.id}: ${error.message}`
           );
         }
       }
 
       this.logger.log(
-        `Successfully verified checkout session and created/updated subscription for user: ${user.id}`,
+        `Successfully verified checkout session and created/updated subscription for user: ${user.id}`
       );
 
       return {
@@ -722,7 +836,7 @@ export class BillingController {
     } catch (error: any) {
       this.logger.error(
         `Error verifying checkout session for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Re-throw known exceptions
@@ -735,7 +849,7 @@ export class BillingController {
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to verify checkout session: ${error.message}`,
+        `Failed to verify checkout session: ${error.message}`
       );
     }
   }

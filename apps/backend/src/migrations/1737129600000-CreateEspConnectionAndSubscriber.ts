@@ -1,8 +1,12 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
-export class CreateEspConnectionAndSubscriber1737129600000
-  implements MigrationInterface
-{
+export class CreateEspConnectionAndSubscriber1737129600000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create enum types
     await queryRunner.query(`
@@ -85,7 +89,7 @@ export class CreateEspConnectionAndSubscriber1737129600000
           },
         ],
       }),
-      true,
+      true
     );
 
     // Create subscribers table
@@ -162,7 +166,7 @@ export class CreateEspConnectionAndSubscriber1737129600000
           },
         ],
       }),
-      true,
+      true
     );
 
     // Create foreign key from subscribers to esp_connections
@@ -173,7 +177,7 @@ export class CreateEspConnectionAndSubscriber1737129600000
         referencedColumnNames: ['id'],
         referencedTableName: 'esp_connections',
         onDelete: 'CASCADE',
-      }),
+      })
     );
 
     // Create foreign key from esp_connections to users
@@ -184,7 +188,7 @@ export class CreateEspConnectionAndSubscriber1737129600000
         referencedColumnNames: ['id'],
         referencedTableName: 'users',
         onDelete: 'CASCADE',
-      }),
+      })
     );
 
     // Create unique index on espConnectionId + externalId
@@ -193,14 +197,14 @@ export class CreateEspConnectionAndSubscriber1737129600000
       new TableIndex({
         columnNames: ['espConnectionId', 'externalId'],
         isUnique: true,
-      }),
+      })
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('subscribers', true);
     await queryRunner.dropTable('esp_connections', true);
-    
+
     // Drop enum types
     await queryRunner.query('DROP TYPE IF EXISTS "subscriber_status_enum"');
     await queryRunner.query('DROP TYPE IF EXISTS "esp_connection_status_enum"');

@@ -12,7 +12,7 @@ export class BillingSchedulerService implements OnModuleInit {
 
   constructor(
     @InjectQueue('billing')
-    private billingQueue: Queue<MonthlyBillingJobData>,
+    private billingQueue: Queue<MonthlyBillingJobData>
   ) {}
 
   /**
@@ -24,7 +24,7 @@ export class BillingSchedulerService implements OnModuleInit {
       // Check if repeatable job already exists
       const repeatableJobs = await this.billingQueue.getRepeatableJobs();
       const existingJob = repeatableJobs.find(
-        (job) => job.name === 'monthly-billing',
+        (job) => job.name === 'monthly-billing'
       );
 
       if (existingJob) {
@@ -44,16 +44,16 @@ export class BillingSchedulerService implements OnModuleInit {
             tz: 'UTC',
           },
           jobId: 'monthly-billing-recurring',
-        },
+        }
       );
 
       this.logger.log(
-        'Scheduled monthly billing job to run on 1st day of each month at 00:00 UTC',
+        'Scheduled monthly billing job to run on 1st day of each month at 00:00 UTC'
       );
     } catch (error: any) {
       this.logger.error(
         `Failed to schedule monthly billing job: ${error.message}`,
-        error.stack,
+        error.stack
       );
       // Don't throw - allow app to start even if scheduling fails
       // The job can be manually scheduled later

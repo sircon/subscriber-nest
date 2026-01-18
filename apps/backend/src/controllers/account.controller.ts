@@ -24,7 +24,7 @@ export class AccountController {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly stripeService: StripeService,
-    private readonly billingSubscriptionService: BillingSubscriptionService,
+    private readonly billingSubscriptionService: BillingSubscriptionService
   ) {}
 
   /**
@@ -45,34 +45,42 @@ export class AccountController {
       });
 
       // Cancel Stripe subscription immediately if exists
-      const subscription = await this.billingSubscriptionService.findByUserId(user.id);
+      const subscription = await this.billingSubscriptionService.findByUserId(
+        user.id
+      );
       if (subscription && subscription.stripeSubscriptionId) {
         try {
-          await this.stripeService.cancelSubscription(subscription.stripeSubscriptionId, false);
+          await this.stripeService.cancelSubscription(
+            subscription.stripeSubscriptionId,
+            false
+          );
           this.logger.log(`Canceled Stripe subscription for user: ${user.id}`);
         } catch (error: any) {
           // Log error but don't fail the deletion request
           this.logger.error(
             `Failed to cancel Stripe subscription for user ${user.id}: ${error.message}`,
-            error.stack,
+            error.stack
           );
         }
       }
 
-      this.logger.log(`Account deletion requested successfully for user: ${user.id}`);
+      this.logger.log(
+        `Account deletion requested successfully for user: ${user.id}`
+      );
 
       return {
-        message: 'Account deletion requested. Your account will be deleted after 30 days.',
+        message:
+          'Account deletion requested. Your account will be deleted after 30 days.',
       };
     } catch (error: any) {
       this.logger.error(
         `Error requesting account deletion for user ${user.id}: ${error.message}`,
-        error.stack,
+        error.stack
       );
 
       // Wrap unknown errors
       throw new InternalServerErrorException(
-        `Failed to request account deletion: ${error.message}`,
+        `Failed to request account deletion: ${error.message}`
       );
     }
   }

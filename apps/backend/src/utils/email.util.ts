@@ -9,7 +9,7 @@
  * - "a@example.com" -> "a****@example.com"
  * - "ab@example.com" -> "a****@example.com"
  * - "abc@example.com" -> "a****@example.com"
- * 
+ *
  * @param email - The email address to mask
  * @returns Masked email address with local part masked and domain visible
  * @throws Error if email format is invalid
