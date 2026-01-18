@@ -155,3 +155,26 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn install` after creating package.json to install dependencies
   - Use `yarn lint --filter=api` and `yarn build --filter=api` to verify API service configuration
 ---
+
+## 2026-01-19 - US-008
+- Copied all 5 controller files from `apps/backend/src/controllers/` to `apps/api/src/controllers/`:
+  - account.controller.ts
+  - billing.controller.ts
+  - dashboard.controller.ts
+  - esp-connection.controller.ts
+  - subscriber.controller.ts
+- Copied `apps/backend/src/auth.controller.ts` to `apps/api/src/auth.controller.ts`
+- Copied `apps/backend/src/app.controller.ts` to `apps/api/src/app.controller.ts`
+- Created `apps/api/src/app.service.ts` (required by app.controller.ts)
+- Verified all entity and DTO imports already use `@subscriber-nest/shared/entities` and `@subscriber-nest/shared/dto` (no updates needed)
+- Files changed:
+  - Created 7 controller files in `apps/api/src/controllers/` and `apps/api/src/`
+  - Created `apps/api/src/app.service.ts`
+- **Learnings for future iterations:**
+  - Controllers already use shared package imports for entities and DTOs (from previous stories)
+  - Controllers reference services, guards, and decorators that will be copied in US-009 and US-010
+  - Type errors for missing services/guards/decorators are expected until those stories are completed
+  - All entity and DTO imports correctly use `@subscriber-nest/shared/*` paths
+  - Use `yarn lint --filter=api` to verify code style after copying controllers
+  - Typecheck will show errors for missing dependencies until services/guards/decorators are copied
+---
