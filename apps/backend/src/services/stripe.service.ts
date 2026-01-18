@@ -394,4 +394,46 @@ export class StripeService {
       );
     }
   }
+
+  /**
+   * Report usage to Stripe meter for a subscription item
+   * @param subscriptionItemId - Stripe subscription item ID
+   * @param quantity - Number of 10k units (already calculated and rounded up)
+   * @param timestamp - Optional timestamp for the usage record (defaults to current time)
+   * @returns Stripe usage record object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async reportUsageToMeter(
+    subscriptionItemId: string,
+    quantity: number,
+    timestamp?: Date
+  ): Promise<any> {
+    try {
+      // Convert Date to Unix timestamp (seconds) if provided, otherwise use current time
+      const timestampSeconds = timestamp
+        ? Math.floor(timestamp.getTime() / 1000)
+        : undefined;
+
+      // Use type assertion since Stripe TypeScript types may not include UsageRecord
+      const usageRecord = await (
+        this.stripe.subscriptionItems as any
+      ).createUsageRecord(subscriptionItemId, {
+        quantity,
+        timestamp: timestampSeconds,
+      });
+
+      return usageRecord;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to report usage to Stripe meter: ${error.message}`
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error reporting usage to Stripe meter: ${error.message || 'Unknown error'}`
+      );
+    }
+  }
 }

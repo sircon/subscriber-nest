@@ -682,3 +682,23 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Add getter methods for accessing configuration values that are validated on initialization
   - Follow the same pattern as other Stripe configuration (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) for consistency
 ---
+
+## 2026-01-19 - US-033
+- Added `reportUsageToMeter(subscriptionItemId: string, quantity: number, timestamp?: Date): Promise<any>` method to `StripeService`
+- Method creates Stripe usage record using `stripe.subscriptionItems.createUsageRecord()` API
+- Method converts Date timestamp to Unix timestamp (seconds) if provided, otherwise uses current time (undefined)
+- Method uses type assertion `(this.stripe.subscriptionItems as any).createUsageRecord()` since Stripe TypeScript types don't export `UsageRecord` type
+- Method handles Stripe API errors with `InternalServerErrorException` following the same pattern as other Stripe service methods
+- Quantity parameter represents the number of 10k units (already calculated and rounded up by caller)
+- Typecheck passes: `turbo run build --filter=backend` completes successfully
+- Lint passes: `turbo run lint --filter=backend` completes successfully
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added reportUsageToMeter method)
+- **Learnings for future iterations:**
+  - Stripe's TypeScript types may not include all API methods/types (e.g., `UsageRecord` type is not exported)
+  - Use type assertion `(this.stripe.subscriptionItems as any)` when TypeScript types are incomplete but API method exists
+  - Stripe usage records use Unix timestamps in seconds (not milliseconds) - convert Date using `Math.floor(timestamp.getTime() / 1000)`
+  - When timestamp is undefined, Stripe API defaults to current time automatically
+  - Stripe meter usage reporting is done via `subscriptionItems.createUsageRecord()` with subscription item ID and quantity
+  - The meter ID from environment variable is not directly used in `createUsageRecord()` - it's configured on the subscription item when created
+---
