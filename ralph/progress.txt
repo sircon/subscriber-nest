@@ -510,3 +510,30 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - The processor creates sync history for API key connections, while the service creates sync history per publication for OAuth connections
   - After syncing OAuth publications, check recent sync history records (within last 5 minutes) to determine overall sync status
 ---
+
+## Sun Jan 19 2026 - US-023
+- Added DELETE endpoint `DELETE /esp-connections/:id` to EspConnectionController
+- Endpoint requires authentication via `@UseGuards(AuthGuard)` (inherited from controller-level guard)
+- Endpoint validates user owns the connection using `espConnectionService.findById(id, user.id)`
+- Added `deleteConnection()` method to EspConnectionService that deletes ESP connection (cascade deletes handle subscribers and sync history automatically)
+- Added `deleteConnection()` function to frontend API client that calls DELETE endpoint
+- Added "Disconnect" button to ESP detail page for OAuth connections (shown in OAuth Connection Details card header)
+- Button opens confirmation dialog using Dialog component with warning message about permanent deletion
+- Dialog shows error messages if deletion fails
+- After successful deletion, redirects to `/dashboard` page (ESP connections are listed in sidebar)
+- All acceptance criteria met: authentication, ownership validation, deletion with cascade, disconnect button, confirmation dialog, redirect, error handling, typecheck passes, lint passes, build passes
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added DELETE endpoint)
+  - `apps/backend/src/services/esp-connection.service.ts` (added deleteConnection method)
+  - `apps/frontend/src/lib/api.ts` (added deleteConnection function)
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` (added Disconnect button and confirmation dialog)
+- **Learnings for future iterations:**
+  - DELETE endpoints should return 204 No Content status code using `@HttpCode(HttpStatus.NO_CONTENT)`
+  - Database CASCADE delete handles deletion of related records (subscribers, sync history) automatically when ESP connection is deleted
+  - Use `repository.remove()` to delete entities - it handles cascading deletes if configured in entity relationships
+  - Confirmation dialogs should clearly explain the consequences of the action (permanent deletion, cannot be undone)
+  - Disconnect buttons should only be shown for OAuth connections (not API key connections) as per acceptance criteria
+  - After deleting a connection, redirect to dashboard page where connections are listed in sidebar (not a dedicated ESP list page)
+  - Dialog component uses `open` and `onOpenChange` props to control visibility
+  - Always show loading state during deletion operation to prevent multiple clicks
+---
