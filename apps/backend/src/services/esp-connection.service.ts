@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,6 +17,7 @@ import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { KitConnector } from '../connectors/kit.connector';
+import { OAuthTokenRefreshService } from './oauth-token-refresh.service';
 
 @Injectable()
 export class EspConnectionService {
@@ -24,7 +26,8 @@ export class EspConnectionService {
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
-    private kitConnector: KitConnector
+    private kitConnector: KitConnector,
+    private oauthTokenRefreshService: OAuthTokenRefreshService
   ) {}
 
   /**
@@ -170,26 +173,159 @@ export class EspConnectionService {
   async getSubscriberCount(id: string, userId?: string): Promise<number> {
     const connection = await this.findById(id, userId);
 
-    // Validate this is an API key connection
-    if (connection.authMethod !== AuthMethod.API_KEY) {
+    if (connection.authMethod === AuthMethod.API_KEY) {
+      if (!connection.encryptedApiKey || !connection.publicationId) {
+        throw new BadRequestException(
+          'API key or publication ID is missing for this connection'
+        );
+      }
+
+      // Decrypt the API key
+      const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);
+
+      // Get the appropriate connector
+      const connector = this.getConnector(connection.espType);
+
+      // Get subscriber count from the ESP API
+      return connector.getSubscriberCount(apiKey, connection.publicationId);
+    } else if (connection.authMethod === AuthMethod.OAUTH) {
+      if (!connection.encryptedAccessToken) {
+        throw new BadRequestException(
+          'Access token is missing for this OAuth connection'
+        );
+      }
+
+      // Use wrapper method that handles token refresh on 401
+      return this.getSubscriberCountWithOAuth(connection);
+    } else {
       throw new BadRequestException(
-        'This method only supports API key connections'
+        `Unsupported auth method: ${connection.authMethod}`
+      );
+    }
+  }
+
+  /**
+   * Gets subscriber count for OAuth connection with automatic token refresh on 401
+   * @param connection - The ESP connection (must be OAuth-based)
+   * @returns The total number of subscribers
+   * @throws BadRequestException if connection is invalid or publication ID is missing
+   * @throws InternalServerErrorException if API call fails after token refresh
+   */
+  private async getSubscriberCountWithOAuth(
+    connection: EspConnection
+  ): Promise<number> {
+    if (!connection.publicationId && !connection.publicationIds) {
+      throw new BadRequestException(
+        'Publication ID is missing for this OAuth connection'
       );
     }
 
-    if (!connection.encryptedApiKey || !connection.publicationId) {
+    // For OAuth, we need to handle multiple publications
+    // For now, use the first publication ID (will be enhanced in US-022)
+    const publicationId =
+      connection.publicationId ||
+      (connection.publicationIds && connection.publicationIds[0]);
+
+    if (!publicationId) {
       throw new BadRequestException(
-        'API key or publication ID is missing for this connection'
+        'No publication ID available for this connection'
       );
     }
 
-    // Decrypt the API key
-    const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);
-
-    // Get the appropriate connector
     const connector = this.getConnector(connection.espType);
 
-    // Get subscriber count from the ESP API
-    return connector.getSubscriberCount(apiKey, connection.publicationId);
+    if (!connector.getSubscriberCountWithOAuth) {
+      throw new BadRequestException(
+        `OAuth is not supported for ESP type: ${connection.espType}`
+      );
+    }
+
+    // Decrypt access token
+    let accessToken = this.encryptionService.decrypt(
+      connection.encryptedAccessToken!
+    );
+
+    // Try to get subscriber count with automatic retry on 401
+    return this.callOAuthConnectorMethodWithRetry(
+      connection,
+      async (token: string) => {
+        return connector.getSubscriberCountWithOAuth!(token, publicationId);
+      },
+      accessToken
+    );
+  }
+
+  /**
+   * Calls an OAuth connector method with automatic token refresh on 401 errors
+   * This method handles:
+   * - Catching 401 errors from connector methods
+   * - Refreshing the OAuth token
+   * - Retrying the original call once with the new token
+   * - Limiting retry to once per request to prevent infinite loops
+   *
+   * @param connection - The ESP connection (must be OAuth-based)
+   * @param method - The connector method to call (receives access token as parameter)
+   * @param accessToken - The current access token
+   * @param retried - Internal flag to track if we've already retried (prevents infinite loops)
+   * @returns The result of the connector method
+   * @throws InternalServerErrorException if method fails after token refresh
+   */
+  private async callOAuthConnectorMethodWithRetry<T>(
+    connection: EspConnection,
+    method: (accessToken: string) => Promise<T>,
+    accessToken: string,
+    retried: boolean = false
+  ): Promise<T> {
+    try {
+      // Call the connector method
+      return await method(accessToken);
+    } catch (error: any) {
+      // Check if this is a 401 error (invalid/expired token)
+      const is401Error =
+        error.message?.includes('401') ||
+        error.message?.includes('Invalid access token') ||
+        error.response?.status === 401;
+
+      if (is401Error && !retried) {
+        // Token is expired or invalid, try to refresh it
+        try {
+          // Refresh the token (this updates the connection in the database)
+          const refreshResult =
+            await this.oauthTokenRefreshService.refreshToken(connection);
+
+          // Reload connection to get updated token
+          const updatedConnection = await this.espConnectionRepository.findOne({
+            where: { id: connection.id },
+          });
+
+          if (!updatedConnection || !updatedConnection.encryptedAccessToken) {
+            throw new InternalServerErrorException(
+              'Failed to refresh token: connection not found or token missing'
+            );
+          }
+
+          // Decrypt the new access token
+          const newAccessToken = this.encryptionService.decrypt(
+            updatedConnection.encryptedAccessToken
+          );
+
+          // Retry the original call with the new token (only once)
+          return this.callOAuthConnectorMethodWithRetry(
+            updatedConnection,
+            method,
+            newAccessToken,
+            true // Mark as retried to prevent infinite loops
+          );
+        } catch (refreshError: any) {
+          // Token refresh failed, throw error
+          throw new InternalServerErrorException(
+            `Token refresh failed: ${refreshError.message}. Please reconnect your account.`
+          );
+        }
+      }
+
+      // If we've already retried or it's not a 401 error, throw the original error
+      throw error;
+    }
   }
 }

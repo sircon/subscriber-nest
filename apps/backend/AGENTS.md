@@ -94,6 +94,10 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `src/processors/oauth-token-refresh.processor.ts` – OAuthTokenRefreshProcessor finds OAuth connections with tokens expiring within 10 minutes and refreshes them
 - Scheduled token refresh jobs use BullMQ queue (`oauth-token-refresh`) and run every 5 minutes to proactively refresh tokens before expiry
 - Processor handles errors gracefully - logs failures but continues processing other connections to prevent one failure from blocking all refreshes
+- **Automatic token refresh on 401 errors**: When calling OAuth connector methods (e.g., `getSubscriberCountWithOAuth`, `fetchSubscribersWithOAuth`), use `callOAuthConnectorMethodWithRetry()` wrapper method in `EspConnectionService` to automatically handle 401 errors by refreshing tokens and retrying the call once
+- The wrapper method catches 401 errors (detected by error message containing "401" or "Invalid access token"), refreshes the token using `OAuthTokenRefreshService`, reloads the connection from database, and retries the original call with the new token
+- Retry is limited to once per request to prevent infinite loops - use `retried` flag to track retry attempts
+- After token refresh, always reload the connection from database to get the updated encrypted token before decrypting and using it
 
 ## Subscribers
 
