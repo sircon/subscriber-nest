@@ -16,7 +16,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EspConnectionService } from '../services/esp-connection.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
-import { EspConnection } from '../entities/esp-connection.entity';
+import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -109,20 +109,30 @@ export class EspConnectionController {
     jobId: string;
     status: string;
     message: string;
+    connection: Omit<EspConnection, 'encryptedApiKey'>;
   }> {
     try {
       // Validate ESP connection exists and belongs to user
       await this.espConnectionService.findById(id, user.id);
+
+      // Mark connection as syncing before adding to queue
+      const updatedConnection = await this.espConnectionService.updateSyncStatus(
+        id,
+        EspSyncStatus.SYNCING,
+      );
 
       // Add job to queue
       const job = await this.subscriberSyncQueue.add('sync-publication', {
         espConnectionId: id,
       });
 
+      // Return response with updated connection (without encrypted API key)
+      const { encryptedApiKey, ...connectionResponse } = updatedConnection;
       return {
         jobId: job.id!,
         status: 'queued',
         message: 'Sync job has been queued successfully',
+        connection: connectionResponse,
       };
     } catch (error) {
       // Handle NotFoundException from service (404)

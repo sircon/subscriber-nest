@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EspConnection, EspType, EspConnectionStatus } from '../entities/esp-connection.entity';
+import { EspConnection, EspType, EspConnectionStatus, EspSyncStatus } from '../entities/esp-connection.entity';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
@@ -117,5 +117,28 @@ export class EspConnectionService {
     }
 
     return connection;
+  }
+
+  /**
+   * Updates the sync status of an ESP connection
+   * @param id - The ID of the ESP connection
+   * @param syncStatus - The new sync status
+   * @returns The updated ESP connection
+   * @throws NotFoundException if connection not found
+   */
+  async updateSyncStatus(
+    id: string,
+    syncStatus: EspSyncStatus,
+  ): Promise<EspConnection> {
+    const connection = await this.espConnectionRepository.findOne({
+      where: { id },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(`ESP connection with ID ${id} not found`);
+    }
+
+    connection.syncStatus = syncStatus;
+    return await this.espConnectionRepository.save(connection);
   }
 }
