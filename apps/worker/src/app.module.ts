@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { BullModule } from "@nestjs/bullmq";
 import {
   Subscriber,
   EspConnection,
@@ -49,6 +50,43 @@ import { EspConnectionService } from "./services/esp-connection.service";
       BillingSubscription,
       BillingUsage,
     ]),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST ?? "localhost",
+        port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
+        password: process.env.REDIS_PASSWORD,
+      },
+    }),
+    BullModule.registerQueue({
+      name: "subscriber-sync",
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+      },
+    }),
+    BullModule.registerQueue({
+      name: "billing",
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+      },
+    }),
+    BullModule.registerQueue({
+      name: "account-deletion",
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+      },
+    }),
   ],
   providers: [
     EncryptionService,

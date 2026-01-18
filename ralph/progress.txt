@@ -407,3 +407,18 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify TypeORM configuration
   - TypeORM autoLoadEntities: true automatically discovers entities, but forFeature() is still needed for repository injection
 ---
+
+## 2026-01-18 15:47 - US-019
+- Configured BullMQ in worker service with `BullModule.forRoot()` using Redis connection from environment variables (REDIS_HOST, REDIS_PORT, REDIS_PASSWORD)
+- Registered all three queues using `BullModule.registerQueue()` with retry configuration (3 attempts, exponential backoff with 2000ms delay): subscriber-sync, billing, and account-deletion
+- All queue processors (SubscriberSyncProcessor, BillingProcessor, AccountDeletionProcessor) are already registered in AppModule providers from US-018
+- Files changed:
+  - `apps/worker/src/app.module.ts` - Added BullModule import and configuration
+- **Learnings for future iterations:**
+  - BullMQ configuration in worker service matches API service structure (same Redis connection settings, same queue names, same retry configuration)
+  - Worker service needs both `BullModule.forRoot()` and `BullModule.registerQueue()` for each queue
+  - Processors are registered in providers array (not imports) and use `@Processor('queue-name')` decorator
+  - All three queues (subscriber-sync, billing, account-deletion) are registered with the same retry configuration (3 attempts, exponential backoff)
+  - Redis connection uses environment variables with defaults (localhost:6379, no password)
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify BullMQ configuration
+---
