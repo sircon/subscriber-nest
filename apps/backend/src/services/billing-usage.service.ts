@@ -148,4 +148,18 @@ export class BillingUsageService {
       },
     });
   }
+
+  /**
+   * Get billing history for a user
+   * @param userId - The ID of the user
+   * @param limit - Maximum number of records to return (default: 12)
+   * @returns Array of billing usage records ordered by billingPeriodStart DESC
+   */
+  async getBillingHistory(userId: string, limit: number = 12): Promise<BillingUsage[]> {
+    return this.billingUsageRepository.find({
+      where: { userId },
+      order: { billingPeriodStart: 'DESC' },
+      take: limit,
+    });
+  }
 }

@@ -10,6 +10,7 @@ import {
   Logger,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
@@ -569,6 +570,70 @@ export class BillingController {
       // Wrap unknown errors
       throw new InternalServerErrorException(
         `Failed to get current usage: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Get billing history for the authenticated user
+   * GET /billing/history
+   */
+  @Get('history')
+  @UseGuards(AuthGuard)
+  async getBillingHistory(
+    @CurrentUser() user: User,
+    @Query('limit') limit?: string,
+  ): Promise<
+    Array<{
+      billingPeriodStart: Date;
+      billingPeriodEnd: Date;
+      maxSubscriberCount: number;
+      calculatedAmount: number;
+      status: BillingUsageStatus;
+      stripeInvoiceId: string | null;
+    }>
+  > {
+    try {
+      // Parse limit query parameter (default: 12)
+      const limitNumber = limit ? parseInt(limit, 10) : 12;
+
+      // Validate limit is a positive number
+      if (isNaN(limitNumber) || limitNumber < 1) {
+        throw new BadRequestException('Limit must be a positive number');
+      }
+
+      // Get billing history from service
+      const billingHistory = await this.billingUsageService.getBillingHistory(
+        user.id,
+        limitNumber,
+      );
+
+      // Map to response format
+      return billingHistory.map((usage) => ({
+        billingPeriodStart: usage.billingPeriodStart,
+        billingPeriodEnd: usage.billingPeriodEnd,
+        maxSubscriberCount: usage.maxSubscriberCount,
+        calculatedAmount: Number(usage.calculatedAmount),
+        status: usage.status,
+        stripeInvoiceId: usage.stripeInvoiceId,
+      }));
+    } catch (error: any) {
+      this.logger.error(
+        `Error getting billing history for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Re-throw known exceptions
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to get billing history: ${error.message}`,
       );
     }
   }
