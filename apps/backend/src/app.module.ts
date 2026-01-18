@@ -30,6 +30,7 @@ import { SyncHistoryService } from './services/sync-history.service';
 import { BillingSubscription } from './entities/billing-subscription.entity';
 import { BillingUsage } from './entities/billing-usage.entity';
 import { StripeService } from './services/stripe.service';
+import { BillingCalculationService } from './services/billing-calculation.service';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { StripeService } from './services/stripe.service';
     AuthGuard,
     SyncHistoryService,
     StripeService,
+    BillingCalculationService,
   ],
   exports: [EmailService],
 })
