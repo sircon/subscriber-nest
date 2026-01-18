@@ -390,3 +390,21 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Always handle loading and error states in data-fetching components for better UX
   - Use skeleton loaders that match the structure of the actual content for better perceived performance
 ---
+
+## 2026-01-19 - US-020
+- Verified all billing API client functions are already implemented in `apps/frontend/src/lib/api.ts`
+- All required functions present: `getBillingStatus()`, `getCurrentUsage()`, `getBillingHistory(limit?: number)`, `createCheckoutSession()`, `createPortalSession()`
+- All functions include proper TypeScript types (interfaces defined: `BillingStatusResponse`, `CurrentUsageResponse`, `BillingHistoryItem[]`, `CreateCheckoutSessionResponse`, `CreatePortalSessionResponse`)
+- All functions handle authentication tokens (accept `token: string | null` parameter)
+- All functions handle 401 errors (accept `onUnauthorized?: OnUnauthorizedCallback` parameter)
+- Functions follow the same pattern as other API namespaces (authApi, espConnectionApi) using the shared `apiRequest()` helper
+- Typecheck passes: `yarn tsc --noEmit` in frontend directory completes successfully
+- Lint passes: `turbo run lint --filter=frontend` completes successfully
+- Files changed:
+  - No changes needed - functions were already implemented in US-017
+- **Learnings for future iterations:**
+  - When verifying story completion, check if functionality was already implemented in previous stories (billing API functions were added in US-017)
+  - API client functions should follow consistent patterns across all namespaces for maintainability
+  - All API functions should use the shared `apiRequest()` helper to ensure consistent error handling and authentication
+  - TypeScript interfaces for API responses should be defined at the top of the API client file for easy reference
+---
