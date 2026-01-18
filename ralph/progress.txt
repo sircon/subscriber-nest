@@ -365,3 +365,28 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When removing functionality from a component, remember to remove unused imports to avoid lint errors
   - The onboarding completion endpoint should validate all prerequisites (like active subscription) before marking user as onboarded
 ---
+
+## 2026-01-19 - US-019
+- Created billing settings page at `apps/frontend/src/app/dashboard/settings/billing/page.tsx`
+- Page displays current month usage card showing max subscriber count, calculated amount, and billing period dates
+- Page displays subscription status card showing subscription status, current period end date, and cancel at period end flag (if applicable)
+- Added "Manage Subscription" and "View Invoices" buttons that open Stripe Customer Portal (both use the same portal session as Stripe doesn't support opening specific sections via API)
+- Implemented billing history table displaying past 12 months with period dates, subscriber count, amount, status, and invoice links
+- Added loading states with skeleton UI and error handling with user-friendly error messages
+- Used shadcn components: Card, Table (with TableHeader, TableBody, TableRow, TableCell, TableHead), and Button
+- Page fetches billing data using `billingApi.getBillingStatus()`, `billingApi.getCurrentUsage()`, and `billingApi.getBillingHistory()` on mount
+- Implemented date formatting using `toLocaleDateString()` and currency formatting using `Intl.NumberFormat`
+- Added status color coding for billing history items (green for paid, blue for invoiced, yellow for pending, red for failed)
+- Invoice links open Stripe dashboard invoices in new tab
+- Files changed:
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (new)
+- **Learnings for future iterations:**
+  - Use `Promise.all()` to fetch multiple API endpoints in parallel for better performance
+  - Stripe Customer Portal doesn't support opening specific sections (like invoices) directly via API - users navigate within the portal
+  - When displaying billing periods, show both start and end dates for clarity
+  - Use `Intl.NumberFormat` for currency formatting to ensure proper locale-specific formatting
+  - Status enums from backend are typically in snake_case (e.g., 'past_due') - format them for display using string manipulation
+  - Stripe invoice IDs can be used to construct dashboard URLs: `https://dashboard.stripe.com/invoices/{invoice_id}`
+  - Always handle loading and error states in data-fetching components for better UX
+  - Use skeleton loaders that match the structure of the actual content for better perceived performance
+---
