@@ -184,3 +184,25 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - Always register new connectors in app.module.ts providers and inject into EspConnectionService
   - Update getConnector() switch statement to include new connector types
 ---
+
+## Sun Jan 19 2026 - US-009
+- Created OAuthTokenRefreshService with `refreshToken(espConnection: EspConnection)` method
+- Method validates connection is OAuth-based and has refresh token
+- Method calls ESP's token endpoint with grant_type=refresh_token, refresh_token, client_id, client_secret
+- Method decrypts refresh token, exchanges it for new access token, encrypts new tokens, and updates database
+- Updates `encryptedAccessToken`, `encryptedRefreshToken` (if new one provided), `tokenExpiresAt`, and `lastValidatedAt`
+- Handles errors appropriately: BadRequestException for invalid/expired refresh tokens (400/401), InternalServerErrorException for other errors
+- Returns TokenRefreshResult with accessToken, optional refreshToken, and expiresIn
+- Registered service in app.module.ts providers array
+- Files changed:
+  - `apps/backend/src/services/oauth-token-refresh.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+  - `apps/backend/AGENTS.md` (updated)
+- **Learnings for future iterations:**
+  - Token refresh uses same pattern as token exchange: HttpService with firstValueFrom, URLSearchParams, application/x-www-form-urlencoded
+  - OAuth token refresh may not always return a new refresh_token - keep existing one if not provided
+  - Handle 400 (invalid refresh token) and 401 (expired/revoked refresh token) as BadRequestException with user-friendly messages
+  - Always update lastValidatedAt when refreshing tokens to track when connection was last validated
+  - Token refresh service should validate authMethod === 'oauth' and check for refresh token existence before attempting refresh
+  - Service should validate ESP type supports OAuth (Kit, Mailchimp) before attempting refresh
+---
