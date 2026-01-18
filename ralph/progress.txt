@@ -384,3 +384,26 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - OAuth flows initiated from onboarding should redirect to onboarding steps, not dashboard pages
   - The `isOnboarding` flag is stored in the database and retrieved during state validation, allowing the callback to make routing decisions
 ---
+
+## Sun Jan 19 2026 - US-018
+- Updated ESP detail page to display OAuth connection status information
+- Updated `EspConnection` interface in frontend API client to include OAuth fields: `authMethod`, `tokenExpiresAt`, `publicationIds`
+- Added auth method badge in header showing "OAuth" or "API Key" using shadcn Badge component
+- Created new "OAuth Connection Details" Card section that displays:
+  - Token expiry time (from `tokenExpiresAt` field)
+  - Last refresh time (from `lastValidatedAt` field)
+  - All connected publications (from `publicationIds` array, displayed as Badge components)
+- Display shows publication count in header for OAuth connections with multiple publications
+- Connection status and sync status already displayed in existing cards (no changes needed)
+- All acceptance criteria met: authMethod display, token expiry, last refresh, publications list, connection/sync status, shadcn components, typecheck passes
+- Files changed:
+  - `apps/frontend/src/lib/api.ts` (updated EspConnection interface)
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` (added OAuth status display)
+- **Learnings for future iterations:**
+  - Frontend `EspConnection` interface must match backend entity fields - update interface when adding new fields to backend entity
+  - OAuth connections use `publicationIds` array (JSONB) while API key connections use single `publicationId` field - handle both cases in UI
+  - Use conditional rendering (`connection.authMethod === 'oauth'`) to show OAuth-specific information only for OAuth connections
+  - Token expiry and last refresh times should use existing `formatDate()` helper function for consistent date formatting
+  - shadcn Badge component supports `variant` prop for different styles (default, secondary, outline)
+  - Always run `yarn lint --fix` after making frontend changes to fix prettier formatting issues automatically
+---
