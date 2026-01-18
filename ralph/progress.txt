@@ -184,3 +184,32 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Dashboard stats endpoints typically aggregate data across multiple tables
   - Direct repository injection in controllers is acceptable for simple aggregation queries
 ---
+
+## 2026-01-19 02:00 - US-009
+- Installed @tanstack/react-table v8.21.3 for data table functionality
+- Added shadcn UI components using shadcn CLI: table, dropdown-menu
+- Additional shadcn components installed as dependencies: separator, sheet, tooltip
+- Note: xlsx/papaparse not installed as backend handles all export generation (US-007)
+- Note: Sidebar component will be manually created in US-010 using existing components
+- Updated tailwind.config.ts with sidebar animations and CSS variables
+- Updated globals.css with additional CSS variables for sidebar styling
+- Reinstalled dependencies from root to resolve workspace linking issues
+- Frontend build passes successfully with all new dependencies
+- Files changed:
+  - `apps/frontend/package.json` - Added @tanstack/react-table and radix-ui dependencies
+  - `apps/frontend/src/components/ui/table.tsx` - New table component
+  - `apps/frontend/src/components/ui/dropdown-menu.tsx` - New dropdown-menu component
+  - `apps/frontend/src/components/ui/separator.tsx` - New separator component
+  - `apps/frontend/src/components/ui/sheet.tsx` - New sheet component (useful for mobile sidebar)
+  - `apps/frontend/src/components/ui/tooltip.tsx` - New tooltip component
+  - `apps/frontend/tailwind.config.ts` - Added sidebar animations and keyframes
+  - `apps/frontend/src/app/globals.css` - Added CSS variables for sidebar colors
+  - `yarn.lock` - Updated with new dependencies
+- **Learnings for future iterations:**
+  - shadcn CLI command: `npx shadcn@latest add <component> --yes` to skip prompts
+  - shadcn components automatically install required radix-ui peer dependencies
+  - Yarn workspace requires reinstalling from root after adding dependencies to child packages
+  - Sheet component can be used as a mobile-friendly sidebar alternative
+  - Separator component useful for dividing sections in sidebars/menus
+  - Backend handling exports means frontend doesn't need xlsx/papaparse libraries
+---
