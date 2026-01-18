@@ -22,6 +22,7 @@ import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
+import { SubscriptionGuard } from './guards/subscription.guard';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
@@ -103,6 +104,7 @@ import { BillingController } from './controllers/billing.controller';
     EmailService,
     AuthService,
     AuthGuard,
+    SubscriptionGuard,
     SyncHistoryService,
     StripeService,
     BillingCalculationService,

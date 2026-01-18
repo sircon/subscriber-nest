@@ -28,6 +28,7 @@ import { EspConnection, EspSyncStatus } from '../entities/esp-connection.entity'
 import { SyncHistory } from '../entities/sync-history.entity';
 import { Subscriber } from '../entities/subscriber.entity';
 import { AuthGuard } from '../guards/auth.guard';
+import { SubscriptionGuard } from '../guards/subscription.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 
@@ -114,6 +115,7 @@ export class EspConnectionController {
   }
 
   @Post(':id/sync')
+  @UseGuards(SubscriptionGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   async triggerSync(
     @Param('id') id: string,
@@ -275,6 +277,7 @@ export class EspConnectionController {
   }
 
   @Get(':id/subscribers/export')
+  @UseGuards(SubscriptionGuard)
   async exportSubscribers(
     @Param('id') id: string,
     @CurrentUser() user: User,
