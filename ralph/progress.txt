@@ -620,3 +620,22 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Error handling in cron methods should log errors but not crash (similar to SyncSchedulerService and BillingSchedulerService patterns)
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify cron conversion
 ---
+
+## 2026-01-19 - US-031
+- Verified Turbo configuration for new API and Worker services
+- Confirmed that `turbo.json` already correctly applies tasks to all workspaces (Turborepo automatically discovers workspaces from `package.json`)
+- Verified `turbo run build` builds both `api` and `worker` services successfully (along with shared package)
+- Verified `turbo run dev` configuration supports running both services simultaneously (dev task is configured with `persistent: true` and `cache: false`)
+- Verified typecheck passes for both services (`yarn workspace api typecheck` and `yarn workspace worker typecheck`)
+- Verified lint passes for both services (`turbo run lint --filter=api --filter=worker`)
+- Files changed:
+  - No files changed (turbo.json was already correctly configured)
+- **Learnings for future iterations:**
+  - Turborepo automatically discovers all workspaces from `package.json` workspaces configuration (`apps/*` and `packages/*`)
+  - Tasks defined in `turbo.json` apply to all workspaces automatically - no need to explicitly list apps
+  - Use `turbo run build --filter=api --filter=worker` to build specific services
+  - Use `turbo run dev --filter=api --filter=worker` to run multiple services simultaneously
+  - Both `api` and `worker` services have all required scripts (build, dev, start, lint, typecheck) in their package.json files
+  - Shared package (`@subscriber-nest/shared`) is automatically included in builds when it's a dependency
+  - Use `yarn workspace <package-name> typecheck` to verify TypeScript compilation for individual packages
+---
