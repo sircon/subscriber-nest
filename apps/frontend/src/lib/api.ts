@@ -69,6 +69,7 @@ export interface EspConnection {
   espType: string;
   publicationId: string;
   status: string;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
   lastValidatedAt: string | null;
   lastSyncedAt: string | null;
   createdAt: string;
@@ -198,6 +199,11 @@ export const authApi = {
   },
 };
 
+export interface TriggerSyncResponse {
+  connection: EspConnection;
+  jobId: string;
+}
+
 /**
  * ESP Connection API functions
  */
@@ -232,6 +238,24 @@ export const espConnectionApi = {
       '/esp-connections',
       {
         method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Trigger manual sync for ESP connection
+   */
+  triggerSync: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<TriggerSyncResponse> => {
+    return apiRequest<TriggerSyncResponse>(
+      `/esp-connections/${connectionId}/sync`,
+      {
+        method: 'POST',
       },
       token,
       onUnauthorized,

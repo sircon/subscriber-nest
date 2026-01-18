@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi, EspConnection } from '@/lib/api';
 
@@ -12,12 +13,20 @@ const providerNames: Record<string, string> = {
   mailchimp: 'Mailchimp',
 };
 
+const syncStatusLabels: Record<string, string> = {
+  idle: 'Not synced yet',
+  syncing: 'Syncing...',
+  synced: 'Synced',
+  error: 'Sync failed',
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, token } = useAuth();
   const [connections, setConnections] = useState<EspConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncErrors, setSyncErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchConnections = async () => {
@@ -41,6 +50,63 @@ export default function DashboardPage() {
 
     fetchConnections();
   }, [token, router]);
+
+  const handleSync = async (connectionId: string) => {
+    if (!token) return;
+
+    // Clear any previous error for this connection
+    setSyncErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[connectionId];
+      return newErrors;
+    });
+
+    // Optimistically update the connection status to 'syncing'
+    setConnections((prev) =>
+      prev.map((conn) =>
+        conn.id === connectionId ? { ...conn, syncStatus: 'syncing' as const } : conn
+      )
+    );
+
+    try {
+      const result = await espConnectionApi.triggerSync(connectionId, token, () => {
+        router.push('/login');
+      });
+      
+      // Update the connection with the response from the server
+      setConnections((prev) =>
+        prev.map((conn) =>
+          conn.id === connectionId ? result.connection : conn
+        )
+      );
+    } catch (err) {
+      // Revert optimistic update on error
+      setConnections((prev) =>
+        prev.map((conn) =>
+          conn.id === connectionId ? { ...conn, syncStatus: 'error' as const } : conn
+        )
+      );
+      
+      // Store error message
+      setSyncErrors((prev) => ({
+        ...prev,
+        [connectionId]: err instanceof Error ? err.message : 'Failed to trigger sync',
+      }));
+    }
+  };
+
+  const getSyncButtonText = (syncStatus: string) => {
+    switch (syncStatus) {
+      case 'syncing':
+        return 'Syncing...';
+      case 'error':
+        return 'Retry Sync';
+      case 'synced':
+        return 'Sync Again';
+      default:
+        return 'Sync Now';
+    }
+  };
 
   if (loading) {
     return (
@@ -93,18 +159,42 @@ export default function DashboardPage() {
                   <CardHeader>
                     <CardTitle>{providerNames[connection.espType] || connection.espType}</CardTitle>
                     <CardDescription>
-                      {connection.status}
+                      Status: {connection.status}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Connected {new Date(connection.createdAt).toLocaleDateString()}
-                    </p>
-                    {connection.lastSyncedAt && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Last synced {new Date(connection.lastSyncedAt).toLocaleDateString()}
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Connected {new Date(connection.createdAt).toLocaleDateString()}
                       </p>
+                      
+                      <div className="mt-2">
+                        <p className="text-sm font-medium">
+                          Sync Status: {syncStatusLabels[connection.syncStatus] || connection.syncStatus}
+                        </p>
+                        {connection.lastSyncedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Last synced {new Date(connection.lastSyncedAt).toLocaleDateString()} at{' '}
+                            {new Date(connection.lastSyncedAt).toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {syncErrors[connection.id] && (
+                      <div className="text-sm text-destructive">
+                        {syncErrors[connection.id]}
+                      </div>
                     )}
+
+                    <Button
+                      onClick={() => handleSync(connection.id)}
+                      disabled={connection.syncStatus === 'syncing'}
+                      className="w-full"
+                      variant={connection.syncStatus === 'error' ? 'destructive' : 'default'}
+                    >
+                      {getSyncButtonText(connection.syncStatus)}
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
