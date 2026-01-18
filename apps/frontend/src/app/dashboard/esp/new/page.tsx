@@ -49,10 +49,38 @@ export default function NewEspConnectionPage() {
     publicationId?: string;
   }>({});
 
+  // Check if selected ESP type supports OAuth
+  const supportsOAuth =
+    selectedEspType === 'kit' || selectedEspType === 'mailchimp';
+
   const handleEspTypeSelect = (espType: EspType) => {
     setSelectedEspType(espType);
     setError(null);
     setValidationErrors({});
+  };
+
+  const handleOAuthConnect = async () => {
+    if (!token || !selectedEspType) {
+      return;
+    }
+
+    try {
+      await espConnectionApi.initiateOAuth(
+        selectedEspType as 'kit' | 'mailchimp',
+        token,
+        () => {
+          router.push('/login');
+        }
+      );
+      // initiateOAuth will redirect the browser, so we don't need to do anything else
+    } catch (err) {
+      console.error('Failed to initiate OAuth:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to initiate OAuth connection'
+      );
+    }
   };
 
   const handleBack = () => {
@@ -197,81 +225,130 @@ export default function NewEspConnectionPage() {
         <CardHeader>
           <CardTitle>Connection Details</CardTitle>
           <CardDescription>
-            Please provide your API key and publication ID
+            {supportsOAuth
+              ? 'Connect your account securely using OAuth'
+              : 'Please provide your API key and publication ID'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="apiKey" className="text-sm font-medium">
-                API Key <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="apiKey"
-                type="password"
-                placeholder="Enter your API key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                disabled={loading}
-                className={validationErrors.apiKey ? 'border-destructive' : ''}
-              />
-              {validationErrors.apiKey && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.apiKey}
+          {supportsOAuth ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-md bg-primary/10 border border-primary/20">
+                <p className="text-sm text-primary font-medium mb-2">
+                  Connect with OAuth
                 </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="publicationId" className="text-sm font-medium">
-                Publication ID <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="publicationId"
-                type="text"
-                placeholder="Enter your publication ID"
-                value={publicationId}
-                onChange={(e) => setPublicationId(e.target.value)}
-                disabled={loading}
-                className={
-                  validationErrors.publicationId ? 'border-destructive' : ''
-                }
-              />
-              {validationErrors.publicationId && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.publicationId}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Connect your{' '}
+                  {espTypes.find((e) => e.id === selectedEspType)?.name} account
+                  securely using OAuth. No API keys needed!
                 </p>
-              )}
-            </div>
-
-            {error && (
-              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={loading}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  'Connect & Sync'
+                {error && (
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 mb-4">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
                 )}
-              </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleOAuthConnect}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect with OAuth'
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="apiKey" className="text-sm font-medium">
+                  API Key <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Enter your API key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  disabled={loading}
+                  className={
+                    validationErrors.apiKey ? 'border-destructive' : ''
+                  }
+                />
+                {validationErrors.apiKey && (
+                  <p className="text-sm text-destructive">
+                    {validationErrors.apiKey}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="publicationId" className="text-sm font-medium">
+                  Publication ID <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="publicationId"
+                  type="text"
+                  placeholder="Enter your publication ID"
+                  value={publicationId}
+                  onChange={(e) => setPublicationId(e.target.value)}
+                  disabled={loading}
+                  className={
+                    validationErrors.publicationId ? 'border-destructive' : ''
+                  }
+                />
+                {validationErrors.publicationId && (
+                  <p className="text-sm text-destructive">
+                    {validationErrors.publicationId}
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading} className="flex-1">
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    'Connect & Sync'
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +75,9 @@ export default function EspDetailPage() {
     boolean | null
   >(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+
+  // OAuth success message state
+  const [showOAuthSuccess, setShowOAuthSuccess] = useState(false);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -142,6 +146,24 @@ export default function EspDetailPage() {
 
     checkSubscription();
   }, [token]);
+
+  // Check for OAuth success query parameter
+  useEffect(() => {
+    const oauthSuccess = searchParams.get('oauth');
+    if (oauthSuccess === 'success') {
+      setShowOAuthSuccess(true);
+      // Remove the query parameter from URL after showing the message
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('oauth');
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+      // Hide the message after 5 seconds
+      const timer = setTimeout(() => {
+        setShowOAuthSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -360,6 +382,19 @@ export default function EspDetailPage() {
 
   return (
     <div className="p-8">
+      {/* OAuth Success Message */}
+      {showOAuthSuccess && (
+        <Alert className="mb-6 border-green-500 bg-green-50">
+          <AlertTitle className="text-green-800">
+            Connection Successful!
+          </AlertTitle>
+          <AlertDescription className="text-green-700">
+            Your OAuth connection has been established successfully. Your
+            subscribers are being synced.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>

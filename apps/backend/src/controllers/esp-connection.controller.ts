@@ -330,8 +330,8 @@ export class EspConnectionController {
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
 
-      // Redirect to frontend success page
-      const successUrl = `${frontendUrl}/esp-connections/${savedConnection.id}?oauth=success`;
+      // Redirect to frontend success page (ESP detail page)
+      const successUrl = `${frontendUrl}/dashboard/esp/${savedConnection.id}?oauth=success`;
       res.redirect(successUrl);
     } catch (error) {
       // Handle BadRequestException (400 - invalid provider, missing params, invalid state)

@@ -74,6 +74,23 @@ export default function OnboardingPage() {
     router.push(`/onboarding/api-key?provider=${provider}`);
   };
 
+  const handleOAuthConnect = async (provider: 'kit' | 'mailchimp') => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      await espConnectionApi.initiateOAuth(provider, token, () => {
+        router.push('/login');
+      });
+      // initiateOAuth will redirect the browser, so we don't need to do anything else
+    } catch (err) {
+      console.error('Failed to initiate OAuth:', err);
+      // Error handling is done in the API client
+    }
+  };
+
   // Show loading state while checking for existing connections
   if (checkingConnections) {
     return (
@@ -120,30 +137,49 @@ export default function OnboardingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {providers.map((provider) => (
-            <Card
-              key={provider.id}
-              className="cursor-pointer hover:border-primary transition-colors"
-              onClick={() => handleProviderSelect(provider.id)}
-            >
-              <CardHeader>
-                <CardTitle className="text-xl">{provider.name}</CardTitle>
-                <CardDescription>{provider.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleProviderSelect(provider.id);
-                  }}
-                >
-                  Select {provider.name}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {providers.map((provider) => {
+            const supportsOAuth =
+              provider.id === 'kit' || provider.id === 'mailchimp';
+
+            return (
+              <Card
+                key={provider.id}
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() =>
+                  !supportsOAuth && handleProviderSelect(provider.id)
+                }
+              >
+                <CardHeader>
+                  <CardTitle className="text-xl">{provider.name}</CardTitle>
+                  <CardDescription>{provider.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {supportsOAuth ? (
+                    <Button
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOAuthConnect(provider.id as 'kit' | 'mailchimp');
+                      }}
+                    >
+                      Connect with OAuth
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProviderSelect(provider.id);
+                      }}
+                    >
+                      Select {provider.name}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
