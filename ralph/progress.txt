@@ -407,3 +407,56 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - shadcn Badge component supports `variant` prop for different styles (default, secondary, outline)
   - Always run `yarn lint --fix` after making frontend changes to fix prettier formatting issues automatically
 ---
+
+## Sun Jan 19 2026 - US-019
+- Added manual token refresh endpoint `POST /esp-connections/:id/refresh-token` to EspConnectionController
+- Endpoint requires authentication via `@UseGuards(AuthGuard)` (inherited from controller-level guard)
+- Endpoint validates user owns the connection using `espConnectionService.findById(id, user.id)`
+- Endpoint calls `OAuthTokenRefreshService.refreshToken()` to refresh the OAuth token
+- Endpoint reloads connection from database after refresh to get updated token info
+- Endpoint returns updated connection info without encrypted fields (encryptedApiKey, encryptedAccessToken, encryptedRefreshToken)
+- Handles errors appropriately: NotFoundException for connection not found, BadRequestException for not OAuth connection/missing refresh token/invalid/expired refresh token, InternalServerErrorException for other errors
+- Injected OAuthTokenRefreshService into controller constructor
+- All acceptance criteria met: authentication, ownership validation, service call, updated connection response, error handling, typecheck passes
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (added refresh-token endpoint)
+- **Learnings for future iterations:**
+  - Manual token refresh endpoints should reload the connection from database after refresh to get the latest token information
+  - OAuthTokenRefreshService throws BadRequestException for invalid/expired refresh tokens (400/401) - these should be passed through to the client with user-friendly messages
+  - When returning connection data from endpoints, exclude all encrypted fields (encryptedApiKey, encryptedAccessToken, encryptedRefreshToken) for security
+  - The endpoint follows the same pattern as other controller endpoints: validate ownership, call service, handle errors, return response
+  - OAuthTokenRefreshService handles all the token refresh logic (decryption, API call, encryption, database update) - controller just orchestrates the call
+---
+
+## Sun Jan 19 2026 - US-020
+- Created MailchimpConnector class implementing IEspConnector interface with OAuth methods
+- Implemented OAuth methods: `validateAccessToken`, `fetchPublicationsWithOAuth`, `fetchSubscribersWithOAuth`, `getSubscriberCountWithOAuth`
+- Used Bearer token authentication for Mailchimp API calls: `Authorization: Bearer {accessToken}`
+- Implemented datacenter code retrieval from Mailchimp metadata endpoint (`https://login.mailchimp.com/oauth2/metadata`) using `Authorization: OAuth {accessToken}` header
+- Base URL dynamically constructed as `https://{dc}.api.mailchimp.com/3.0` where `dc` is retrieved from metadata endpoint
+- Handled Mailchimp-specific API structure: lists (publications) from `/lists` endpoint, members (subscribers) from `/lists/{list_id}/members` endpoint
+- Implemented offset-based pagination for both lists and members (Mailchimp uses `offset` and `count` parameters, max 1000 items per request)
+- Mapped Mailchimp status values (subscribed, unsubscribed, cleaned, pending, transactional) to standard status format
+- Handled API errors appropriately: 401/403 (invalid token), 404 (list not found), 429 (rate limit), 500+ (server errors)
+- Returned 401 errors to trigger token refresh (errors thrown with descriptive messages)
+- Registered MailchimpConnector in app.module.ts providers array
+- Updated EspConnectionService to inject MailchimpConnector and added MAILCHIMP case to getConnector() switch statement
+- Updated SubscriberSyncService to inject MailchimpConnector and added MAILCHIMP case to getConnector() switch statement
+- All acceptance criteria met: connector created, OAuth methods implemented, Bearer token auth, dynamic base URL, Mailchimp API structure handled, error handling, typecheck passes
+- Files changed:
+  - `apps/backend/src/connectors/mailchimp.connector.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+  - `apps/backend/src/services/esp-connection.service.ts` (updated)
+  - `apps/backend/src/services/subscriber-sync.service.ts` (updated)
+- **Learnings for future iterations:**
+  - Mailchimp requires datacenter code (dc) from metadata endpoint before making API calls - metadata endpoint uses `Authorization: OAuth {accessToken}` (not Bearer!)
+  - Mailchimp API base URL is dynamic: `https://{dc}.api.mailchimp.com/3.0` where dc is retrieved from metadata endpoint
+  - Mailchimp uses "lists" as publications and "members" as subscribers
+  - Mailchimp API uses offset-based pagination with `offset` and `count` parameters (max 1000 items per request)
+  - Mailchimp returns data in specific structure: `response.data.lists` for lists, `response.data.members` for members, `response.data.total_items` for total count
+  - Mailchimp member data includes `email_address` field (not just `email`), and merge fields (`FNAME`, `LNAME`) for first/last name
+  - Mailchimp status values: subscribed (active), unsubscribed (unsubscribed), cleaned (bounced), pending (active), transactional (active)
+  - The `getDatacenterCode()` method should be called once per access token and cached if possible to avoid multiple metadata API calls
+  - Always register new connectors in app.module.ts providers and inject into both EspConnectionService and SubscriberSyncService
+  - Update getConnector() switch statements in both services to include new connector types
+---

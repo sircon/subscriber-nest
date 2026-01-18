@@ -16,6 +16,7 @@ import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { KitConnector } from '../connectors/kit.connector';
+import { MailchimpConnector } from '../connectors/mailchimp.connector';
 import { OAuthTokenRefreshService } from './oauth-token-refresh.service';
 import { SubscriberMapperService } from './subscriber-mapper.service';
 import { SubscriberService } from './subscriber.service';
@@ -38,6 +39,7 @@ export class SubscriberSyncService {
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
     private kitConnector: KitConnector,
+    private mailchimpConnector: MailchimpConnector,
     private oauthTokenRefreshService: OAuthTokenRefreshService,
     private subscriberMapperService: SubscriberMapperService,
     private subscriberService: SubscriberService,
@@ -58,6 +60,8 @@ export class SubscriberSyncService {
         return this.beehiivConnector;
       case EspType.KIT:
         return this.kitConnector;
+      case EspType.MAILCHIMP:
+        return this.mailchimpConnector;
       default:
         throw new InternalServerErrorException(
           `Unsupported ESP type: ${espType}`

@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
 import { KitConnector } from './connectors/kit.connector';
+import { MailchimpConnector } from './connectors/mailchimp.connector';
 import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
 import { SubscriberExportService } from './services/subscriber-export.service';
@@ -147,6 +148,7 @@ import { OAuthTokenRefreshSchedulerService } from './services/oauth-token-refres
     EncryptionService,
     BeehiivConnector,
     KitConnector,
+    MailchimpConnector,
     SubscriberService,
     SubscriberExportService,
     EspConnectionService,

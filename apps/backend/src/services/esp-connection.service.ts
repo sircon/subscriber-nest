@@ -17,6 +17,7 @@ import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
 import { KitConnector } from '../connectors/kit.connector';
+import { MailchimpConnector } from '../connectors/mailchimp.connector';
 import { OAuthTokenRefreshService } from './oauth-token-refresh.service';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class EspConnectionService {
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
     private kitConnector: KitConnector,
+    private mailchimpConnector: MailchimpConnector,
     private oauthTokenRefreshService: OAuthTokenRefreshService
   ) {}
 
@@ -42,6 +44,8 @@ export class EspConnectionService {
         return this.beehiivConnector;
       case EspType.KIT:
         return this.kitConnector;
+      case EspType.MAILCHIMP:
+        return this.mailchimpConnector;
       default:
         throw new BadRequestException(`Unsupported ESP type: ${espType}`);
     }
