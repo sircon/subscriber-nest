@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi, EspConnection } from '@/lib/api';
-import { Menu, Plus, Settings, Database } from 'lucide-react';
+import { Menu, Plus, Settings, Database, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const providerNames: Record<string, string> = {
@@ -51,17 +51,37 @@ export default function DashboardLayout({
     fetchConnections();
   }, [token, router]);
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Header with Connect ESP button */}
-      <div className="p-4 border-b">
-        <Link href="/onboarding">
-          <Button className="w-full" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Connect New ESP
-          </Button>
-        </Link>
-      </div>
+  const SidebarContent = () => {
+    const isDashboardActive = pathname === '/dashboard';
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Dashboard Navigation Item */}
+        <div className="p-4 border-b">
+          <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+            <div
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 transition-all',
+                isDashboardActive
+                  ? 'bg-primary/10 border-l-4 border-primary text-primary font-medium'
+                  : 'hover:bg-accent'
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="text-sm">Dashboard</span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Header with Connect ESP button */}
+        <div className="p-4 border-b">
+          <Link href="/onboarding">
+            <Button className="w-full" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Connect New ESP
+            </Button>
+          </Link>
+        </div>
 
       {/* ESP Connections List */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -140,7 +160,8 @@ export default function DashboardLayout({
         </Link>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="flex min-h-screen">
