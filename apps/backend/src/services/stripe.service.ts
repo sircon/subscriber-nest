@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -37,5 +37,36 @@ export class StripeService {
    */
   getWebhookSecret(): string {
     return this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || '';
+  }
+
+  /**
+   * Create a Stripe customer
+   * @param email - Customer email address
+   * @param userId - User ID to store in metadata
+   * @returns Stripe customer object
+   * @throws InternalServerErrorException if Stripe API call fails
+   */
+  async createCustomer(email: string, userId: string): Promise<Stripe.Customer> {
+    try {
+      const customer = await this.stripe.customers.create({
+        email,
+        metadata: {
+          userId,
+        },
+      });
+
+      return customer;
+    } catch (error: any) {
+      // Handle Stripe API errors
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to create Stripe customer: ${error.message}`,
+        );
+      }
+      // Handle unexpected errors
+      throw new InternalServerErrorException(
+        `Unexpected error creating Stripe customer: ${error.message || 'Unknown error'}`,
+      );
+    }
   }
 }
