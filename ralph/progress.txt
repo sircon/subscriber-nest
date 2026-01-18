@@ -665,3 +665,20 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Date filtering in TypeORM queries uses comparison operators like `LessThanOrEqual(date)` in the where clause
   - The frontend automatically benefits from backend filtering - no frontend changes needed when backend filters correctly
 ---
+
+## 2026-01-19 - US-032
+- Added `STRIPE_METER_ID` environment variable to `.env.example` with comment explaining it's for usage-based billing
+- Updated `StripeService` constructor to read meter ID from `ConfigService`
+- Added validation to ensure meter ID is configured on initialization (fail-fast pattern, throws error if missing)
+- Added `getMeterId()` method to `StripeService` to access the meter ID
+- Stored meter ID as private readonly property for type safety
+- Files changed:
+  - `apps/backend/.env.example` (added STRIPE_METER_ID variable)
+  - `apps/backend/src/services/stripe.service.ts` (added meter ID validation and getter method)
+- **Learnings for future iterations:**
+  - Stripe meters are used for usage-based billing to track and report usage to Stripe
+  - Environment variables for Stripe configuration should be validated in service constructors using fail-fast pattern
+  - Store validated environment variables as private readonly properties for type safety and immutability
+  - Add getter methods for accessing configuration values that are validated on initialization
+  - Follow the same pattern as other Stripe configuration (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) for consistency
+---
