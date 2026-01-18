@@ -411,6 +411,99 @@
       "priority": 26,
       "passes": true,
       "notes": "Both typecheck pass. Code review confirms all relationships and auth properly configured. Runtime testing recommended."
+    },
+    {
+      "id": "US-027",
+      "title": "Add Sync Status Tracking to EspConnection Entity",
+      "description": "As a developer, I need to track the sync status of ESP connections so users can see when a sync is in progress, completed, or failed.",
+      "acceptanceCriteria": [
+        "Add `syncStatus` field to `EspConnection` entity with enum: 'idle', 'syncing', 'synced', 'error'",
+        "Add `syncStatus` column to database migration",
+        "Default value should be 'idle' for new connections",
+        "Update entity to include `syncStatus` in all queries and responses",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": true,
+      "notes": "Added EspSyncStatus enum and syncStatus field to entity. Created migration to add column to database."
+    },
+    {
+      "id": "US-028",
+      "title": "Update Sync Endpoint to Mark Connection as Syncing When Queued",
+      "description": "As a developer, I need the sync endpoint to immediately mark the connection as 'syncing' when the job is added to the queue, not when the processor picks it up.",
+      "acceptanceCriteria": [
+        "Update `POST /esp-connections/:id/sync` endpoint to set `syncStatus` to 'syncing' before adding job to queue",
+        "Update connection status atomically (in same transaction if possible)",
+        "Ensure status is set even if job queueing fails (handle rollback appropriately)",
+        "Returns connection with updated `syncStatus` in response",
+        "Typecheck passes"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Add Validation to Prevent Double Syncing",
+      "description": "As a developer, I need to prevent users from triggering multiple syncs for the same connection simultaneously.",
+      "acceptanceCriteria": [
+        "Add validation in `POST /esp-connections/:id/sync` endpoint to check if `syncStatus` is 'syncing'",
+        "Return 409 Conflict error if connection is already syncing",
+        "Error message should indicate that a sync is already in progress",
+        "Allow sync to be triggered again if status is 'idle', 'synced', or 'error'",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Update Processor to Mark Connection Status After Sync",
+      "description": "As a developer, I need the sync processor to update the connection status to 'synced' on success or 'error' on failure so users know when sync completes.",
+      "acceptanceCriteria": [
+        "Update `SubscriberSyncProcessor` to set `syncStatus` to 'synced' after successful sync completion",
+        "Update `SubscriberSyncProcessor` to set `syncStatus` to 'error' if sync fails (after all retries exhausted)",
+        "Update `lastSyncedAt` timestamp on successful sync",
+        "Handle errors gracefully and ensure status is always updated (even on unexpected failures)",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "Add Sync Button to Frontend ESP Connection UI",
+      "description": "As a user, I want a button in the frontend to manually trigger a sync for my ESP connection so I can refresh my subscriber list on demand.",
+      "acceptanceCriteria": [
+        "Add 'Sync' button to ESP connection display component/page",
+        "Button calls `POST /esp-connections/:id/sync` endpoint",
+        "Button is disabled when `syncStatus` is 'syncing'",
+        "Button shows loading state while sync is in progress",
+        "Button displays appropriate text based on sync status ('Sync', 'Syncing...', 'Sync Again' after error)",
+        "Displays sync status and last synced timestamp to user",
+        "Handles error responses appropriately (shows error message to user)",
+        "Typecheck passes for frontend"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Auto-Trigger Sync When Onboarding Completes",
+      "description": "As a user, I want my ESP connection to automatically start syncing when I complete the onboarding flow so I don't have to manually trigger the first sync.",
+      "acceptanceCriteria": [
+        "Update onboarding completion flow to automatically call `POST /esp-connections/:id/sync` after ESP connection is created",
+        "Only trigger sync if connection was successfully created during onboarding",
+        "Handle sync errors gracefully (don't block onboarding completion if sync fails)",
+        "Show sync status in onboarding completion screen or redirect to dashboard with sync in progress",
+        "Typecheck passes for frontend"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

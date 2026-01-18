@@ -784,3 +784,19 @@ Started: Sat Jan 17 2026
   6. Monitor BullMQ queue processing
   7. Verify subscriber data syncs correctly
 ---
+
+## 2026-01-18 15:30 - US-027
+- Added sync status tracking to EspConnection entity
+- Created EspSyncStatus enum with values: idle, syncing, synced, error
+- Added syncStatus column to entity with default value 'idle'
+- Created migration 1737200000000-AddSyncStatusToEspConnection.ts
+- Files changed:
+  - `apps/backend/src/entities/esp-connection.entity.ts` - Added EspSyncStatus enum and syncStatus field
+  - `apps/backend/src/migrations/1737200000000-AddSyncStatusToEspConnection.ts` - Migration to add enum type and column
+- **Learnings for future iterations:**
+  - PostgreSQL enum types are created using DO $$ BEGIN ... EXCEPTION pattern for idempotency
+  - Use TableColumn with addColumn() to add new columns to existing tables in migrations
+  - Default enum value must be wrapped in single quotes in migration: `default: "'idle'"`
+  - The syncStatus field enables real-time UI updates showing sync progress
+  - All quality checks passed (typecheck, lint, build)
+---
