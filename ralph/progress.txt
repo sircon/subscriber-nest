@@ -628,3 +628,26 @@ The SubscriberNest dashboard is now fully functional with comprehensive features
   - All status values are lowercase from backend, so capitalization is purely a frontend display concern
   - No need for helper function - inline capitalization is clear and readable
 ---
+
+## 2026-01-19 11:30 - US-023
+- Moved mask/unmask action from separate Actions column to within Email cell as icon button
+- Replaced text button with icon-only button (Eye icon for unmask, EyeOff icon for mask, Loader2 spinner for loading)
+- Icon button appears inline with masked email text using flex layout (flex items-center gap-2)
+- Added Tooltip component wrapper for accessibility (shows "Unmask email", "Mask email", or "Loading..." on hover)
+- Button uses variant="ghost" with size="sm" and className="h-6 w-6 p-0" for compact icon-only appearance
+- Removed Actions column header and column from table
+- Updated empty state colSpan from 6 to 5 to match new column count
+- All existing functionality preserved: loading state, error handling, toggle behavior
+- Error messages still display below email in same cell
+- Files changed:
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Moved unmask button to Email cell, removed Actions column
+  - `apps/frontend/AGENTS.md` - Added pattern for icon buttons in table cells
+- **Learnings for future iterations:**
+  - Icon buttons in table cells should use variant="ghost" with compact sizing (h-6 w-6 p-0) for clean inline appearance
+  - Always wrap icon buttons in Tooltip components for accessibility (screen readers and hover tooltips)
+  - Use flex layout (flex items-center gap-2) to position icon button inline with cell content
+  - When removing table columns, update both TableHeader and empty state colSpan to match new column count
+  - TooltipProvider must wrap Tooltip components (can be at page level or per tooltip)
+  - Icon-only buttons improve table density and visual cleanliness compared to text buttons
+  - Keep error messages in same cell as the action for better UX (user sees error context immediately)
+---
