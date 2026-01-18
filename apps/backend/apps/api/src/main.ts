@@ -1,9 +1,9 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import * as express from 'express';
 import { AppModule } from './app.module';
 import { setupBullBoard } from './bull-board';
-import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
