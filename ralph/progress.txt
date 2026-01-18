@@ -93,3 +93,19 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When creating subscriptions, the price ID must be configured in Stripe Dashboard with `usage_type: 'metered'` for usage-based pricing
   - Stripe subscription creation only requires `customer` and `items` with `price` - billing cycle is determined by the price configuration
 ---
+
+## 2026-01-19 - US-006
+- Created `BillingCalculationService` with `calculateAmount(subscriberCount: number): number` method
+- Implemented tiered pricing logic: $5 for first 10,000 subscribers, then $1 per each additional 10,000 subscribers
+- Method handles edge cases: returns $0 for 0 or negative subscribers, handles very large numbers correctly
+- Method rounds to 2 decimal places to handle floating point precision issues
+- Registered `BillingCalculationService` in `AppModule` providers array
+- Files changed:
+  - `apps/backend/src/services/billing-calculation.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered service)
+- **Learnings for future iterations:**
+  - Services that don't require dependencies (like calculation services) can be simple `@Injectable()` classes without constructor injection
+  - When implementing tiered pricing, use `Math.ceil()` to round up to the next tier (e.g., 15,001 subscribers should be charged for 2 additional tiers)
+  - Always handle edge cases (0, negative numbers) explicitly in calculation methods
+  - Round monetary calculations to 2 decimal places to avoid floating point precision issues
+---
