@@ -496,3 +496,31 @@ Started: Sat Jan 17 2026
   - Always verify existing code before starting implementation
   - When merging branches with parallel development, many stories may already be completed by one branch
 ---
+
+## 2026-01-18 - US-019
+- Integrated AuthGuard into all ESP Connection endpoints
+- Added `@UseGuards(AuthGuard)` decorator at controller level (applies to all endpoints)
+- Imported and used `@CurrentUser()` decorator from `src/decorators/current-user.decorator.ts`
+- Removed all placeholder userId logic (`'placeholder-user-id'`) from all three endpoints
+- Removed all TODO comments about getting userId from authentication context
+- Updated GET `/api/esp-connections/:id` endpoint:
+  - Added `@CurrentUser() user: User` parameter
+  - Changed from `userId` to `user.id` for ownership validation
+- Updated POST `/api/esp-connections` endpoint:
+  - Added `@CurrentUser() user: User` parameter
+  - Changed from `userId` to `user.id` for creating connection
+- Updated POST `/api/esp-connections/:id/sync` endpoint:
+  - Added `@CurrentUser() user: User` parameter
+  - Changed from `userId` to `user.id` for ownership validation
+- All endpoints now return 401 Unauthorized if authentication fails (handled by AuthGuard)
+- AuthGuard validates Bearer token, checks session expiration, and attaches user to request
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` - Added auth integration
+- **Learnings for future iterations:**
+  - Apply `@UseGuards()` at the controller level to protect all endpoints with one decorator
+  - The `@CurrentUser()` decorator extracts the user attached to the request by AuthGuard
+  - AuthGuard throws UnauthorizedException (401) automatically if token is missing, invalid, or expired
+  - The user object is typed as `User` entity, so we have full type safety when accessing `user.id`
+  - No need to manually check authentication in endpoints - the guard handles it before the endpoint is called
+  - The pattern is: AuthGuard validates → attaches user to request → @CurrentUser() extracts user → endpoint uses user.id
+---
