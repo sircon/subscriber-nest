@@ -21,7 +21,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 
-@Controller('api/esp-connections')
+@Controller('esp-connections')
 @UseGuards(AuthGuard)
 export class EspConnectionController {
   constructor(
