@@ -257,36 +257,73 @@ export class EspConnectionController {
 
       // Calculate token expiry time
       const expiresIn = tokenResponse.expires_in || 3600; // Default to 1 hour if not provided
-      const tokenExpiresAt = new Date();
-      tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expiresIn);
+      const refreshToken = tokenResponse.refresh_token || '';
 
-      // Encrypt tokens
-      const encryptedAccessToken = this.encryptionService.encrypt(
-        tokenResponse.access_token
-      );
-      const encryptedRefreshToken = tokenResponse.refresh_token
-        ? this.encryptionService.encrypt(tokenResponse.refresh_token)
-        : null;
-
-      // Store connection (basic implementation - will be refined in US-012)
-      // For now, we'll create a connection with OAuth tokens
-      // Note: This is a temporary implementation until US-012 creates createOAuthConnection method
-      const connection = this.espConnectionRepository.create({
-        userId,
-        espType,
-        authMethod: AuthMethod.OAUTH,
-        encryptedAccessToken,
-        encryptedRefreshToken,
-        tokenExpiresAt,
-        status: EspConnectionStatus.ACTIVE,
-        lastValidatedAt: new Date(),
+      // Check if user already has an OAuth connection for this ESP type
+      const existingConnections = await this.espConnectionRepository.find({
+        where: {
+          userId,
+          espType,
+          authMethod: AuthMethod.OAUTH,
+        },
       });
 
-      const savedConnection =
-        await this.espConnectionRepository.save(connection);
+      // If existing connection found, delete it (we'll create a new one with updated tokens)
+      if (existingConnections.length > 0) {
+        for (const existingConnection of existingConnections) {
+          await this.espConnectionRepository.remove(existingConnection);
+        }
+      }
+
+      // Create OAuth connection using the service method
+      let savedConnection;
+      try {
+        savedConnection = await this.espConnectionService.createOAuthConnection(
+          userId,
+          espType,
+          tokenResponse.access_token,
+          refreshToken,
+          expiresIn
+        );
+      } catch (error: any) {
+        // Handle connection creation errors
+        if (error instanceof BadRequestException) {
+          throw new InternalServerErrorException(
+            `Failed to create OAuth connection: ${error.message}`
+          );
+        }
+        throw new InternalServerErrorException(
+          `Failed to create OAuth connection: ${error.message}`
+        );
+      }
 
       // Delete OAuth state after successful use
       await this.oauthStateService.deleteState(state);
+
+      // Trigger sync for all connected publications
+      try {
+        // Mark connection as syncing before adding to queue
+        await this.espConnectionService.updateSyncStatus(
+          savedConnection.id,
+          EspSyncStatus.SYNCING
+        );
+
+        // Add sync job to queue
+        // Note: OAuth sync support will be added in US-014
+        // For now, we trigger the sync job - it may fail if OAuth sync isn't implemented yet,
+        // but the connection is created successfully and user can manually trigger sync later
+        await this.subscriberSyncQueue.add('sync-publication', {
+          espConnectionId: savedConnection.id,
+        });
+      } catch (syncError: any) {
+        // Log sync trigger error but don't fail the OAuth callback
+        // Connection is already created, user can manually trigger sync later
+        // This is expected if OAuth sync isn't implemented yet (US-014 will add it)
+        console.error(
+          `Failed to trigger sync for OAuth connection ${savedConnection.id}:`,
+          syncError.message
+        );
+      }
 
       // Get frontend URL for redirect
       const frontendUrl =

@@ -270,3 +270,23 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - The method throws BadRequestException if OAuth is not supported for the ESP type or if access token validation fails
   - Empty publication arrays are stored as `null` in the database (check `publicationIds.length > 0` before storing)
 ---
+
+## Sun Jan 19 2026 - US-013
+- Updated OAuth callback endpoint to use `EspConnectionService.createOAuthConnection()` method instead of basic connection creation
+- Replaced manual connection creation with service method that validates access token, fetches publications, and stores all publication IDs
+- Added logic to handle existing OAuth connections: checks if user already has OAuth connection for this ESP type and deletes it before creating new one (ensures only one active OAuth connection per ESP type per user)
+- After connection creation, triggers sync job by adding to `subscriberSyncQueue` with job name 'sync-publication'
+- Marks connection as syncing before adding to queue using `updateSyncStatus()`
+- Handles sync trigger errors gracefully - logs error but doesn't fail OAuth callback (connection is created successfully, user can manually trigger sync later)
+- Handles connection creation errors appropriately - wraps BadRequestException from service as InternalServerErrorException with descriptive message
+- Redirects to frontend success page with connection ID and oauth=success parameter
+- Files changed:
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (updated)
+- **Learnings for future iterations:**
+  - When handling existing connections, delete old OAuth connections before creating new ones to avoid duplicates (users typically want to reconnect with fresh tokens)
+  - Sync trigger should be wrapped in try-catch to prevent OAuth callback from failing if sync service doesn't support OAuth yet (US-014 will add OAuth sync support)
+  - The sync processor calls `subscriberSyncService.syncSubscribers()` which currently only supports API key connections - OAuth sync support will be added in US-014
+  - Always mark connection as syncing before adding job to queue to prevent race conditions
+  - OAuth callback should handle errors gracefully - connection creation is the critical path, sync trigger is secondary
+  - When deleting existing connections, use `repository.remove()` which handles cascading deletes if configured
+---
