@@ -213,3 +213,33 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Separator component useful for dividing sections in sidebars/menus
   - Backend handling exports means frontend doesn't need xlsx/papaparse libraries
 ---
+
+## 2026-01-19 03:00 - US-010
+- Created dashboard layout component at src/app/dashboard/layout.tsx
+- Layout wraps all /dashboard/* routes with persistent sidebar navigation
+- Sidebar features:
+  - Fixed width (~256px) left sidebar on desktop
+  - "Connect New ESP" button at top (links to /onboarding)
+  - ESP connections list with ESP name and publication ID
+  - Active ESP connection highlighted based on pathname
+  - Settings button at bottom (links to /dashboard/settings)
+- Responsive design:
+  - Desktop: Fixed sidebar visible at all times
+  - Mobile: Hamburger menu button triggers Sheet component overlay
+  - Sheet component slides in from left on mobile
+- Fetches ESP connections from API on mount
+- Uses lucide-react icons: Menu, Plus, Settings, Database
+- Active state uses pathname comparison to highlight current ESP
+- Sidebar content shared between desktop and mobile views (DRY pattern)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/layout.tsx` - New dashboard layout
+- **Learnings for future iterations:**
+  - Next.js App Router layouts wrap all child routes in that directory
+  - Use pathname from usePathname() to highlight active navigation items
+  - Sheet component is perfect for mobile-friendly sidebars
+  - Fixed sidebar on desktop: `md:fixed md:inset-y-0` with matching `md:ml-64` on main content
+  - Hamburger menu should be `fixed` with high z-index to stay visible
+  - Extract shared sidebar content into separate component to DRY between desktop/mobile
+  - useEffect with token dependency to refetch connections when auth state changes
+  - Close mobile sidebar on navigation by calling setMobileOpen(false) in onClick handlers
+---
