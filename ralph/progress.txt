@@ -479,3 +479,20 @@ Started: Sat Jan 17 2026
   - After removing duplicate files, verify all imports in app.module.ts point to the correct remaining files
   - Typecheck is the best way to verify all conflicts are resolved and imports are correct
 ---
+
+## 2026-01-18 - US-018
+- Verified User, Session, and VerificationCode entities exist from main branch merge
+- All entities have correct fields and relationships:
+  - User: id (UUID), email (unique), isOnboarded (boolean, default false), createdAt, updatedAt
+  - Session: id (UUID), userId (FK to User), token (unique string), expiresAt (timestamp), createdAt
+  - VerificationCode: id (UUID), email, code (6-digit string), expiresAt (timestamp), used (boolean, default false), createdAt
+- User entity has `@OneToMany(() => EspConnection)` relationship (verified in US-017)
+- Migration `1737000000000-CreateUserAndSessionEntities.ts` creates all three tables with proper foreign key relationships
+- Session table has FK constraint from userId to users(id) with CASCADE delete
+- All entities properly imported in app.module.ts and registered with TypeOrmModule.forFeature()
+- Typecheck passes
+- **Learnings for future iterations:**
+  - This story was already completed by the merge - entities and migrations came from the main branch
+  - Always verify existing code before starting implementation
+  - When merging branches with parallel development, many stories may already be completed by one branch
+---
