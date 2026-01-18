@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Param,
   Query,
@@ -771,6 +772,36 @@ export class EspConnectionController {
 
       // Handle other errors as 500
       throw new InternalServerErrorException('Failed to export subscribers');
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteConnection(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<void> {
+    try {
+      // Validate ESP connection exists and belongs to user
+      await this.espConnectionService.findById(id, user.id);
+
+      // Delete the connection (cascade will handle subscribers and sync history)
+      await this.espConnectionService.deleteConnection(id, user.id);
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to delete this ESP connection'
+        );
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException('Failed to delete ESP connection');
     }
   }
 }

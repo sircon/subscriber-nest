@@ -30,7 +30,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, EyeOff, Loader2, Download, RefreshCw } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Download,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import {
   Tooltip,
@@ -78,6 +93,11 @@ export default function EspDetailPage() {
 
   // OAuth success message state
   const [showOAuthSuccess, setShowOAuthSuccess] = useState(false);
+
+  // Disconnect dialog state
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -332,6 +352,28 @@ export default function EspDetailPage() {
       setTimeout(() => setSyncError(null), 5000);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!token || !id) return;
+
+    setIsDisconnecting(true);
+    setDisconnectError(null);
+
+    try {
+      await espConnectionApi.deleteConnection(id as string, token);
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Error disconnecting ESP:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to disconnect ESP connection';
+      setDisconnectError(errorMessage);
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
@@ -607,7 +649,17 @@ export default function EspDetailPage() {
       {connection.authMethod === 'oauth' && (
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>OAuth Connection Details</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>OAuth Connection Details</CardTitle>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDisconnectDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -659,6 +711,57 @@ export default function EspDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Disconnect Confirmation Dialog */}
+      <Dialog
+        open={showDisconnectDialog}
+        onOpenChange={setShowDisconnectDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Disconnect ESP Connection</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to disconnect this ESP connection? This
+              action will permanently delete the connection and all associated
+              subscribers and sync history. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {disconnectError && (
+            <Alert variant="destructive">
+              <AlertDescription>{disconnectError}</AlertDescription>
+            </Alert>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisconnectDialog(false);
+                setDisconnectError(null);
+              }}
+              disabled={isDisconnecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnect}
+              disabled={isDisconnecting}
+            >
+              {isDisconnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Disconnecting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Disconnect
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Subscribers Table */}
       <Card>

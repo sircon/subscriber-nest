@@ -520,6 +520,25 @@ export const espConnectionApi = {
     // If we get here, something unexpected happened
     throw new Error('OAuth initiation did not redirect as expected');
   },
+
+  /**
+   * Delete an ESP connection
+   * This will delete the connection and all associated subscribers and sync history
+   */
+  deleteConnection: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<void> => {
+    return apiRequest<void>(
+      `/esp-connections/${connectionId}`,
+      {
+        method: 'DELETE',
+      },
+      token,
+      onUnauthorized
+    );
+  },
 };
 
 /**
