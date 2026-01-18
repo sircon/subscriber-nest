@@ -529,3 +529,24 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Event listeners should log received events for debugging and monitoring
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify event listener implementation
 ---
+
+## 2026-01-19 - US-026
+- Created `SyncSchedulerService` in `apps/worker/src/services/` with midnight UTC cron job
+- Used `@Cron('0 0 * * *', { timeZone: 'UTC' })` decorator for midnight UTC schedule
+- Service queries database for all ESP connections where `status = EspConnectionStatus.ACTIVE` using TypeORM repository
+- For each active connection, adds a `sync-publication` job to `subscriber-sync` queue using `subscriberSyncQueue.add()`
+- Logs number of connections queued for sync (both successful and total count)
+- Handles errors gracefully with try-catch blocks (logs errors but doesn't crash the scheduler)
+- Service is registered in worker service AppModule providers
+- Files changed:
+  - `apps/worker/src/services/sync-scheduler.service.ts` - Created scheduler service
+  - `apps/worker/src/app.module.ts` - Added SyncSchedulerService import and registration
+- **Learnings for future iterations:**
+  - Use `@InjectRepository(Entity)` to inject TypeORM repositories in services for database queries
+  - Use `@InjectQueue('queue-name')` to inject BullMQ queue instances in services
+  - `@Cron()` decorator from `@nestjs/schedule` requires `ScheduleModule.forRoot()` to be imported in AppModule (already done in US-020)
+  - Cron jobs run automatically once the service is registered in AppModule providers - no manual initialization needed
+  - Use `repository.find({ where: { status: EnumValue } })` to query entities by enum status
+  - Handle errors at both the individual connection level (continue processing others) and the overall scheduler level (log but don't crash)
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify scheduler implementation
+---
