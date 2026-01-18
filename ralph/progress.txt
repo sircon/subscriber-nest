@@ -608,3 +608,23 @@ The SubscriberNest dashboard is now fully functional with comprehensive features
   - Error messages should auto-clear after timeout for better UX (don't persist indefinitely)
   - API response types should match backend response structure exactly (including all fields)
 ---
+
+## 2026-01-19 11:00 - US-022
+- Capitalized all status badges across the dashboard for better readability
+- Updated sync history status badges in dashboard overview page (success/failed → Success/Failed)
+- Updated subscriber status badges in ESP detail page (active/unsubscribed/bounced → Active/Unsubscribed/Bounced)
+- Updated connection status badges in ESP detail page (idle/syncing/synced/error → Idle/Syncing/Synced/Error)
+- Updated last sync status badge in ESP detail page (success/failed → Success/Failed)
+- Updated connection status text display (active → Active)
+- Used simple capitalization pattern: `status.charAt(0).toUpperCase() + status.slice(1)`
+- Badge colors and styling remain unchanged (only text capitalization modified)
+- Files changed:
+  - `apps/frontend/src/app/dashboard/page.tsx` - Capitalized sync history status badges
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Capitalized all status badges and connection status text
+- **Learnings for future iterations:**
+  - Simple string capitalization: `str.charAt(0).toUpperCase() + str.slice(1)` works for all status values
+  - Status badges display in multiple locations: dashboard overview, ESP detail page cards, and subscriber table
+  - Connection status appears both as badge (syncStatus) and as plain text (status field)
+  - All status values are lowercase from backend, so capitalization is purely a frontend display concern
+  - No need for helper function - inline capitalization is clear and readable
+---
