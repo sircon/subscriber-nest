@@ -3,13 +3,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In } from 'typeorm';
 import { Job } from 'bullmq';
-import { User } from '../entities/user.entity';
-import { BillingSubscription } from '../entities/billing-subscription.entity';
-import { BillingUsage } from '../entities/billing-usage.entity';
-import { EspConnection } from '../entities/esp-connection.entity';
-import { Subscriber } from '../entities/subscriber.entity';
-import { SyncHistory } from '../entities/sync-history.entity';
-import { Session } from '../entities/session.entity';
+import {
+  User,
+  BillingSubscription,
+  BillingUsage,
+  EspConnection,
+  Subscriber,
+  SyncHistory,
+  Session,
+} from '@subscriber-nest/shared/entities';
 import { StripeService } from '../services/stripe.service';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
 

@@ -4,14 +4,12 @@ import { Repository, LessThanOrEqual } from 'typeorm';
 import {
   BillingUsage,
   BillingUsageStatus,
-} from '../entities/billing-usage.entity';
-import { BillingCalculationService } from './billing-calculation.service';
-import { EspConnectionService } from './esp-connection.service';
-import {
   SyncHistory,
   SyncHistoryStatus,
-} from '../entities/sync-history.entity';
-import { Subscriber } from '../entities/subscriber.entity';
+  Subscriber,
+} from '@subscriber-nest/shared/entities';
+import { BillingCalculationService } from './billing-calculation.service';
+import { EspConnectionService } from './esp-connection.service';
 
 @Injectable()
 export class BillingUsageService {

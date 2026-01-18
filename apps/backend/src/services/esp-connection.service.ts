@@ -10,7 +10,7 @@ import {
   EspType,
   EspConnectionStatus,
   EspSyncStatus,
-} from '../entities/esp-connection.entity';
+} from '@subscriber-nest/shared/entities';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';

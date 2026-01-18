@@ -36,3 +36,38 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Turborepo automatically builds all packages in workspaces when running `yarn build`
   - Package name should use scoped format `@subscriber-nest/shared` for monorepo packages
 ---
+
+## 2026-01-18 16:15 - US-003
+- Moved all 8 entity files from `apps/backend/src/entities/` to `packages/shared/src/entities/`:
+  - billing-subscription.entity.ts
+  - billing-usage.entity.ts
+  - esp-connection.entity.ts
+  - session.entity.ts
+  - subscriber.entity.ts
+  - sync-history.entity.ts
+  - user.entity.ts
+  - verification-code.entity.ts
+- Updated all entity imports within entities to use relative paths (they reference each other using `./entity-name.entity`)
+- Updated `packages/shared/src/entities/index.ts` to export all entities and their enums
+- Updated all backend imports (24 files) to use `@subscriber-nest/shared/entities` instead of relative paths:
+  - Controllers: subscriber, esp-connection, dashboard, billing, account, auth
+  - Services: sync-history, subscriber, subscriber-sync, subscriber-mapper, subscriber-export, esp-connection, billing-usage, billing-subscription, auth
+  - Processors: subscriber-sync, billing, account-deletion
+  - Guards: subscription, auth
+  - Decorators: current-user
+  - DTOs: create-subscriber, create-esp-connection
+  - app.module.ts
+- Deleted old entity files from backend
+- Files changed:
+  - Created 8 entity files in `packages/shared/src/entities/`
+  - Updated `packages/shared/src/entities/index.ts` to export all entities
+  - Updated 24 files in `apps/backend/src/` to use shared package imports
+  - Deleted 8 entity files from `apps/backend/src/entities/`
+- **Learnings for future iterations:**
+  - Entity files can reference each other using relative imports within the same directory (e.g., `./user.entity`)
+  - When moving entities, update imports in: controllers, services, processors, guards, decorators, DTOs, and app.module.ts
+  - Use `@subscriber-nest/shared/entities` import path for all entity imports after moving to shared package
+  - All entities and their enums should be exported from `packages/shared/src/entities/index.ts`
+  - Use `turbo run build --filter=backend` and `turbo run build --filter=@subscriber-nest/shared` to verify compilation
+  - Use `yarn lint` to verify code style after moving files
+---

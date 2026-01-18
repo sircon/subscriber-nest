@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EspConnection } from '../entities/esp-connection.entity';
-import { Subscriber } from '../entities/subscriber.entity';
-import { SyncHistory } from '../entities/sync-history.entity';
+import {
+  EspConnection,
+  Subscriber,
+  SyncHistory,
+  User,
+} from '@subscriber-nest/shared/entities';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { User } from '../entities/user.entity';
 
 @Controller('dashboard')
 @UseGuards(AuthGuard)

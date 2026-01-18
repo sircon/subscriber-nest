@@ -8,7 +8,7 @@ import { BillingSubscriptionService } from '../services/billing-subscription.ser
 import {
   BillingSubscription,
   BillingSubscriptionStatus,
-} from '../entities/billing-subscription.entity';
+} from '@subscriber-nest/shared/entities';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {

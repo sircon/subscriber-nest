@@ -6,9 +6,9 @@ import { Job } from 'bullmq';
 import {
   BillingSubscription,
   BillingSubscriptionStatus,
-} from '../entities/billing-subscription.entity';
-import { Subscriber } from '../entities/subscriber.entity';
-import { EspConnection } from '../entities/esp-connection.entity';
+  Subscriber,
+  EspConnection,
+} from '@subscriber-nest/shared/entities';
 import { BillingUsageService } from '../services/billing-usage.service';
 
 export interface MonthlyBillingJobData {

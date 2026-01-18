@@ -21,16 +21,16 @@ import Stripe from 'stripe';
 import { StripeService } from '../services/stripe.service';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
 import { BillingUsageService } from '../services/billing-usage.service';
-import { BillingUsageStatus } from '../entities/billing-usage.entity';
 import {
+  BillingUsageStatus,
   BillingSubscription,
   BillingSubscriptionStatus,
-} from '../entities/billing-subscription.entity';
+  User,
+  EspConnection,
+  Subscriber,
+} from '@subscriber-nest/shared/entities';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { User } from '../entities/user.entity';
-import { EspConnection } from '../entities/esp-connection.entity';
-import { Subscriber } from '../entities/subscriber.entity';
 import { AuthService } from '../auth.service';
 
 @Controller('billing')

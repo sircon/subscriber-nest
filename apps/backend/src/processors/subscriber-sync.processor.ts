@@ -6,12 +6,10 @@ import { Job } from 'bullmq';
 import {
   EspConnection,
   EspSyncStatus,
-} from '../entities/esp-connection.entity';
-import {
   SyncHistory,
   SyncHistoryStatus,
-} from '../entities/sync-history.entity';
-import { Subscriber } from '../entities/subscriber.entity';
+  Subscriber,
+} from '@subscriber-nest/shared/entities';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
 
 export interface SyncPublicationJobData {

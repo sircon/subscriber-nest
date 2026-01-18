@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import {
   BillingSubscription,
   BillingSubscriptionStatus,
-} from '../entities/billing-subscription.entity';
+} from '@subscriber-nest/shared/entities';
 import Stripe from 'stripe';
 
 @Injectable()

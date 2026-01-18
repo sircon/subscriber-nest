@@ -11,11 +11,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscriber } from '../entities/subscriber.entity';
+import { Subscriber, User } from '@subscriber-nest/shared/entities';
 import { EncryptionService } from '../services/encryption.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { User } from '../entities/user.entity';
 
 @Controller('subscribers')
 @UseGuards(AuthGuard)

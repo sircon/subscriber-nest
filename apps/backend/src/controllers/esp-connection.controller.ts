@@ -30,13 +30,13 @@ import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
 import {
   EspConnection,
   EspSyncStatus,
-} from '../entities/esp-connection.entity';
-import { SyncHistory } from '../entities/sync-history.entity';
-import { Subscriber } from '../entities/subscriber.entity';
+  SyncHistory,
+  Subscriber,
+  User,
+} from '@subscriber-nest/shared/entities';
 import { AuthGuard } from '../guards/auth.guard';
 import { SubscriptionGuard } from '../guards/subscription.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { User } from '../entities/user.entity';
 
 @Controller('esp-connections')
 @UseGuards(AuthGuard)

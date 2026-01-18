@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { EspConnection, EspType } from '../entities/esp-connection.entity';
-import { Subscriber } from '../entities/subscriber.entity';
+import {
+  EspConnection,
+  EspType,
+  Subscriber,
+} from '@subscriber-nest/shared/entities';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';

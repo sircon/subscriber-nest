@@ -5,9 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { VerificationCode } from './entities/verification-code.entity';
-import { User } from './entities/user.entity';
-import { Session } from './entities/session.entity';
+import {
+  VerificationCode,
+  User,
+  Session,
+} from '@subscriber-nest/shared/entities';
 import { EmailService } from './email.service';
 import { BillingSubscriptionService } from './services/billing-subscription.service';
 import * as crypto from 'crypto';

@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString, IsEnum } from 'class-validator';
-import { EspType } from '../entities/esp-connection.entity';
+import { EspType } from '@subscriber-nest/shared/entities';
 
 export class CreateEspConnectionDto {
   @IsNotEmpty()

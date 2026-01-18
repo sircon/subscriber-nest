@@ -9,8 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../entities/user.entity';
-import { BillingSubscription } from '../entities/billing-subscription.entity';
+import { User, BillingSubscription } from '@subscriber-nest/shared/entities';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { StripeService } from '../services/stripe.service';

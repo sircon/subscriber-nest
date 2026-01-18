@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SyncHistory } from '../entities/sync-history.entity';
+import { SyncHistory } from '@subscriber-nest/shared/entities';
 
 @Injectable()
 export class SyncHistoryService {
