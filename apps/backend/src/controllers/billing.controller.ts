@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -17,7 +18,10 @@ import { StripeService } from '../services/stripe.service';
 import { BillingSubscriptionService } from '../services/billing-subscription.service';
 import { BillingUsageService } from '../services/billing-usage.service';
 import { BillingUsageStatus } from '../entities/billing-usage.entity';
-import { BillingSubscriptionStatus } from '../entities/billing-subscription.entity';
+import {
+  BillingSubscription,
+  BillingSubscriptionStatus,
+} from '../entities/billing-subscription.entity';
 import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -435,6 +439,55 @@ export class BillingController {
       // Wrap unknown errors
       throw new InternalServerErrorException(
         `Failed to create portal session: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Get billing status for the authenticated user
+   * GET /billing/status
+   */
+  @Get('status')
+  @UseGuards(AuthGuard)
+  async getBillingStatus(
+    @CurrentUser() user: User,
+  ): Promise<{
+    hasActiveSubscription: boolean;
+    subscription: BillingSubscription | null;
+    currentPeriodEnd: Date | null;
+  }> {
+    try {
+      // Find subscription for user
+      const subscription = await this.billingSubscriptionService.findByUserId(user.id);
+
+      if (!subscription) {
+        return {
+          hasActiveSubscription: false,
+          subscription: null,
+          currentPeriodEnd: null,
+        };
+      }
+
+      // Check if subscription is active
+      // Active means: status is 'active' and not canceled at period end
+      const hasActiveSubscription =
+        subscription.status === BillingSubscriptionStatus.ACTIVE &&
+        !subscription.cancelAtPeriodEnd;
+
+      return {
+        hasActiveSubscription,
+        subscription,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Error getting billing status for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
+
+      // Wrap unknown errors
+      throw new InternalServerErrorException(
+        `Failed to get billing status: ${error.message}`,
       );
     }
   }

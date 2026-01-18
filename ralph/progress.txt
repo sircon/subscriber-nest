@@ -228,3 +228,20 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Use `BadRequestException` for client errors (missing customer) and `InternalServerErrorException` for Stripe API errors
   - Portal session URLs are returned in the same format as checkout session URLs (`{ url: string }`)
 ---
+
+## 2026-01-19 - US-012
+- Added `GET /billing/status` endpoint to `BillingController`
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint returns `{ hasActiveSubscription: boolean, subscription: BillingSubscription | null, currentPeriodEnd: Date | null }`
+- `hasActiveSubscription` is true if subscription status is 'active' and not canceled at period end
+- Returns subscription details if exists, null otherwise
+- Returns 401 if not authenticated (handled automatically by AuthGuard)
+- Files changed:
+  - `apps/backend/src/controllers/billing.controller.ts` (added getBillingStatus endpoint and Get import)
+- **Learnings for future iterations:**
+  - GET endpoints in NestJS use `@Get()` decorator (not `@Post()`)
+  - When returning entity objects from endpoints, TypeORM entities are automatically serialized to JSON
+  - The `hasActiveSubscription` logic checks both status === ACTIVE and !cancelAtPeriodEnd to ensure subscription is truly active
+  - AuthGuard automatically returns 401 Unauthorized if authentication fails, no need to handle it explicitly in the endpoint
+  - When checking subscription status, return the full subscription object so frontend can access all subscription details if needed
+---
