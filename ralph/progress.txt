@@ -412,3 +412,26 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Client-side navigation state (useState) is sufficient for simple settings menu switching
   - No need for URL-based routing for settings tabs if content is all on one page
 ---
+
+## 2026-01-19 08:45 - US-016
+- Verified all API client functions are already implemented from previous user stories
+- dashboardApi.getStats() - Added in US-011 (Dashboard Overview)
+- espConnectionApi.getSyncHistory() - Added in US-011 (Dashboard Overview)
+- espConnectionApi.getSubscribers() - Added in US-012 (ESP Detail Page)
+- subscriberApi.unmaskEmail() - Added in US-013 (Email Unmasking)
+- espConnectionApi.exportSubscribers() - Added in US-014 (Export Functionality)
+- All functions have proper TypeScript types (interfaces defined)
+- All functions handle authentication tokens via token parameter
+- All functions handle 401 errors via onUnauthorized callback
+- exportSubscribers handles file download correctly (returns blob and filename)
+- Build and typecheck pass successfully
+- Files verified:
+  - `apps/frontend/src/lib/api.ts` - All API functions present with correct signatures
+- **Learnings for future iterations:**
+  - When stories have dependencies, API functions are naturally added incrementally
+  - US-016 was a consolidation story to verify all endpoints were implemented
+  - Pattern: Add API functions as part of feature implementation, not as separate task
+  - This approach ensures API functions are tested immediately with the feature
+  - TypeScript interfaces should be defined near the functions that use them
+  - Namespace pattern (authApi, espConnectionApi, dashboardApi, subscriberApi) keeps API organized
+---

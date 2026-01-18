@@ -284,8 +284,8 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed incrementally through US-011, US-012, US-013, and US-014"
     },
     {
       "id": "US-017",
