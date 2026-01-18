@@ -430,3 +430,32 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - `CREATE UNIQUE INDEX IF NOT EXISTS` for indexes
   - This pattern is useful when database state is out of sync with migration tracking table
 ---
+
+## 2026-01-18 12:56:15 - US-022
+- Created `AccountController` with `POST /account/delete` endpoint
+- Endpoint requires authentication using `@UseGuards(AuthGuard)` and `@CurrentUser()` decorator
+- Endpoint sets `deleteRequestedAt` timestamp on user when deletion is requested
+- Endpoint cancels Stripe subscription immediately (if exists) using `StripeService.cancelSubscription()` with `cancelAtPeriodEnd: false`
+- Created `AccountDeletionProcessor` that extends BullMQ `WorkerHost` to process account deletion jobs
+- Created `AccountDeletionSchedulerService` that implements `OnModuleInit` to schedule daily account deletion job on app startup
+- Scheduled job runs daily at 00:00 UTC using BullMQ repeatable jobs with cron pattern `0 0 * * *`
+- Processor finds all users with `deleteRequestedAt` older than 30 days and processes deletion for each user
+- For each user: cancels Stripe subscription if still active, deletes subscribers (using `In()` for multiple ESP connections), deletes sync history, deletes ESP connections, deletes billing usage records, deletes billing subscription, deletes sessions, hard deletes user (sets `deletedAt` and removes)
+- Processor supports manual runs for specific users via `userId` in job data
+- Error handling: logs errors per user but continues processing other users, re-throws errors for BullMQ retry handling
+- Registered `account-deletion` queue in `AppModule` with retry configuration (3 attempts, exponential backoff)
+- Registered `AccountController`, `AccountDeletionProcessor`, and `AccountDeletionSchedulerService` in `AppModule`
+- Files changed:
+  - `apps/backend/src/controllers/account.controller.ts` (new)
+  - `apps/backend/src/processors/account-deletion.processor.ts` (new)
+  - `apps/backend/src/services/account-deletion-scheduler.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (registered controller, processor, scheduler, and queue)
+- **Learnings for future iterations:**
+  - When deleting related data, use TypeORM's `In()` operator to efficiently delete records across multiple foreign keys (e.g., subscribers for multiple ESP connections)
+  - For daily scheduled jobs, use cron pattern `0 0 * * *` (daily at 00:00 UTC)
+  - When checking if 30 days have passed, calculate `thirtyDaysAgo` by subtracting 30 days from current date: `new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)`
+  - When canceling Stripe subscriptions during account deletion, check subscription status first to avoid errors on already-canceled subscriptions
+  - Hard deletion of users should set `deletedAt` timestamp before removing the record for audit purposes
+  - Processors can support both scheduled runs (process all eligible records) and manual runs (process specific record via job data)
+  - When deleting cascading data, delete in order: child records first (subscribers, sync history), then parent records (ESP connections), then user-level records (billing, sessions), finally user
+---
