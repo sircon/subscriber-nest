@@ -9,6 +9,7 @@ import { EncryptionService } from './services/encryption.service';
 import { BeehiivConnector } from './connectors/beehiiv.connector';
 import { Subscriber } from './entities/subscriber.entity';
 import { SubscriberService } from './services/subscriber.service';
+import { SubscriberExportService } from './services/subscriber-export.service';
 import { EspConnection } from './entities/esp-connection.entity';
 import { EspConnectionService } from './services/esp-connection.service';
 import { EspConnectionController } from './controllers/esp-connection.controller';
@@ -72,6 +73,7 @@ import { SyncHistoryService } from './services/sync-history.service';
     EncryptionService,
     BeehiivConnector,
     SubscriberService,
+    SubscriberExportService,
     EspConnectionService,
     SubscriberMapperService,
     SubscriberSyncService,
