@@ -435,3 +435,37 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - TypeScript interfaces should be defined near the functions that use them
   - Namespace pattern (authApi, espConnectionApi, dashboardApi, subscriberApi) keeps API organized
 ---
+
+## 2026-01-19 09:00 - US-017
+- Created reusable Pagination component at apps/frontend/src/components/ui/pagination.tsx
+- Component is fully typed with PaginationProps interface
+- Props: currentPage, totalPages, onPageChange, itemsPerPage, totalItems
+- Displays "Showing X to Y of Z items" info on left side
+- Navigation controls on right: Previous button, page indicator, Next button
+- Previous/Next buttons disabled at edges (currentPage === 1, currentPage === totalPages)
+- Component hidden when totalPages <= 1 (returns null)
+- Accessibility features implemented:
+  - role="navigation" and aria-label="Pagination" on container
+  - aria-label on Previous/Next buttons
+  - aria-current="page" on page indicator
+  - aria-live="polite" on items info for screen reader announcements
+  - Keyboard navigation support (Enter/Space key handlers)
+- Uses existing shadcn Button component and lucide-react icons (ChevronLeft, ChevronRight)
+- Refactored ESP detail page to use new Pagination component
+- Replaced 32 lines of inline pagination code with 7-line component usage
+- Fixed ESLint error: added eslint-disable comment for unused parameter in interface
+- Files changed:
+  - `apps/frontend/src/components/ui/pagination.tsx` - New pagination component
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Refactored to use component
+- **Learnings for future iterations:**
+  - Reusable components should be in components/ui/ directory following shadcn pattern
+  - Export both component and Props interface for easy importing
+  - Accessibility is critical: use semantic HTML, ARIA attributes, keyboard support
+  - aria-live="polite" announces changes to screen readers without interrupting
+  - role="navigation" with aria-label describes the purpose of the navigation section
+  - Early return (null) for edge cases (single page) prevents unnecessary rendering
+  - handleKeyDown pattern: check for Enter or Space key, preventDefault, call action
+  - ESLint complains about unused parameters in interfaces - use eslint-disable-next-line
+  - Calculate display ranges: startItem = ((page - 1) * perPage) + 1, endItem = min(page * perPage, total)
+  - Refactoring inline code to components improves maintainability and DRY principle
+---
