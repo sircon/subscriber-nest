@@ -537,3 +537,27 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Base route pages can redirect to default child route using `useEffect` and `router.replace()`
   - shadcn Tabs component follows the same pattern as other UI components (Button, Card, etc.) using Radix UI primitives
 ---
+
+## 2026-01-19 - US-026
+- Added `getCheckoutSession(sessionId: string)` method to `StripeService` to retrieve Stripe checkout sessions with subscription expansion
+- Added `POST /billing/verify-checkout-session` endpoint to `BillingController` that verifies checkout session, creates/updates subscription, and completes onboarding if needed
+- Endpoint verifies session is completed and paid, retrieves subscription from Stripe, syncs to `BillingSubscription` entity, and completes onboarding for non-onboarded users
+- Updated frontend billing settings page to check for `session_id` query parameter on load
+- When `session_id` is present, page calls verification endpoint, shows success message, removes `session_id` from URL, and reloads billing data
+- Added `verifyCheckoutSession()` function to billing API client with proper TypeScript types
+- Wrapped billing settings page content in Suspense boundary to support `useSearchParams()` hook
+- Used `useCallback` to memoize functions and prevent unnecessary re-renders
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (added getCheckoutSession method)
+  - `apps/backend/src/controllers/billing.controller.ts` (added verifyCheckoutSession endpoint, injected AuthService)
+  - `apps/frontend/src/lib/api.ts` (added BillingSubscription interface and verifyCheckoutSession function)
+  - `apps/frontend/src/app/dashboard/settings/billing/page.tsx` (added session_id handling, success message, Suspense wrapper)
+- **Learnings for future iterations:**
+  - Stripe checkout sessions can be retrieved using `stripe.checkout.sessions.retrieve()` with `expand: ['subscription']` to get subscription details
+  - Checkout session `payment_status` must be 'paid' and `status` must be 'complete' for successful checkout
+  - When handling checkout success, verify session first, then sync subscription data, then complete onboarding if needed
+  - Use `useSearchParams()` from Next.js to read query parameters in client components (requires Suspense boundary)
+  - When using `useSearchParams()` in useEffect dependencies, wrap callback functions in `useCallback` to prevent infinite loops
+  - Success messages should be displayed prominently and removed from URL after processing to avoid re-processing on page refresh
+  - Always reload data after successful checkout verification to show updated subscription status to user
+---
