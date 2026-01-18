@@ -681,3 +681,25 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - API service acts as HTTP API with event publishers, Worker service processes jobs and runs cron jobs
   - Typecheck passes for all services after documentation updates
 ---
+
+## 2026-01-19 - US-034
+- Verified all 7 controllers are registered in API service AppModule: AppController, AuthController, EspConnectionController, SubscriberController, DashboardController, BillingController, AccountController
+- Verified all 10 services are registered in API service AppModule: AppService, EncryptionService, BeehiivConnector, SubscriberService, SubscriberExportService, EspConnectionService, EmailService, AuthService, SyncHistoryService, StripeService, BillingCalculationService, BillingUsageService, BillingSubscriptionService
+- Verified all controllers have proper route prefixes: `/` (AppController), `/auth` (AuthController), `/esp-connections` (EspConnectionController), `/subscribers` (SubscriberController), `/dashboard` (DashboardController), `/billing` (BillingController), `/account` (AccountController)
+- Verified typecheck passes (`yarn workspace api typecheck`)
+- Verified build passes (`turbo run build --filter=api`)
+- Verified lint passes (`turbo run lint --filter=api`)
+- Verified main.ts is correctly configured with CORS, validation pipes, raw body middleware for webhooks, and Bull Board dashboard
+- Files changed:
+  - No code changes (verification only)
+- **Learnings for future iterations:**
+  - API service has 7 controllers with 24+ HTTP endpoints covering auth, ESP connections, subscribers, dashboard, billing, and account management
+  - All controllers use proper NestJS decorators (@Controller, @Get, @Post, etc.) with route prefixes
+  - API service requires database (PostgreSQL) and Redis connections to actually start, but code structure is verified
+  - All services are properly registered in AppModule providers array for dependency injection
+  - Guards (AuthGuard, SubscriptionGuard) are registered as providers and used with @UseGuards decorator
+  - TypeORM entities are registered via TypeOrmModule.forFeature() for repository injection
+  - BullMQ queues are registered for job producers (subscriber-sync, billing, account-deletion)
+  - EventEmitterModule is configured for event-based communication with worker service
+  - Use `yarn workspace api typecheck`, `turbo run build --filter=api`, and `turbo run lint --filter=api` to verify API service
+---
