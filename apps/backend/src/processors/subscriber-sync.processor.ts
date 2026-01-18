@@ -13,6 +13,7 @@ import {
 } from '../entities/sync-history.entity';
 import { Subscriber } from '../entities/subscriber.entity';
 import { SubscriberSyncService } from '../services/subscriber-sync.service';
+import { BillingSubscriptionService } from '../services/billing-subscription.service';
 
 export interface SyncPublicationJobData {
   espConnectionId: string;
@@ -33,7 +34,8 @@ export class SubscriberSyncProcessor extends WorkerHost {
     private syncHistoryRepository: Repository<SyncHistory>,
     @InjectRepository(Subscriber)
     private subscriberRepository: Repository<Subscriber>,
-    private subscriberSyncService: SubscriberSyncService
+    private subscriberSyncService: SubscriberSyncService,
+    private billingSubscriptionService: BillingSubscriptionService
   ) {
     super();
   }
@@ -63,6 +65,34 @@ export class SubscriberSyncProcessor extends WorkerHost {
     this.logger.log(
       `Processing sync job ${job.id} for ESP connection ${espConnectionId}`
     );
+
+    // Check if user has an active subscription before processing
+    const espConnection = await this.espConnectionRepository.findOne({
+      where: { id: espConnectionId },
+    });
+
+    if (!espConnection) {
+      throw new Error(`ESP connection ${espConnectionId} not found`);
+    }
+
+    const hasActiveSubscription =
+      await this.billingSubscriptionService.hasActiveSubscription(
+        espConnection.userId
+      );
+
+    if (!hasActiveSubscription) {
+      this.logger.warn(
+        `Rejecting sync job for ESP connection ${espConnectionId}: user ${espConnection.userId} does not have an active subscription`
+      );
+      // Reset sync status to idle since we're not actually syncing
+      await this.espConnectionRepository.update(
+        { id: espConnectionId },
+        { syncStatus: EspSyncStatus.IDLE }
+      );
+      throw new Error(
+        'Active subscription required to sync subscribers. Please subscribe to continue.'
+      );
+    }
 
     // Create sync history record at start with optimistic 'success' status
     const syncHistory = this.syncHistoryRepository.create({

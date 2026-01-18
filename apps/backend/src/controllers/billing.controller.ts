@@ -417,7 +417,7 @@ export class BillingController {
         'http://localhost:3000';
 
       // Build success and cancel URLs
-      const successUrl = `${frontendUrl}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}`;
+      const successUrl = `${frontendUrl}/onboarding/success?session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${frontendUrl}/onboarding/stripe?canceled=true`;
 
       // Check if user already has a Stripe customer
@@ -775,16 +775,24 @@ export class BillingController {
       }
 
       // Get subscription from session
-      const subscriptionId = session.subscription;
-      if (!subscriptionId || typeof subscriptionId !== 'string') {
+      // Note: session.subscription can be a string ID or an expanded Subscription object
+      const sessionSubscription = session.subscription;
+      if (!sessionSubscription) {
         throw new BadRequestException(
           'Checkout session does not have a subscription'
         );
       }
 
-      // Retrieve subscription from Stripe
-      const stripeSubscription =
-        await this.stripeService.getSubscription(subscriptionId);
+      // Handle both expanded subscription object and string ID
+      let stripeSubscription: Stripe.Subscription;
+      if (typeof sessionSubscription === 'string') {
+        // Subscription is a string ID, need to retrieve it
+        stripeSubscription =
+          await this.stripeService.getSubscription(sessionSubscription);
+      } else {
+        // Subscription is already expanded
+        stripeSubscription = sessionSubscription;
+      }
 
       // Create or update billing subscription
       let billingSubscription =

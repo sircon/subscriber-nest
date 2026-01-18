@@ -197,6 +197,62 @@ export class BeehiivConnector implements IEspConnector {
   }
 
   /**
+   * Gets the total subscriber count for a specific publication
+   * This is a lightweight method that only fetches the first page to get the total count
+   * @param apiKey - The API key to use for authentication
+   * @param publicationId - The publication ID to get subscriber count for
+   * @returns Promise<number> - Total number of subscribers
+   */
+  async getSubscriberCount(
+    apiKey: string,
+    publicationId: string
+  ): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.baseUrl}/publications/${publicationId}/subscriptions`,
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+            params: {
+              page: 1,
+              limit: 1, // Only fetch 1 subscriber to get the total count from metadata
+            },
+          }
+        )
+      );
+
+      if (response.status === 200 && response.data) {
+        // Beehiiv API returns total_results in the response
+        return response.data.total_results || response.data.total || 0;
+      }
+
+      return 0;
+    } catch (error: any) {
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401 || status === 403) {
+          throw new Error(`Invalid API key: ${status}`);
+        }
+        if (status === 404) {
+          throw new Error(`Publication not found: ${publicationId}`);
+        }
+        if (status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+        if (status >= 500) {
+          throw new Error(`Beehiiv API server error: ${status}`);
+        }
+        throw new Error(`Failed to fetch subscriber count: ${status}`);
+      }
+      throw new Error(
+        `Network error while fetching subscriber count: ${error.message}`
+      );
+    }
+  }
+
+  /**
    * Maps Beehiiv status values to our standard status format
    * @param beehiivStatus - The status from Beehiiv API
    * @returns string - Mapped status value

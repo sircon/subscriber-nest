@@ -30,4 +30,13 @@ export interface IEspConnector {
     apiKey: string,
     publicationId: string
   ): Promise<SubscriberData[]>;
+
+  /**
+   * Gets the total subscriber count for a specific publication
+   * This is a lightweight method that doesn't fetch all subscriber data
+   * @param apiKey - The API key to use for authentication
+   * @param publicationId - The publication ID to get subscriber count for
+   * @returns Promise<number> - Total number of subscribers
+   */
+  getSubscriberCount(apiKey: string, publicationId: string): Promise<number>;
 }
