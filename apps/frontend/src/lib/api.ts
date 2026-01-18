@@ -76,6 +76,22 @@ export interface EspConnection {
   updatedAt: string;
 }
 
+export interface DashboardStats {
+  totalEspConnections: number;
+  totalSubscribers: number;
+  lastSyncTime: string | null;
+}
+
+export interface SyncHistory {
+  id: string;
+  espConnectionId: string;
+  status: 'success' | 'failed';
+  startedAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 // Error handling callback type
 type OnUnauthorizedCallback = () => void;
 
@@ -256,6 +272,48 @@ export const espConnectionApi = {
       `/esp-connections/${connectionId}/sync`,
       {
         method: 'POST',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+
+  /**
+   * Get sync history for ESP connection
+   */
+  getSyncHistory: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    limit?: number,
+  ): Promise<SyncHistory[]> => {
+    const url = `/esp-connections/${connectionId}/sync-history${limit ? `?limit=${limit}` : ''}`;
+    return apiRequest<SyncHistory[]>(
+      url,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized,
+    );
+  },
+};
+
+/**
+ * Dashboard API functions
+ */
+export const dashboardApi = {
+  /**
+   * Get dashboard statistics
+   */
+  getStats: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+  ): Promise<DashboardStats> => {
+    return apiRequest<DashboardStats>(
+      '/dashboard/stats',
+      {
+        method: 'GET',
       },
       token,
       onUnauthorized,
