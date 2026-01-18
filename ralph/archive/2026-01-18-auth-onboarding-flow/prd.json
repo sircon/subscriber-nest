@@ -1,507 +1,307 @@
 {
   "project": "SubscriberNest",
-  "branchName": "ralph/esp-subscriber-sync",
-  "description": "ESP Subscriber Sync System - Connect to Email Service Providers (ESPs) like Beehiiv, validate API credentials, and sync subscriber data into our database using a queue-based architecture with BullMQ and Redis",
+  "branchName": "ralph/dashboard",
+  "description": "User Dashboard - Build a comprehensive dashboard interface with sidebar navigation, overview cards, sync history table, ESP detail views with subscriber tables, email unmasking, and export functionality",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create ESP Connection Entity and Migration",
-      "description": "As a developer, I need database tables to store ESP connections and their encrypted credentials so the system can persist connection information.",
+      "title": "Create Sync History Entity and Migration",
+      "description": "As a developer, I need a database table to track sync history so users can see when syncs were performed and whether they succeeded or failed.",
       "acceptanceCriteria": [
-        "Create `EspConnection` entity with fields: `id`, `userId`, `espType` (enum: 'beehiiv', etc.), `encryptedApiKey`, `publicationId`, `status` (enum: 'active', 'invalid', 'error'), `lastValidatedAt`, `createdAt`, `updatedAt`",
-        "Create `Subscriber` entity with fields: `id`, `espConnectionId` (FK), `externalId` (ESP's subscriber ID), `encryptedEmail`, `maskedEmail`, `status` (enum: 'active', 'unsubscribed', 'bounced', etc.), `firstName`, `lastName`, `subscribedAt`, `unsubscribedAt`, `metadata` (JSONB for ESP-specific fields), `createdAt`, `updatedAt`",
+        "Create `SyncHistory` entity with fields: `id` (UUID), `espConnectionId` (FK to EspConnection), `status` (enum: 'success', 'failed'), `startedAt` (timestamp), `completedAt` (timestamp, nullable), `errorMessage` (text, nullable), `createdAt` (timestamp)",
+        "Add `@ManyToOne` relationship to `EspConnection` entity",
         "Generate and run migration successfully",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Create Encryption Service",
-      "description": "As a developer, I need a service to encrypt and decrypt sensitive data (API keys and email addresses) so they can be stored securely in the database.",
+      "title": "Update Sync Processor to Record Sync History",
+      "description": "As a developer, I need the sync processor to create sync history records so we can track all sync operations.",
       "acceptanceCriteria": [
-        "Create `EncryptionService` with methods: `encrypt(plaintext: string): string` and `decrypt(ciphertext: string): string`",
-        "Use AES-256 encryption with a key from environment variable `ENCRYPTION_KEY`",
-        "Handle encryption/decryption errors gracefully",
+        "Update `SubscriberSyncProcessor` to create a `SyncHistory` record with `status: 'success'` and `startedAt` when sync job starts",
+        "Update `completedAt` timestamp when sync completes successfully",
+        "Create `SyncHistory` record with `status: 'failed'` and `errorMessage` when sync fails (after all retries)",
+        "Store error message from exception in `errorMessage` field",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Create Email Masking Utility",
-      "description": "As a developer, I need a utility function to create masked email addresses (e.g., `m****@gmail.com`) for display purposes while keeping the original encrypted.",
+      "title": "Create Sync History Service",
+      "description": "As a developer, I need a service to query sync history records so the frontend can display sync history.",
       "acceptanceCriteria": [
-        "Create utility function `maskEmail(email: string): string` that masks the local part (before @) but keeps domain visible",
-        "Handles edge cases: single character emails, very short emails, invalid formats",
+        "Create `SyncHistoryService` with method `findByEspConnection(espConnectionId: string, limit?: number): Promise<SyncHistory[]>`",
+        "Method returns sync history records ordered by `startedAt` DESC (most recent first)",
+        "Optional `limit` parameter defaults to 50 if not provided",
+        "Method includes ESP connection relationship in query",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create Abstract ESP Interface",
-      "description": "As a developer, I need an abstract interface that defines the contract for ESP integrations so we can support multiple ESPs with a consistent pattern.",
+      "title": "Create Sync History Controller Endpoint",
+      "description": "As a user, I want to retrieve sync history via API so I can see when syncs occurred and their status.",
       "acceptanceCriteria": [
-        "Create `IEspConnector` interface with methods: `validateApiKey(apiKey: string, publicationId?: string): Promise<boolean>`, `fetchPublications(apiKey: string): Promise<Publication[]>`, `fetchSubscribers(apiKey: string, publicationId: string): Promise<SubscriberData[]>`",
-        "Create `Publication` and `SubscriberData` DTOs/interfaces",
+        "Add `GET /esp-connections/:id/sync-history` endpoint to `EspConnectionController`",
+        "Endpoint accepts optional query parameter `limit` (default: 50)",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Returns array of sync history records (without sensitive data)",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Implement Beehiiv ESP Connector",
-      "description": "As a developer, I need a concrete implementation of the ESP connector for Beehiiv so we can connect to Beehiiv accounts.",
+      "title": "Create Subscriber List Controller Endpoint",
+      "description": "As a user, I want to retrieve paginated subscriber data for an ESP connection so I can view my subscribers in the dashboard.",
       "acceptanceCriteria": [
-        "Create `BeehiivConnector` class implementing `IEspConnector`",
-        "`validateApiKey` calls `GET https://api.beehiiv.com/v2/publications` with Bearer token, returns true if status 200 and publication exists",
-        "`fetchPublications` calls Beehiiv API and returns list of publications",
-        "`fetchSubscribers` calls `GET https://api.beehiiv.com/v2/publications/:publicationId/subscriptions` with pagination, returns all subscribers",
-        "Handles API errors (401, 403, 429, 500) appropriately",
+        "Add `GET /esp-connections/:id/subscribers` endpoint to `EspConnectionController`",
+        "Endpoint accepts query parameters: `page` (default: 1), `limit` (default: 50), `status` (optional filter by subscriber status)",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Returns paginated response: `{ data: Subscriber[], total: number, page: number, limit: number, totalPages: number }`",
+        "Subscribers returned with `maskedEmail` (not encrypted email)",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "Create Subscriber Repository and Service",
-      "description": "As a developer, I need a service to manage subscriber data in the database so we can query and update subscribers.",
-      "acceptanceCriteria": [
-        "Create `SubscriberService` with methods: `findByEspConnection(espConnectionId: string): Promise<Subscriber[]>`, `upsertSubscriber(data: CreateSubscriberDto): Promise<Subscriber>`",
-        "`upsertSubscriber` uses `externalId` + `espConnectionId` as unique key",
-        "Updates existing subscriber if found, creates new if not",
-        "Typecheck passes"
-      ],
-      "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Create ESP Connection Service",
-      "description": "As a developer, I need a service to manage ESP connections, including validating API keys and storing encrypted credentials.",
+      "title": "Create Unmask Email Endpoint",
+      "description": "As a user, I want to decrypt a specific subscriber's email address so I can view the full email when needed.",
       "acceptanceCriteria": [
-        "Create `EspConnectionService` with method `createConnection(userId: string, espType: string, apiKey: string, publicationId: string): Promise<EspConnection>`",
-        "Method validates API key using appropriate ESP connector before saving",
-        "Encrypts API key using `EncryptionService` before storing",
-        "Sets `status` to 'active' if validation succeeds, throws error if validation fails",
-        "Sets `lastValidatedAt` timestamp",
+        "Add `POST /subscribers/:id/unmask` endpoint to a new `SubscriberController`",
+        "Endpoint validates subscriber exists and belongs to a connection owned by requesting user",
+        "Endpoint decrypts the subscriber's email using `EncryptionService`",
+        "Returns `{ email: string }` with decrypted email",
+        "Returns 404 if subscriber not found, 403 if user doesn't own the connection",
         "Typecheck passes"
       ],
-      "priority": 7,
-      "passes": true,
+      "priority": 6,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Create ESP Connection Controller",
-      "description": "As a user, I want to connect my ESP account via API so I can start syncing subscribers.",
+      "title": "Create Export Subscribers Endpoint",
+      "description": "As a user, I want to export all subscribers for an ESP connection in various formats so I can use the data elsewhere.",
       "acceptanceCriteria": [
-        "Create `EspConnectionController` with `POST /api/esp-connections` endpoint",
-        "Endpoint accepts `{ espType: string, apiKey: string, publicationId: string }`",
-        "Validates request body (required fields, valid ESP type)",
-        "Uses `EspConnectionService` to create connection",
-        "Returns connection record (without encrypted API key) on success",
-        "Returns appropriate error responses (400, 401, 500)",
+        "Add `GET /esp-connections/:id/subscribers/export` endpoint to `EspConnectionController`",
+        "Endpoint accepts query parameter `format` (enum: 'csv', 'json', 'xlsx')",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Endpoint fetches all subscribers for the connection (no pagination)",
+        "Endpoint decrypts all subscriber emails using `EncryptionService`",
+        "Returns file download with appropriate content-type header",
+        "CSV format includes: email (decrypted), firstName, lastName, status, subscribedAt, unsubscribedAt, and all metadata fields flattened",
+        "JSON format includes all subscriber fields with decrypted emails",
+        "Excel format includes same fields as CSV in spreadsheet format",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
         "Typecheck passes"
       ],
-      "priority": 8,
-      "passes": true,
+      "priority": 7,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Install and Configure BullMQ",
-      "description": "As a developer, I need BullMQ and Redis configured so we can process background jobs for subscriber syncing.",
+      "title": "Create Dashboard Stats Endpoint",
+      "description": "As a user, I want to retrieve dashboard statistics so I can see overview metrics on the dashboard.",
       "acceptanceCriteria": [
-        "Install `@nestjs/bullmq`, `bullmq`, and `ioredis` packages",
-        "Add Redis connection configuration to `AppModule` using `BullModule.forRoot()`",
-        "Configure Redis connection from environment variables (`REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`)",
-        "Create `subscriber-sync` queue using `BullModule.registerQueue()`",
+        "Add `GET /dashboard/stats` endpoint to a new `DashboardController`",
+        "Endpoint returns: `{ totalEspConnections: number, totalSubscribers: number, lastSyncTime: Date | null }`",
+        "`totalEspConnections` counts all active ESP connections for the user",
+        "`totalSubscribers` counts all subscribers across all user's ESP connections",
+        "`lastSyncTime` is the most recent `completedAt` timestamp from sync history across all connections",
+        "Returns 401 if not authenticated",
         "Typecheck passes"
       ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "Configure Queue Job Retry Policy",
-      "description": "As a developer, I need automatic retries with exponential backoff for failed sync jobs so transient errors don't cause permanent failures.",
-      "acceptanceCriteria": [
-        "Configure queue job options with `attempts: 3` and `backoff: { type: 'exponential', delay: 2000 }`",
-        "Failed jobs are automatically retried up to 3 times with increasing delays (2s, 4s, 8s)",
-        "After 3 failed attempts, job is marked as failed and logged",
-        "Typecheck passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-014",
-      "title": "Map Beehiiv Subscriber Data to Our Schema",
-      "description": "As a developer, I need to map Beehiiv API subscriber response to our database schema so we store all available information.",
-      "acceptanceCriteria": [
-        "Map Beehiiv subscriber fields: `email` → encrypted + masked, `status` → our status enum, `created_at` → `subscribedAt`, `first_name` → `firstName`, `last_name` → `lastName`",
-        "Store all other Beehiiv fields (tags, custom fields, etc.) in `metadata` JSONB column",
-        "Handle missing/null fields gracefully",
-        "Typecheck passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Create Subscriber Sync Service",
-      "description": "As a developer, I need a service to orchestrate subscriber syncing, including encrypting emails and storing subscriber data.",
-      "acceptanceCriteria": [
-        "Create `SubscriberSyncService` with method `syncSubscribers(espConnectionId: string): Promise<void>`",
-        "Method fetches subscribers using ESP connector",
-        "For each subscriber: encrypts email, creates masked email, maps ESP data to our schema",
-        "Stores subscribers in database (upsert by `externalId` + `espConnectionId`)",
-        "Stores ESP-specific fields in `metadata` JSONB column",
-        "Handles errors and throws appropriate exceptions",
-        "Typecheck passes"
-      ],
-      "priority": 12,
-      "passes": true,
+      "priority": 8,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Create Subscriber Sync Queue Processor",
-      "description": "As a developer, I need a queue processor that handles subscriber sync jobs so syncing happens asynchronously without blocking the API.",
+      "title": "Install Required Frontend Dependencies",
+      "description": "As a developer, I need to install frontend dependencies for data tables, export functionality, and UI components.",
       "acceptanceCriteria": [
-        "Create `SubscriberSyncProcessor` class with `@Processor('subscriber-sync')` decorator",
-        "Create `@Process('sync-publication')` handler method that accepts job data: `{ espConnectionId: string }`",
-        "Handler retrieves ESP connection from database, decrypts API key",
-        "Handler uses appropriate ESP connector to fetch all subscribers",
-        "Handler processes subscribers in batches and saves to database",
-        "Handler updates ESP connection `lastSyncedAt` timestamp on success",
+        "Install `@tanstack/react-table` for data table functionality",
+        "Install `xlsx` or `exceljs` for Excel export generation",
+        "Install `papaparse` for CSV export generation (or use native implementation)",
+        "Install shadcn table component: `npx shadcn@latest add table`",
+        "Install shadcn dropdown-menu component: `npx shadcn@latest add dropdown-menu`",
+        "Install shadcn sidebar component: `npx shadcn@latest add sidebar` (or similar navigation component)",
+        "Verify all packages are added to `package.json`",
         "Typecheck passes"
       ],
-      "priority": 13,
-      "passes": true,
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Dashboard Layout with Sidebar",
+      "description": "As a user, I want a dashboard layout with a sidebar navigation so I can easily navigate between ESPs and access settings.",
+      "acceptanceCriteria": [
+        "Create new dashboard layout component at `src/app/dashboard/layout.tsx`",
+        "Layout includes left sidebar (fixed width ~250px) with: list of ESP connections (clickable items showing ESP name/type), \"Connect New ESP\" button at top of list, Settings button at bottom of sidebar",
+        "Main content area takes remaining width",
+        "Sidebar is collapsible on mobile (hamburger menu)",
+        "Active ESP connection is highlighted in sidebar",
+        "Uses shadcn sidebar or similar navigation component",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Add Queue Job Producer for Manual Sync",
-      "description": "As a user, I want to trigger a manual subscriber sync via API so I can refresh my subscriber list on demand.",
+      "title": "Create Dashboard Overview Page",
+      "description": "As a user, I want to see overview statistics and sync history when I first open the dashboard.",
       "acceptanceCriteria": [
-        "Add `POST /api/esp-connections/:id/sync` endpoint to `EspConnectionController`",
-        "Endpoint validates ESP connection exists and belongs to requesting user",
-        "Endpoint adds job to `subscriber-sync` queue with `{ espConnectionId: string }` data",
-        "Returns job ID and status immediately (doesn't wait for sync to complete)",
-        "Returns appropriate error responses (404 if connection not found, 403 if not owner)",
-        "Typecheck passes"
+        "Create dashboard overview at `src/app/dashboard/page.tsx` (or update existing)",
+        "Page displays three dashboard cards: Card 1: \"Total ESPs\" with count from stats endpoint, Card 2: \"Total Subscribers\" with count from stats endpoint, Card 3: \"Last Sync\" with formatted timestamp from stats endpoint (or \"Never\" if null)",
+        "Below cards, display sync history table with columns: ESP Name, Status, Started At, Completed At, Error (if failed)",
+        "Sync history table shows most recent 50 syncs across all ESPs",
+        "Table is sortable by date (default: most recent first)",
+        "Status column shows badge (green for success, red for failed)",
+        "Error column only shows when status is 'failed'",
+        "Page handles loading and error states",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create ESP Detail Page",
+      "description": "As a user, I want to see detailed information about a specific ESP connection when I click on it in the sidebar.",
+      "acceptanceCriteria": [
+        "Create ESP detail page at `src/app/dashboard/esp/[id]/page.tsx`",
+        "Page displays ESP connection information cards: Card 1: \"List Size\" showing total subscriber count for this ESP, Card 2: \"Last Sync\" showing last sync timestamp and status, Card 3: \"Connection Status\" showing ESP connection status, Card 4: Additional relevant metrics (e.g., active vs unsubscribed count)",
+        "Below cards, display paginated subscriber data table",
+        "Table columns: Email (masked), First Name, Last Name, Status, Subscribed At, Actions",
+        "Email column shows masked email with small \"Unmask\" button/icon next to it",
+        "Pagination controls at bottom: page number, items per page (default: 50), next/previous buttons",
+        "Page uses URL search params for pagination state (`?page=1&limit=50`)",
+        "Page handles loading and error states",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Implement Email Unmasking in Subscriber Table",
+      "description": "As a user, I want to click an unmask button to reveal a subscriber's email address in the table.",
+      "acceptanceCriteria": [
+        "Add \"Unmask\" button/icon next to each masked email in subscriber table",
+        "Button calls `POST /subscribers/:id/unmask` endpoint when clicked",
+        "On success, replace masked email with decrypted email in the table row",
+        "Unmasked email persists in table for the current session (until page refresh)",
+        "Button changes to \"Mask\" after unmasking (allows re-masking)",
+        "Re-masking restores the masked email display",
+        "Handle loading state while unmasking (disable button, show spinner)",
+        "Handle error state (show error message, keep masked email)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Implement Export Functionality",
+      "description": "As a user, I want to export subscriber data in CSV, JSON, or Excel format so I can use it in other tools.",
+      "acceptanceCriteria": [
+        "Add \"Export\" button/dropdown in ESP detail page header",
+        "Dropdown menu shows options: \"Export as CSV\", \"Export as JSON\", \"Export as Excel\"",
+        "Clicking an option calls `GET /esp-connections/:id/subscribers/export?format=<format>`",
+        "On success, triggers browser download with appropriate filename: `subscribers-<esp-name>-<timestamp>.<ext>`",
+        "CSV file includes all subscriber fields with decrypted emails",
+        "JSON file includes all subscriber fields with decrypted emails",
+        "Excel file includes all subscriber fields with decrypted emails in spreadsheet format",
+        "Handle loading state (disable button, show spinner)",
+        "Handle error state (show error message to user)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 14,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-015",
-      "title": "Add ESP Connection Status Endpoint",
-      "description": "As a user, I want to check the status of my ESP connection and see when it was last synced.",
+      "title": "Create Settings Menu Structure",
+      "description": "As a user, I want a settings menu accessible from the sidebar so I can access future features like billing.",
       "acceptanceCriteria": [
-        "Add `GET /api/esp-connections/:id` endpoint to `EspConnectionController`",
-        "Returns connection details including: `id`, `espType`, `publicationId`, `status`, `lastValidatedAt`, `lastSyncedAt`, `createdAt`",
-        "Does NOT return encrypted API key",
-        "Validates user owns the connection (returns 403 if not)",
-        "Returns 404 if connection not found",
-        "Typecheck passes"
+        "Create settings page at `src/app/dashboard/settings/page.tsx`",
+        "Page accessible via Settings button in sidebar",
+        "Page displays settings menu/navigation with sections: \"General\" (placeholder for future settings), \"Billing\" (placeholder, shows \"Coming soon\" message), \"Account\" (placeholder for future settings)",
+        "Settings page has basic layout matching dashboard design",
+        "Menu items are clickable but show placeholder content for now",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 15,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-016",
-      "title": "Merge Main Branch into Current Branch",
-      "description": "As a developer, I need to merge the main branch (containing auth and onboarding features) into the current ESP sync branch to integrate all features.",
+      "title": "Update API Client with New Endpoints",
+      "description": "As a developer, I need to add API client functions for all new dashboard endpoints so the frontend can call them.",
       "acceptanceCriteria": [
-        "Run `git merge main` to merge main branch into current branch",
-        "Identify all merge conflicts in files",
-        "Document all conflicts found (entities, controllers, services, modules, migrations)",
-        "Typecheck passes (may have errors that will be resolved in subsequent stories)"
+        "Add `getDashboardStats` function to API client",
+        "Add `getSyncHistory(espConnectionId: string, limit?: number)` function",
+        "Add `getSubscribers(espConnectionId: string, page?: number, limit?: number, status?: string)` function",
+        "Add `unmaskEmail(subscriberId: string)` function",
+        "Add `exportSubscribers(espConnectionId: string, format: 'csv' | 'json' | 'xlsx')` function",
+        "All functions include proper TypeScript types",
+        "All functions handle authentication tokens and 401 errors",
+        "Export function handles file download response correctly",
+        "Typecheck passes"
       ],
       "priority": 16,
-      "passes": true,
-      "notes": "Conflicts documented: EspConnection entity, AppModule, main.ts, package.json, yarn.lock, ralph files. Duplicate files: esp-connection.controller.ts, esp-connection.service.ts, encryption.service.ts (both in src/ and src/services/src/controllers/)"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-017",
-      "title": "Resolve EspConnection Entity Conflicts",
-      "description": "As a developer, I need to merge the EspConnection entity schemas from both branches, combining auth/onboarding fields with ESP sync fields.",
+      "title": "Add Pagination Component",
+      "description": "As a developer, I need a reusable pagination component for the subscriber table.",
       "acceptanceCriteria": [
-        "Merge EspConnection entity to include all fields: `id`, `userId` (FK to User), `espType` (enum), `encryptedApiKey`, `publicationId`, `status` (enum: 'active', 'invalid', 'error'), `lastValidatedAt`, `lastSyncedAt`, `createdAt`, `updatedAt`",
-        "Add `@ManyToOne(() => User)` relationship with `@JoinColumn()` to User entity",
-        "Ensure `espType` enum matches ESP sync requirements (beehiiv, etc.)",
-        "Ensure `status` enum includes all states: 'active', 'invalid', 'error'",
-        "Keep `encryptedApiKey` (not `apiKey`) and `publicationId` from ESP sync branch",
-        "Keep `lastSyncedAt` from ESP sync branch",
-        "Create migration to update EspConnection table schema if needed",
-        "Typecheck passes"
+        "Create pagination component at `src/components/ui/pagination.tsx` (or use shadcn pagination)",
+        "Component accepts props: `currentPage`, `totalPages`, `onPageChange`, `itemsPerPage`, `totalItems`",
+        "Component displays: current page info, page number buttons, previous/next buttons",
+        "Component handles edge cases (first page, last page, single page)",
+        "Component is accessible (keyboard navigation, ARIA labels)",
+        "Component matches dashboard design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 17,
-      "passes": true,
-      "notes": "Entity already had all required fields. Removed duplicate files from main. Updated migration to include all ESP types and lastSyncedAt field."
-    },
-    {
-      "id": "US-018",
-      "title": "Add User Entity and Authentication Entities",
-      "description": "As a developer, I need to add User, Session, and VerificationCode entities from the auth branch to support authentication.",
-      "acceptanceCriteria": [
-        "Create `User` entity with fields: `id` (UUID), `email` (unique), `isOnboarded` (boolean, default false), `createdAt`, `updatedAt`",
-        "Create `Session` entity with fields: `id` (UUID), `userId` (FK to User), `token` (unique string), `expiresAt` (timestamp), `createdAt`",
-        "Create `VerificationCode` entity with fields: `id` (UUID), `email`, `code` (6-digit string), `expiresAt` (timestamp), `used` (boolean, default false), `createdAt`",
-        "Add `@OneToMany(() => EspConnection)` relationship on User entity",
-        "Create migration for User, Session, and VerificationCode tables",
-        "Ensure all foreign key relationships are properly defined",
-        "Typecheck passes"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": "Entities and migration already exist from main branch merge. All relationships properly configured."
-    },
-    {
-      "id": "US-019",
-      "title": "Integrate AuthGuard into ESP Connection Endpoints",
-      "description": "As a developer, I need to replace placeholder userId logic with real authentication using AuthGuard from the auth branch.",
-      "acceptanceCriteria": [
-        "Import and apply `@UseGuards(AuthGuard)` to all `EspConnectionController` endpoints",
-        "Remove all `TODO: Get userId from authentication context` placeholder comments",
-        "Extract `userId` from authenticated user context (e.g., `req.user.id`) instead of using placeholder",
-        "Update `POST /api/esp-connections` to use authenticated user's ID",
-        "Update `GET /api/esp-connections/:id` to use authenticated user's ID for ownership validation",
-        "Update `POST /api/esp-connections/:id/sync` to use authenticated user's ID for ownership validation",
-        "Ensure all endpoints return 401 if not authenticated",
-        "Typecheck passes"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": "Applied AuthGuard at controller level. Used @CurrentUser() decorator to extract authenticated user."
-    },
-    {
-      "id": "US-020",
-      "title": "Merge AppModule Configurations",
-      "description": "As a developer, I need to merge AppModule configurations from both branches, combining auth modules with ESP sync modules.",
-      "acceptanceCriteria": [
-        "Import AuthModule, AuthService, AuthController, AuthGuard from auth branch",
-        "Import EmailService and email-related modules from auth branch",
-        "Keep BullMQ and Redis configuration from ESP sync branch",
-        "Keep ESP sync services and processors from ESP sync branch",
-        "Register all entities (User, Session, VerificationCode, EspConnection, Subscriber) in TypeOrmModule.forFeature()",
-        "Register all controllers (AuthController, EspConnectionController) in controllers array",
-        "Register all services and providers in providers array",
-        "Ensure no duplicate imports or conflicting configurations",
-        "Typecheck passes"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": "Already completed in US-016 merge and US-017 cleanup. All modules properly configured."
-    },
-    {
-      "id": "US-021",
-      "title": "Resolve Encryption Service Conflicts",
-      "description": "As a developer, I need to ensure the EncryptionService is shared between auth and ESP sync features without duplication.",
-      "acceptanceCriteria": [
-        "Verify EncryptionService exists and is properly configured",
-        "Ensure both auth (for API keys) and ESP sync (for API keys and emails) use the same EncryptionService instance",
-        "Verify ENCRYPTION_KEY environment variable is documented in both .env.example files",
-        "Remove any duplicate EncryptionService implementations if found",
-        "Typecheck passes"
-      ],
-      "priority": 21,
-      "passes": true,
-      "notes": "Duplicate removed in US-017. Added Redis config to .env.example. All services use same instance."
-    },
-    {
-      "id": "US-022",
-      "title": "Resolve Migration Conflicts",
-      "description": "As a developer, I need to resolve any migration conflicts and ensure all database schema changes are properly sequenced.",
-      "acceptanceCriteria": [
-        "Review all migrations from both branches",
-        "Merge or reorder migrations to ensure proper sequence (User/Session/VerificationCode before EspConnection)",
-        "Update EspConnection migration if schema was changed during merge",
-        "Ensure all enum types are created correctly (handle existing types gracefully)",
-        "Run all migrations successfully on a clean database",
-        "Verify all foreign key relationships are created correctly",
-        "Typecheck passes"
-      ],
-      "priority": 22,
-      "passes": true,
-      "notes": "Migrations properly sequenced and updated in US-017. Enum types use safe DO $$ BEGIN pattern."
-    },
-    {
-      "id": "US-023",
-      "title": "Update ESP Connection Service to Use User Entity",
-      "description": "As a developer, I need to update EspConnectionService to work with the User entity relationship instead of plain userId strings.",
-      "acceptanceCriteria": [
-        "Update `createConnection` method to accept User entity or userId string (maintain backward compatibility if needed)",
-        "Ensure `findById` method validates ownership using User relationship",
-        "Update all service methods to work with User entity relationships",
-        "Ensure foreign key constraints are respected",
-        "Typecheck passes"
-      ],
-      "priority": 23,
-      "passes": true,
-      "notes": "Service already properly designed. Accepts userId string, User relationship defined in entity, FK enforced at DB level."
-    },
-    {
-      "id": "US-024",
-      "title": "Verify Frontend Integration",
-      "description": "As a developer, I need to ensure the frontend auth/onboarding flow works with the merged backend ESP sync endpoints.",
-      "acceptanceCriteria": [
-        "Verify frontend auth pages (login, verify-code, onboarding) exist and work",
-        "Verify onboarding flow can create ESP connections using merged endpoints",
-        "Verify ESP connection endpoints are accessible after authentication",
-        "Verify dashboard can display ESP connections and trigger syncs",
-        "Test complete flow: login → onboarding → create ESP connection → trigger sync",
-        "All frontend pages load without errors",
-        "Typecheck passes for frontend"
-      ],
-      "priority": 24,
-      "passes": true,
-      "notes": "Frontend updated to match backend API. All pages exist. Typecheck passes. Browser testing required for full verification."
-    },
-    {
-      "id": "US-025",
-      "title": "Update API Endpoints to Match Auth Branch Conventions",
-      "description": "As a developer, I need to ensure ESP connection endpoints follow the same API conventions as auth endpoints (route prefixes, response formats).",
-      "acceptanceCriteria": [
-        "Verify ESP connection endpoints use consistent route prefixes (e.g., `/api/esp-connections` matches `/api/auth/*` pattern)",
-        "Ensure response formats match auth endpoint patterns",
-        "Ensure error responses use consistent format and status codes",
-        "Update any endpoint paths if needed to match conventions",
-        "Typecheck passes"
-      ],
-      "priority": 25,
-      "passes": true,
-      "notes": "Updated controller route from /api/esp-connections to /esp-connections to match /auth pattern. Response formats already consistent."
-    },
-    {
-      "id": "US-026",
-      "title": "Run Integration Tests and Verify All Features",
-      "description": "As a developer, I need to verify that all merged features work together: auth, onboarding, ESP connections, and subscriber syncing.",
-      "acceptanceCriteria": [
-        "Test complete user flow: send verification code → verify code → create session → complete onboarding → create ESP connection → trigger sync",
-        "Verify authentication protects all ESP connection endpoints",
-        "Verify ESP connections are properly linked to authenticated users",
-        "Verify subscriber sync jobs work with authenticated user's connections",
-        "Verify all database relationships work correctly (User → EspConnection → Subscriber)",
-        "Run backend typecheck and ensure no errors",
-        "Run frontend typecheck and ensure no errors",
-        "Document any remaining issues or limitations"
-      ],
-      "priority": 26,
-      "passes": true,
-      "notes": "Both typecheck pass. Code review confirms all relationships and auth properly configured. Runtime testing recommended."
-    },
-    {
-      "id": "US-027",
-      "title": "Add Sync Status Tracking to EspConnection Entity",
-      "description": "As a developer, I need to track the sync status of ESP connections so users can see when a sync is in progress, completed, or failed.",
-      "acceptanceCriteria": [
-        "Add `syncStatus` field to `EspConnection` entity with enum: 'idle', 'syncing', 'synced', 'error'",
-        "Add `syncStatus` column to database migration",
-        "Default value should be 'idle' for new connections",
-        "Update entity to include `syncStatus` in all queries and responses",
-        "Typecheck passes"
-      ],
-      "priority": 27,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-028",
-      "title": "Update Sync Endpoint to Mark Connection as Syncing When Queued",
-      "description": "As a developer, I need the sync endpoint to immediately mark the connection as 'syncing' when the job is added to the queue, not when the processor picks it up.",
-      "acceptanceCriteria": [
-        "Update `POST /esp-connections/:id/sync` endpoint to set `syncStatus` to 'syncing' before adding job to queue",
-        "Update connection status atomically (in same transaction if possible)",
-        "Ensure status is set even if job queueing fails (handle rollback appropriately)",
-        "Returns connection with updated `syncStatus` in response",
-        "Typecheck passes"
-      ],
-      "priority": 28,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-029",
-      "title": "Add Validation to Prevent Double Syncing",
-      "description": "As a developer, I need to prevent users from triggering multiple syncs for the same connection simultaneously.",
-      "acceptanceCriteria": [
-        "Add validation in `POST /esp-connections/:id/sync` endpoint to check if `syncStatus` is 'syncing'",
-        "Return 409 Conflict error if connection is already syncing",
-        "Error message should indicate that a sync is already in progress",
-        "Allow sync to be triggered again if status is 'idle', 'synced', or 'error'",
-        "Typecheck passes"
-      ],
-      "priority": 29,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-030",
-      "title": "Update Processor to Mark Connection Status After Sync",
-      "description": "As a developer, I need the sync processor to update the connection status to 'synced' on success or 'error' on failure so users know when sync completes.",
-      "acceptanceCriteria": [
-        "Update `SubscriberSyncProcessor` to set `syncStatus` to 'synced' after successful sync completion",
-        "Update `SubscriberSyncProcessor` to set `syncStatus` to 'error' if sync fails (after all retries exhausted)",
-        "Update `lastSyncedAt` timestamp on successful sync",
-        "Handle errors gracefully and ensure status is always updated (even on unexpected failures)",
-        "Typecheck passes"
-      ],
-      "priority": 30,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-031",
-      "title": "Add Sync Button to Frontend ESP Connection UI",
-      "description": "As a user, I want a button in the frontend to manually trigger a sync for my ESP connection so I can refresh my subscriber list on demand.",
-      "acceptanceCriteria": [
-        "Add 'Sync' button to ESP connection display component/page",
-        "Button calls `POST /esp-connections/:id/sync` endpoint",
-        "Button is disabled when `syncStatus` is 'syncing'",
-        "Button shows loading state while sync is in progress",
-        "Button displays appropriate text based on sync status ('Sync', 'Syncing...', 'Sync Again' after error)",
-        "Displays sync status and last synced timestamp to user",
-        "Handles error responses appropriately (shows error message to user)",
-        "Typecheck passes for frontend"
-      ],
-      "priority": 31,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-032",
-      "title": "Auto-Trigger Sync When Onboarding Completes",
-      "description": "As a user, I want my ESP connection to automatically start syncing when I complete the onboarding flow so I don't have to manually trigger the first sync.",
-      "acceptanceCriteria": [
-        "Update onboarding completion flow to automatically call `POST /esp-connections/:id/sync` after ESP connection is created",
-        "Only trigger sync if connection was successfully created during onboarding",
-        "Handle sync errors gracefully (don't block onboarding completion if sync fails)",
-        "Show sync status in onboarding completion screen or redirect to dashboard with sync in progress",
-        "Typecheck passes for frontend"
-      ],
-      "priority": 32,
       "passes": false,
       "notes": ""
     }

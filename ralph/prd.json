@@ -304,6 +304,122 @@
       "priority": 17,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Improve Selected Connection Design in Sidebar",
+      "description": "As a user, I want the selected ESP connection in the sidebar to have a distinct visual design that doesn't look like a button.",
+      "acceptanceCriteria": [
+        "Update sidebar ESP connection item styling when selected",
+        "Selected state uses background color, border, or other visual indicator (not button-like appearance)",
+        "Selected item should be clearly distinguishable from unselected items",
+        "Design matches dashboard aesthetic and is visually appealing",
+        "Selected state persists when navigating to ESP detail page",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Add Dashboard Item at Top of Sidebar",
+      "description": "As a user, I want a Dashboard navigation item at the top of the sidebar so I can easily return to the overview page.",
+      "acceptanceCriteria": [
+        "Add \"Dashboard\" navigation item at the top of the sidebar (above ESP connections list)",
+        "Dashboard item navigates to `/dashboard` when clicked",
+        "Dashboard item is highlighted when on dashboard overview page",
+        "Dashboard item has appropriate icon (e.g., home, dashboard icon)",
+        "Dashboard item styling matches sidebar design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Create New ESP Connection Flow from Dashboard",
+      "description": "As a user, I want to add a new ESP connection from the dashboard by selecting an ESP type, entering credentials, and automatically syncing.",
+      "acceptanceCriteria": [
+        "Create new page at `src/app/dashboard/esp/new/page.tsx`",
+        "Page accessible via \"Connect New ESP\" button in sidebar (navigates to `/dashboard/esp/new`)",
+        "Page displays ESP type selection (e.g., beehiiv, kit, mailchimp) with visual cards/buttons",
+        "After ESP selection, show form with fields: API Key (password input), Publication ID (text input)",
+        "Form includes validation and error handling",
+        "On form submit: calls `POST /esp-connections` to create connection",
+        "After successful connection creation, automatically calls `POST /esp-connections/:id/sync` to trigger sync",
+        "On success, redirects to ESP detail page (`/dashboard/esp/[id]`)",
+        "Show loading states during connection creation and sync trigger",
+        "Handle errors gracefully (show error messages, allow retry)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Add Manual Sync Button Next to Export",
+      "description": "As a user, I want to manually trigger a sync for an ESP connection from the detail page.",
+      "acceptanceCriteria": [
+        "Add \"Sync\" button next to Export button in ESP detail page header",
+        "Button calls `POST /esp-connections/:id/sync` endpoint when clicked",
+        "Button is disabled and shows loading state when sync is in progress (check `syncStatus === 'syncing'`)",
+        "Button shows \"Syncing...\" text or spinner when sync is active",
+        "Button is enabled when sync is not in progress",
+        "After triggering sync, show success message or update UI to reflect sync status",
+        "Handle error states (show error message if sync fails to trigger)",
+        "Button styling matches dashboard design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Capitalize Status Badges",
+      "description": "As a user, I want status badges to be properly capitalized for better readability.",
+      "acceptanceCriteria": [
+        "Update connection status badges (e.g., \"synced\", \"active\") to display capitalized text (e.g., \"Synced\", \"Active\")",
+        "Update subscriber status badges in tables (e.g., \"active\", \"unsubscribed\") to display capitalized text (e.g., \"Active\", \"Unsubscribed\")",
+        "Update sync history status badges (e.g., \"success\", \"failed\") to display capitalized text (e.g., \"Success\", \"Failed\")",
+        "Capitalization applied consistently across all status displays",
+        "Badge colors and styling remain unchanged",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Move Mask/Unmask Action to Email Cell as Icon Button",
+      "description": "As a user, I want the mask/unmask action to be an icon button within the email cell for a cleaner table design.",
+      "acceptanceCriteria": [
+        "Move mask/unmask button from separate Actions column to within Email cell",
+        "Replace text button with icon button (eye icon for unmask, eye-off icon for mask)",
+        "Icon button appears inline with masked email text in the Email column",
+        "Button calls `POST /subscribers/:id/unmask` endpoint when clicked",
+        "On success, replaces masked email with decrypted email in the same cell",
+        "Icon changes from unmask to mask icon after unmasking",
+        "Re-masking restores the masked email display",
+        "Handle loading state (disable button, show spinner on icon)",
+        "Handle error state (show error message, keep masked email)",
+        "Remove Actions column if it's no longer needed",
+        "Icon button has appropriate hover states and tooltips",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

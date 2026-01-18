@@ -93,8 +93,10 @@ export default function DashboardLayout({
                 >
                   <div
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent',
-                      isActive && 'bg-accent text-accent-foreground font-medium'
+                      'flex items-center gap-3 rounded-lg px-3 py-2 transition-all',
+                      isActive
+                        ? 'bg-primary/10 border-l-4 border-primary text-primary font-medium'
+                        : 'hover:bg-accent'
                     )}
                   >
                     <Database className="h-4 w-4" />
@@ -103,7 +105,14 @@ export default function DashboardLayout({
                         {providerNames[connection.espType] ||
                           connection.espType}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
+                      <div
+                        className={cn(
+                          'text-xs truncate',
+                          isActive
+                            ? 'text-primary/70'
+                            : 'text-muted-foreground'
+                        )}
+                      >
                         {connection.publicationId}
                       </div>
                     </div>
