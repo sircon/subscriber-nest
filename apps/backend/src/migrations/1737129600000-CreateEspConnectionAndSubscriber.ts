@@ -7,7 +7,7 @@ export class CreateEspConnectionAndSubscriber1737129600000
     // Create enum types
     await queryRunner.query(`
       DO $$ BEGIN
-        CREATE TYPE "esp_type_enum" AS ENUM ('beehiiv');
+        CREATE TYPE "esp_type_enum" AS ENUM ('beehiiv', 'kit', 'mailchimp');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -65,6 +65,11 @@ export class CreateEspConnectionAndSubscriber1737129600000
           },
           {
             name: 'lastValidatedAt',
+            type: 'timestamp',
+            isNullable: true,
+          },
+          {
+            name: 'lastSyncedAt',
             type: 'timestamp',
             isNullable: true,
           },
@@ -167,6 +172,17 @@ export class CreateEspConnectionAndSubscriber1737129600000
         columnNames: ['espConnectionId'],
         referencedColumnNames: ['id'],
         referencedTableName: 'esp_connections',
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    // Create foreign key from esp_connections to users
+    await queryRunner.createForeignKey(
+      'esp_connections',
+      new TableForeignKey({
+        columnNames: ['userId'],
+        referencedColumnNames: ['id'],
+        referencedTableName: 'users',
         onDelete: 'CASCADE',
       }),
     );
