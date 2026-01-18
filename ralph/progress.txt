@@ -33,3 +33,20 @@ Started: Sun Jan 18 09:32:48 CET 2026
   - Existing migrations may need idempotency fixes if database already has changes applied
   - Migration timestamps should be sequential and higher than existing migrations
 ---
+
+## 2026-01-18 10:15 - US-002
+- Updated SubscriberSyncProcessor to create SyncHistory records for tracking sync operations
+- Added SyncHistory repository injection to the processor
+- Created sync history record at job start with status: 'success' and startedAt timestamp
+- Updated sync history with completedAt timestamp when sync completes successfully
+- Updated sync history with status: 'failed', completedAt, and errorMessage when sync fails after all retries
+- Used BullMQ's job.attemptsMade and job.opts.attempts to detect final retry attempt
+- Files changed:
+  - `apps/backend/src/processors/subscriber-sync.processor.ts` - Added sync history tracking
+- **Learnings for future iterations:**
+  - BullMQ jobs have `attemptsMade` and `opts.attempts` properties to track retry attempts
+  - When a job will be retried, we should only record final failure after all retries exhausted
+  - Repository injection in processors follows same pattern as in services/controllers
+  - Optimistic approach: Create sync history with 'success' status, update to 'failed' only if needed
+  - Always wrap database updates in try-catch to prevent processor failures from cascading
+---
