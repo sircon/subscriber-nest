@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi, EspConnection } from '@/lib/api';
 import { Menu, Plus, Settings, Database, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SubscriptionWarningBanner } from '@/components/subscription-warning-banner';
 
 const providerNames: Record<string, string> = {
   kit: 'Kit',
@@ -185,7 +186,12 @@ export default function DashboardLayout({
       </Sheet>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-64">{children}</main>
+      <main className="flex-1 md:ml-64">
+        <div className="p-6 pb-0">
+          <SubscriptionWarningBanner />
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

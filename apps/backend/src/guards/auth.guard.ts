@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,7 +16,7 @@ export class AuthGuard implements CanActivate {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -62,6 +63,19 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('User not found');
       }
       user = foundUser;
+    }
+
+    // Check if account deletion has been requested
+    if (user.deleteRequestedAt) {
+      // Allow access to export endpoints during grace period
+      const url = request.url || '';
+      const isExportEndpoint = url.includes('/subscribers/export');
+
+      if (!isExportEndpoint) {
+        throw new ForbiddenException(
+          'Account deletion in progress. You can export your data for 30 days.'
+        );
+      }
     }
 
     // Attach user to request

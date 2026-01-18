@@ -1,0 +1,425 @@
+{
+  "project": "SubscriberNest",
+  "branchName": "ralph/dashboard",
+  "description": "User Dashboard - Build a comprehensive dashboard interface with sidebar navigation, overview cards, sync history table, ESP detail views with subscriber tables, email unmasking, and export functionality",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Sync History Entity and Migration",
+      "description": "As a developer, I need a database table to track sync history so users can see when syncs were performed and whether they succeeded or failed.",
+      "acceptanceCriteria": [
+        "Create `SyncHistory` entity with fields: `id` (UUID), `espConnectionId` (FK to EspConnection), `status` (enum: 'success', 'failed'), `startedAt` (timestamp), `completedAt` (timestamp, nullable), `errorMessage` (text, nullable), `createdAt` (timestamp)",
+        "Add `@ManyToOne` relationship to `EspConnection` entity",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Update Sync Processor to Record Sync History",
+      "description": "As a developer, I need the sync processor to create sync history records so we can track all sync operations.",
+      "acceptanceCriteria": [
+        "Update `SubscriberSyncProcessor` to create a `SyncHistory` record with `status: 'success'` and `startedAt` when sync job starts",
+        "Update `completedAt` timestamp when sync completes successfully",
+        "Create `SyncHistory` record with `status: 'failed'` and `errorMessage` when sync fails (after all retries)",
+        "Store error message from exception in `errorMessage` field",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Sync History Service",
+      "description": "As a developer, I need a service to query sync history records so the frontend can display sync history.",
+      "acceptanceCriteria": [
+        "Create `SyncHistoryService` with method `findByEspConnection(espConnectionId: string, limit?: number): Promise<SyncHistory[]>`",
+        "Method returns sync history records ordered by `startedAt` DESC (most recent first)",
+        "Optional `limit` parameter defaults to 50 if not provided",
+        "Method includes ESP connection relationship in query",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Sync History Controller Endpoint",
+      "description": "As a user, I want to retrieve sync history via API so I can see when syncs occurred and their status.",
+      "acceptanceCriteria": [
+        "Add `GET /esp-connections/:id/sync-history` endpoint to `EspConnectionController`",
+        "Endpoint accepts optional query parameter `limit` (default: 50)",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Returns array of sync history records (without sensitive data)",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Subscriber List Controller Endpoint",
+      "description": "As a user, I want to retrieve paginated subscriber data for an ESP connection so I can view my subscribers in the dashboard.",
+      "acceptanceCriteria": [
+        "Add `GET /esp-connections/:id/subscribers` endpoint to `EspConnectionController`",
+        "Endpoint accepts query parameters: `page` (default: 1), `limit` (default: 50), `status` (optional filter by subscriber status)",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Returns paginated response: `{ data: Subscriber[], total: number, page: number, limit: number, totalPages: number }`",
+        "Subscribers returned with `maskedEmail` (not encrypted email)",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Unmask Email Endpoint",
+      "description": "As a user, I want to decrypt a specific subscriber's email address so I can view the full email when needed.",
+      "acceptanceCriteria": [
+        "Add `POST /subscribers/:id/unmask` endpoint to a new `SubscriberController`",
+        "Endpoint validates subscriber exists and belongs to a connection owned by requesting user",
+        "Endpoint decrypts the subscriber's email using `EncryptionService`",
+        "Returns `{ email: string }` with decrypted email",
+        "Returns 404 if subscriber not found, 403 if user doesn't own the connection",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Export Subscribers Endpoint",
+      "description": "As a user, I want to export all subscribers for an ESP connection in various formats so I can use the data elsewhere.",
+      "acceptanceCriteria": [
+        "Add `GET /esp-connections/:id/subscribers/export` endpoint to `EspConnectionController`",
+        "Endpoint accepts query parameter `format` (enum: 'csv', 'json', 'xlsx')",
+        "Endpoint validates ESP connection exists and belongs to requesting user",
+        "Endpoint fetches all subscribers for the connection (no pagination)",
+        "Endpoint decrypts all subscriber emails using `EncryptionService`",
+        "Returns file download with appropriate content-type header",
+        "CSV format includes: email (decrypted), firstName, lastName, status, subscribedAt, unsubscribedAt, and all metadata fields flattened",
+        "JSON format includes all subscriber fields with decrypted emails",
+        "Excel format includes same fields as CSV in spreadsheet format",
+        "Returns 404 if connection not found, 403 if user doesn't own connection",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create Dashboard Stats Endpoint",
+      "description": "As a user, I want to retrieve dashboard statistics so I can see overview metrics on the dashboard.",
+      "acceptanceCriteria": [
+        "Add `GET /dashboard/stats` endpoint to a new `DashboardController`",
+        "Endpoint returns: `{ totalEspConnections: number, totalSubscribers: number, lastSyncTime: Date | null }`",
+        "`totalEspConnections` counts all active ESP connections for the user",
+        "`totalSubscribers` counts all subscribers across all user's ESP connections",
+        "`lastSyncTime` is the most recent `completedAt` timestamp from sync history across all connections",
+        "Returns 401 if not authenticated",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Install Required Frontend Dependencies",
+      "description": "As a developer, I need to install frontend dependencies for data tables, export functionality, and UI components.",
+      "acceptanceCriteria": [
+        "Install `@tanstack/react-table` for data table functionality",
+        "Install `xlsx` or `exceljs` for Excel export generation",
+        "Install `papaparse` for CSV export generation (or use native implementation)",
+        "Install shadcn table component: `npx shadcn@latest add table`",
+        "Install shadcn dropdown-menu component: `npx shadcn@latest add dropdown-menu`",
+        "Install shadcn sidebar component: `npx shadcn@latest add sidebar` (or similar navigation component)",
+        "Verify all packages are added to `package.json`",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Dashboard Layout with Sidebar",
+      "description": "As a user, I want a dashboard layout with a sidebar navigation so I can easily navigate between ESPs and access settings.",
+      "acceptanceCriteria": [
+        "Create new dashboard layout component at `src/app/dashboard/layout.tsx`",
+        "Layout includes left sidebar (fixed width ~250px) with: list of ESP connections (clickable items showing ESP name/type), \"Connect New ESP\" button at top of list, Settings button at bottom of sidebar",
+        "Main content area takes remaining width",
+        "Sidebar is collapsible on mobile (hamburger menu)",
+        "Active ESP connection is highlighted in sidebar",
+        "Uses shadcn sidebar or similar navigation component",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Dashboard Overview Page",
+      "description": "As a user, I want to see overview statistics and sync history when I first open the dashboard.",
+      "acceptanceCriteria": [
+        "Create dashboard overview at `src/app/dashboard/page.tsx` (or update existing)",
+        "Page displays three dashboard cards: Card 1: \"Total ESPs\" with count from stats endpoint, Card 2: \"Total Subscribers\" with count from stats endpoint, Card 3: \"Last Sync\" with formatted timestamp from stats endpoint (or \"Never\" if null)",
+        "Below cards, display sync history table with columns: ESP Name, Status, Started At, Completed At, Error (if failed)",
+        "Sync history table shows most recent 50 syncs across all ESPs",
+        "Table is sortable by date (default: most recent first)",
+        "Status column shows badge (green for success, red for failed)",
+        "Error column only shows when status is 'failed'",
+        "Page handles loading and error states",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create ESP Detail Page",
+      "description": "As a user, I want to see detailed information about a specific ESP connection when I click on it in the sidebar.",
+      "acceptanceCriteria": [
+        "Create ESP detail page at `src/app/dashboard/esp/[id]/page.tsx`",
+        "Page displays ESP connection information cards: Card 1: \"List Size\" showing total subscriber count for this ESP, Card 2: \"Last Sync\" showing last sync timestamp and status, Card 3: \"Connection Status\" showing ESP connection status, Card 4: Additional relevant metrics (e.g., active vs unsubscribed count)",
+        "Below cards, display paginated subscriber data table",
+        "Table columns: Email (masked), First Name, Last Name, Status, Subscribed At, Actions",
+        "Email column shows masked email with small \"Unmask\" button/icon next to it",
+        "Pagination controls at bottom: page number, items per page (default: 50), next/previous buttons",
+        "Page uses URL search params for pagination state (`?page=1&limit=50`)",
+        "Page handles loading and error states",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Implement Email Unmasking in Subscriber Table",
+      "description": "As a user, I want to click an unmask button to reveal a subscriber's email address in the table.",
+      "acceptanceCriteria": [
+        "Add \"Unmask\" button/icon next to each masked email in subscriber table",
+        "Button calls `POST /subscribers/:id/unmask` endpoint when clicked",
+        "On success, replace masked email with decrypted email in the table row",
+        "Unmasked email persists in table for the current session (until page refresh)",
+        "Button changes to \"Mask\" after unmasking (allows re-masking)",
+        "Re-masking restores the masked email display",
+        "Handle loading state while unmasking (disable button, show spinner)",
+        "Handle error state (show error message, keep masked email)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Implement Export Functionality",
+      "description": "As a user, I want to export subscriber data in CSV, JSON, or Excel format so I can use it in other tools.",
+      "acceptanceCriteria": [
+        "Add \"Export\" button/dropdown in ESP detail page header",
+        "Dropdown menu shows options: \"Export as CSV\", \"Export as JSON\", \"Export as Excel\"",
+        "Clicking an option calls `GET /esp-connections/:id/subscribers/export?format=<format>`",
+        "On success, triggers browser download with appropriate filename: `subscribers-<esp-name>-<timestamp>.<ext>`",
+        "CSV file includes all subscriber fields with decrypted emails",
+        "JSON file includes all subscriber fields with decrypted emails",
+        "Excel file includes all subscriber fields with decrypted emails in spreadsheet format",
+        "Handle loading state (disable button, show spinner)",
+        "Handle error state (show error message to user)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Create Settings Menu Structure",
+      "description": "As a user, I want a settings menu accessible from the sidebar so I can access future features like billing.",
+      "acceptanceCriteria": [
+        "Create settings page at `src/app/dashboard/settings/page.tsx`",
+        "Page accessible via Settings button in sidebar",
+        "Page displays settings menu/navigation with sections: \"General\" (placeholder for future settings), \"Billing\" (placeholder, shows \"Coming soon\" message), \"Account\" (placeholder for future settings)",
+        "Settings page has basic layout matching dashboard design",
+        "Menu items are clickable but show placeholder content for now",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Update API Client with New Endpoints",
+      "description": "As a developer, I need to add API client functions for all new dashboard endpoints so the frontend can call them.",
+      "acceptanceCriteria": [
+        "Add `getDashboardStats` function to API client",
+        "Add `getSyncHistory(espConnectionId: string, limit?: number)` function",
+        "Add `getSubscribers(espConnectionId: string, page?: number, limit?: number, status?: string)` function",
+        "Add `unmaskEmail(subscriberId: string)` function",
+        "Add `exportSubscribers(espConnectionId: string, format: 'csv' | 'json' | 'xlsx')` function",
+        "All functions include proper TypeScript types",
+        "All functions handle authentication tokens and 401 errors",
+        "Export function handles file download response correctly",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "Completed incrementally through US-011, US-012, US-013, and US-014"
+    },
+    {
+      "id": "US-017",
+      "title": "Add Pagination Component",
+      "description": "As a developer, I need a reusable pagination component for the subscriber table.",
+      "acceptanceCriteria": [
+        "Create pagination component at `src/components/ui/pagination.tsx` (or use shadcn pagination)",
+        "Component accepts props: `currentPage`, `totalPages`, `onPageChange`, `itemsPerPage`, `totalItems`",
+        "Component displays: current page info, page number buttons, previous/next buttons",
+        "Component handles edge cases (first page, last page, single page)",
+        "Component is accessible (keyboard navigation, ARIA labels)",
+        "Component matches dashboard design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Improve Selected Connection Design in Sidebar",
+      "description": "As a user, I want the selected ESP connection in the sidebar to have a distinct visual design that doesn't look like a button.",
+      "acceptanceCriteria": [
+        "Update sidebar ESP connection item styling when selected",
+        "Selected state uses background color, border, or other visual indicator (not button-like appearance)",
+        "Selected item should be clearly distinguishable from unselected items",
+        "Design matches dashboard aesthetic and is visually appealing",
+        "Selected state persists when navigating to ESP detail page",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Add Dashboard Item at Top of Sidebar",
+      "description": "As a user, I want a Dashboard navigation item at the top of the sidebar so I can easily return to the overview page.",
+      "acceptanceCriteria": [
+        "Add \"Dashboard\" navigation item at the top of the sidebar (above ESP connections list)",
+        "Dashboard item navigates to `/dashboard` when clicked",
+        "Dashboard item is highlighted when on dashboard overview page",
+        "Dashboard item has appropriate icon (e.g., home, dashboard icon)",
+        "Dashboard item styling matches sidebar design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Create New ESP Connection Flow from Dashboard",
+      "description": "As a user, I want to add a new ESP connection from the dashboard by selecting an ESP type, entering credentials, and automatically syncing.",
+      "acceptanceCriteria": [
+        "Create new page at `src/app/dashboard/esp/new/page.tsx`",
+        "Page accessible via \"Connect New ESP\" button in sidebar (navigates to `/dashboard/esp/new`)",
+        "Page displays ESP type selection (e.g., beehiiv, kit, mailchimp) with visual cards/buttons",
+        "After ESP selection, show form with fields: API Key (password input), Publication ID (text input)",
+        "Form includes validation and error handling",
+        "On form submit: calls `POST /esp-connections` to create connection",
+        "After successful connection creation, automatically calls `POST /esp-connections/:id/sync` to trigger sync",
+        "On success, redirects to ESP detail page (`/dashboard/esp/[id]`)",
+        "Show loading states during connection creation and sync trigger",
+        "Handle errors gracefully (show error messages, allow retry)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Add Manual Sync Button Next to Export",
+      "description": "As a user, I want to manually trigger a sync for an ESP connection from the detail page.",
+      "acceptanceCriteria": [
+        "Add \"Sync\" button next to Export button in ESP detail page header",
+        "Button calls `POST /esp-connections/:id/sync` endpoint when clicked",
+        "Button is disabled and shows loading state when sync is in progress (check `syncStatus === 'syncing'`)",
+        "Button shows \"Syncing...\" text or spinner when sync is active",
+        "Button is enabled when sync is not in progress",
+        "After triggering sync, show success message or update UI to reflect sync status",
+        "Handle error states (show error message if sync fails to trigger)",
+        "Button styling matches dashboard design system",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Capitalize Status Badges",
+      "description": "As a user, I want status badges to be properly capitalized for better readability.",
+      "acceptanceCriteria": [
+        "Update connection status badges (e.g., \"synced\", \"active\") to display capitalized text (e.g., \"Synced\", \"Active\")",
+        "Update subscriber status badges in tables (e.g., \"active\", \"unsubscribed\") to display capitalized text (e.g., \"Active\", \"Unsubscribed\")",
+        "Update sync history status badges (e.g., \"success\", \"failed\") to display capitalized text (e.g., \"Success\", \"Failed\")",
+        "Capitalization applied consistently across all status displays",
+        "Badge colors and styling remain unchanged",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Move Mask/Unmask Action to Email Cell as Icon Button",
+      "description": "As a user, I want the mask/unmask action to be an icon button within the email cell for a cleaner table design.",
+      "acceptanceCriteria": [
+        "Move mask/unmask button from separate Actions column to within Email cell",
+        "Replace text button with icon button (eye icon for unmask, eye-off icon for mask)",
+        "Icon button appears inline with masked email text in the Email column",
+        "Button calls `POST /subscribers/:id/unmask` endpoint when clicked",
+        "On success, replaces masked email with decrypted email in the same cell",
+        "Icon changes from unmask to mask icon after unmasking",
+        "Re-masking restores the masked email display",
+        "Handle loading state (disable button, show spinner on icon)",
+        "Handle error state (show error message, keep masked email)",
+        "Remove Actions column if it's no longer needed",
+        "Icon button has appropriate hover states and tooltips",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 23,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

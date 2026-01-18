@@ -1,10 +1,15 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { VerificationCode } from './entities/verification-code.entity';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
 import { EmailService } from './email.service';
+import { BillingSubscriptionService } from './services/billing-subscription.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -17,6 +22,7 @@ export class AuthService {
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
     private emailService: EmailService,
+    private billingSubscriptionService: BillingSubscriptionService
   ) {}
 
   /**
@@ -40,7 +46,7 @@ export class AuthService {
 
     if (recentCodes >= 3) {
       throw new BadRequestException(
-        'Too many verification codes requested. Please try again later.',
+        'Too many verification codes requested. Please try again later.'
       );
     }
   }
@@ -97,8 +103,16 @@ export class AuthService {
    */
   async verifyCode(
     email: string,
-    code: string,
-  ): Promise<{ token: string; user: { id: string; email: string; isOnboarded: boolean } }> {
+    code: string
+  ): Promise<{
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     // Find verification code
     const verificationCode = await this.verificationCodeRepository.findOne({
       where: { email, code },
@@ -110,7 +124,9 @@ export class AuthService {
 
     // Check if code is already used
     if (verificationCode.used) {
-      throw new UnauthorizedException('Verification code has already been used');
+      throw new UnauthorizedException(
+        'Verification code has already been used'
+      );
     }
 
     // Check if code is expired
@@ -150,6 +166,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         isOnboarded: user.isOnboarded,
+        deleteRequestedAt: user.deleteRequestedAt,
       },
     };
   }
@@ -171,15 +188,30 @@ export class AuthService {
   }
 
   /**
-   * Mark user as onboarded
+   * Mark user as onboarded (requires active subscription)
    */
-  async completeOnboarding(
-    userId: string,
-  ): Promise<{ success: true; user: { id: string; email: string; isOnboarded: boolean } }> {
+  async completeOnboarding(userId: string): Promise<{
+    success: true;
+    user: {
+      id: string;
+      email: string;
+      isOnboarded: boolean;
+      deleteRequestedAt: Date | null;
+    };
+  }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    // Check if user has active subscription
+    const hasActiveSubscription =
+      await this.billingSubscriptionService.hasActiveSubscription(userId);
+    if (!hasActiveSubscription) {
+      throw new BadRequestException(
+        'Active subscription required to complete onboarding'
+      );
     }
 
     user.isOnboarded = true;
@@ -191,6 +223,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         isOnboarded: user.isOnboarded,
+        deleteRequestedAt: user.deleteRequestedAt,
       },
     };
   }

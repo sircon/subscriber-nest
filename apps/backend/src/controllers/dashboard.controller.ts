@@ -22,13 +22,11 @@ export class DashboardController {
     @InjectRepository(Subscriber)
     private readonly subscriberRepository: Repository<Subscriber>,
     @InjectRepository(SyncHistory)
-    private readonly syncHistoryRepository: Repository<SyncHistory>,
+    private readonly syncHistoryRepository: Repository<SyncHistory>
   ) {}
 
   @Get('stats')
-  async getDashboardStats(
-    @CurrentUser() user: User,
-  ): Promise<{
+  async getDashboardStats(@CurrentUser() user: User): Promise<{
     totalEspConnections: number;
     totalSubscribers: number;
     lastSyncTime: Date | null;
@@ -75,7 +73,7 @@ export class DashboardController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        'Failed to retrieve dashboard statistics',
+        'Failed to retrieve dashboard statistics'
       );
     }
   }

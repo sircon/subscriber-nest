@@ -20,14 +20,17 @@ export class BeehiivConnector implements IEspConnector {
    * @param publicationId - Optional publication ID to validate against a specific publication
    * @returns Promise<boolean> - true if API key is valid, false otherwise
    */
-  async validateApiKey(apiKey: string, publicationId?: string): Promise<boolean> {
+  async validateApiKey(
+    apiKey: string,
+    publicationId?: string
+  ): Promise<boolean> {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/publications`, {
           headers: {
             Authorization: `Bearer ${apiKey}`,
           },
-        }),
+        })
       );
 
       // If status is 200, the API key is valid
@@ -51,7 +54,10 @@ export class BeehiivConnector implements IEspConnector {
           return false;
         }
         // Other errors (429, 500, etc.) - log but return false
-        console.error(`Beehiiv API error during validation: ${status}`, error.response.data);
+        console.error(
+          `Beehiiv API error during validation: ${status}`,
+          error.response.data
+        );
         return false;
       }
       // Network errors or other issues
@@ -72,7 +78,7 @@ export class BeehiivConnector implements IEspConnector {
           headers: {
             Authorization: `Bearer ${apiKey}`,
           },
-        }),
+        })
       );
 
       if (response.status === 200 && response.data && response.data.data) {
@@ -98,7 +104,9 @@ export class BeehiivConnector implements IEspConnector {
         }
         throw new Error(`Failed to fetch publications: ${status}`);
       }
-      throw new Error(`Network error while fetching publications: ${error.message}`);
+      throw new Error(
+        `Network error while fetching publications: ${error.message}`
+      );
     }
   }
 
@@ -108,7 +116,10 @@ export class BeehiivConnector implements IEspConnector {
    * @param publicationId - The publication ID to fetch subscribers for
    * @returns Promise<SubscriberData[]> - List of subscribers
    */
-  async fetchSubscribers(apiKey: string, publicationId: string): Promise<SubscriberData[]> {
+  async fetchSubscribers(
+    apiKey: string,
+    publicationId: string
+  ): Promise<SubscriberData[]> {
     const allSubscribers: SubscriberData[] = [];
     let page = 1;
     let hasMore = true;
@@ -126,30 +137,33 @@ export class BeehiivConnector implements IEspConnector {
                 page,
                 limit: 100, // Beehiiv API typically supports up to 100 per page
               },
-            },
-          ),
+            }
+          )
         );
 
         if (response.status === 200 && response.data) {
           const subscribers = response.data.data || [];
-          
+
           // Map Beehiiv subscriber data to our SubscriberData interface
-          const mappedSubscribers: SubscriberData[] = subscribers.map((sub: any) => ({
-            id: sub.id || sub.subscriber_id || '',
-            email: sub.email || '',
-            status: this.mapBeehiivStatus(sub.status),
-            firstName: sub.first_name || sub.firstName || null,
-            lastName: sub.last_name || sub.lastName || null,
-            subscribedAt: sub.created_at || sub.subscribed_at || null,
-            unsubscribedAt: sub.unsubscribed_at || sub.unsubscribedAt || null,
-            ...sub, // Include all other Beehiiv-specific fields
-          }));
+          const mappedSubscribers: SubscriberData[] = subscribers.map(
+            (sub: any) => ({
+              id: sub.id || sub.subscriber_id || '',
+              email: sub.email || '',
+              status: this.mapBeehiivStatus(sub.status),
+              firstName: sub.first_name || sub.firstName || null,
+              lastName: sub.last_name || sub.lastName || null,
+              subscribedAt: sub.created_at || sub.subscribed_at || null,
+              unsubscribedAt: sub.unsubscribed_at || sub.unsubscribedAt || null,
+              ...sub, // Include all other Beehiiv-specific fields
+            })
+          );
 
           allSubscribers.push(...mappedSubscribers);
 
           // Check if there are more pages
           // Beehiiv API typically returns pagination info in response
-          const totalPages = response.data.total_pages || response.data.pages || 1;
+          const totalPages =
+            response.data.total_pages || response.data.pages || 1;
           const currentPage = response.data.page || page;
           hasMore = currentPage < totalPages && subscribers.length > 0;
           page++;
@@ -176,7 +190,9 @@ export class BeehiivConnector implements IEspConnector {
         }
         throw new Error(`Failed to fetch subscribers: ${status}`);
       }
-      throw new Error(`Network error while fetching subscribers: ${error.message}`);
+      throw new Error(
+        `Network error while fetching subscribers: ${error.message}`
+      );
     }
   }
 

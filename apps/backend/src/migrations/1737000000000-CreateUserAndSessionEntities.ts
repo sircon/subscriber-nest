@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateUserAndSessionEntities1737000000000
-  implements MigrationInterface
-{
+export class CreateUserAndSessionEntities1737000000000 implements MigrationInterface {
   name = 'CreateUserAndSessionEntities1737000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

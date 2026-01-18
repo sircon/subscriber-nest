@@ -1,0 +1,17 @@
+# Ralph Progress Log
+Started: [Date will be set when first story is started]
+
+## Codebase Patterns
+- TypeORM entities use `@Entity`, `@Column`, and relationship decorators (`@ManyToOne`, `@OneToMany`)
+- Enums are defined at the top of entity files and exported for reuse
+- Entity IDs use UUID type with `@PrimaryGeneratedColumn('uuid')`
+- Migrations use DO $$ BEGIN ... EXCEPTION WHEN duplicate_object pattern for idempotent enum creation
+- Foreign key relationships use `@JoinColumn({ name: 'columnName' })` with explicit column naming
+- Migration files are timestamped and must be in `src/migrations/` (compiled to `dist/migrations/`)
+- Use `columnExists` check pattern to make migrations idempotent: `table?.columns.find((col) => col.name === 'columnName')`
+- Always run `turbo run build --filter=backend` before running migrations
+- Migration command: `cd apps/backend && yarn db:migrate`
+- shadcn CLI generates code with tabs - always convert to spaces to avoid linting errors
+- When fetching data for dashboard/overview pages, use Promise.all to fetch multiple endpoints in parallel
+
+---

@@ -26,7 +26,7 @@ export class SubscriberMapperService {
    */
   mapToCreateSubscriberDto(
     subscriberData: SubscriberData,
-    espConnectionId: string,
+    espConnectionId: string
   ): CreateSubscriberDto {
     // Extract known fields that we map to specific columns
     const {
@@ -67,9 +67,15 @@ export class SubscriberMapperService {
     Object.keys(restFields).forEach((key) => {
       // Only include fields that aren't already mapped
       if (
-        !['id', 'email', 'status', 'firstName', 'lastName', 'subscribedAt', 'unsubscribedAt'].includes(
-          key,
-        )
+        ![
+          'id',
+          'email',
+          'status',
+          'firstName',
+          'lastName',
+          'subscribedAt',
+          'unsubscribedAt',
+        ].includes(key)
       ) {
         const value = restFields[key];
         // Only include non-null/undefined values

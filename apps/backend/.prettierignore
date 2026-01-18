@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+dist
+.turbo
+
+# Build outputs
+dist
+
+# Logs
+*.log
+
+# Lock files
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# TypeScript build info
+*.tsbuildinfo

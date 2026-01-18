@@ -40,6 +40,9 @@ export class SyncHistory {
   @Column({ type: 'text', nullable: true })
   errorMessage: string | null;
 
+  @Column({ type: 'integer', nullable: true })
+  subscriberCount: number | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -1,7 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EspConnection, EspType, EspConnectionStatus, EspSyncStatus } from '../entities/esp-connection.entity';
+import {
+  EspConnection,
+  EspType,
+  EspConnectionStatus,
+  EspSyncStatus,
+} from '../entities/esp-connection.entity';
 import { EncryptionService } from './encryption.service';
 import { IEspConnector } from '../interfaces/esp-connector.interface';
 import { BeehiivConnector } from '../connectors/beehiiv.connector';
@@ -12,8 +21,8 @@ export class EspConnectionService {
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
-    private beehiivConnector: BeehiivConnector,
-  ) { }
+    private beehiivConnector: BeehiivConnector
+  ) {}
 
   /**
    * Gets the appropriate ESP connector based on ESP type
@@ -43,7 +52,7 @@ export class EspConnectionService {
     userId: string,
     espType: string,
     apiKey: string,
-    publicationId: string,
+    publicationId: string
   ): Promise<EspConnection> {
     // Validate espType
     if (!Object.values(EspType).includes(espType as EspType)) {
@@ -75,7 +84,8 @@ export class EspConnectionService {
     });
 
     // Save to database
-    const savedConnection = await this.espConnectionRepository.save(espConnection);
+    const savedConnection =
+      await this.espConnectionRepository.save(espConnection);
 
     return savedConnection;
   }
@@ -112,7 +122,7 @@ export class EspConnectionService {
     // Validate ownership if userId is provided
     if (userId && connection.userId !== userId) {
       throw new BadRequestException(
-        'You do not have permission to access this ESP connection',
+        'You do not have permission to access this ESP connection'
       );
     }
 
@@ -128,7 +138,7 @@ export class EspConnectionService {
    */
   async updateSyncStatus(
     id: string,
-    syncStatus: EspSyncStatus,
+    syncStatus: EspSyncStatus
   ): Promise<EspConnection> {
     const connection = await this.espConnectionRepository.findOne({
       where: { id },

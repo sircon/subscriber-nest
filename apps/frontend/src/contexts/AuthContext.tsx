@@ -1,12 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import { authApi } from '@/lib/api';
 
 interface User {
   id: string;
   email: string;
   isOnboarded: boolean;
+  deleteRequestedAt: Date | string | null;
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -47,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     const storedUser = localStorage.getItem(USER_KEY);
-    
+
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(USER_KEY);
     deleteCookie(TOKEN_KEY);
     deleteCookie(USER_KEY);
-    
+
     // Optionally call logout endpoint to invalidate session on server
     if (currentToken) {
       authApi.logout(currentToken).catch(() => {
