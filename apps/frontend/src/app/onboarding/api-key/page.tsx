@@ -55,7 +55,7 @@ function ApiKeyForm() {
             }
 
             // Step 1: Create ESP connection
-            await espConnectionApi.createConnection(
+            const connection = await espConnectionApi.createConnection(
                 { espType: provider, apiKey, publicationId },
                 token,
                 () => {
@@ -73,7 +73,20 @@ function ApiKeyForm() {
             // Step 3: Update user in auth context
             login(token, onboardingData.user);
 
-            // Step 4: Redirect to dashboard
+            // Step 4: Auto-trigger sync (don't block on errors)
+            if (connection?.id) {
+                try {
+                    await espConnectionApi.triggerSync(connection.id, token, () => {
+                        // Handle 401: already redirecting to dashboard, ignore
+                    });
+                } catch (syncErr) {
+                    // Log sync error but don't block onboarding completion
+                    console.error('Failed to trigger initial sync:', syncErr);
+                    // User can manually trigger sync from dashboard
+                }
+            }
+
+            // Step 5: Redirect to dashboard (with sync in progress if successful)
             router.push('/dashboard');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
