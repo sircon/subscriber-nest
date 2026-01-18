@@ -1,2 +1,1 @@
-// Events will be exported here once created
-export {};
+export { SyncRequestedEvent } from './sync-requested.event';

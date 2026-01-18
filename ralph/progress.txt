@@ -454,3 +454,20 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify main.ts configuration
   - Worker service can start successfully once database and Redis connections are configured
 ---
+
+## 2026-01-18 15:51 - US-022
+- Created `SyncRequestedEvent` class in `packages/shared/src/events/sync-requested.event.ts` with `espConnectionId` and `userId` properties
+- Event class uses constructor with readonly properties for immutability
+- Exported event class from `packages/shared/src/events/index.ts`
+- Main shared package index.ts already exports from events module, so event is available via `@subscriber-nest/shared/events`
+- Files changed:
+  - `packages/shared/src/events/sync-requested.event.ts` - Created event class
+  - `packages/shared/src/events/index.ts` - Exported SyncRequestedEvent
+- **Learnings for future iterations:**
+  - NestJS event emitter events are plain TypeScript classes with properties
+  - Event classes should use readonly properties and constructor parameters for immutability
+  - Events in shared package can be imported via `@subscriber-nest/shared/events` path
+  - Main shared package index.ts already exports all subdirectories, so events are automatically available
+  - Use `yarn workspace @subscriber-nest/shared typecheck` and `turbo run build --filter=@subscriber-nest/shared` to verify event compilation
+  - Event classes don't need any decorators or special configuration - just plain classes
+---
