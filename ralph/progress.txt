@@ -842,3 +842,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Keep scheduler services even if job logic is simplified - they're still needed to schedule the simplified job
   - Metered billing eliminates the need for manual invoice creation - Stripe handles everything automatically at the end of each billing period
 ---
+
+## 2026-01-18 14:50:01 - US-041
+- Updated `BillingUsageService.updateUsage()` to calculate per-publication max usage instead of using total maximum
+- Method now calls `calculatePerPublicationMaxUsage()` to get maximum subscriber count per ESP connection for current billing period
+- Sums all per-publication maximums to get total subscriber count
+- Stores total sum of per-publication maximums in `maxSubscriberCount` field (updates if calculated total is higher than stored max)
+- Maintains backward compatibility: method signature unchanged, `currentSubscriberCount` parameter kept but not used (documented in JSDoc)
+- Calculates `calculatedAmount` based on the sum of per-publication maximums using `BillingCalculationService`
+- Total usage in 10k units can be calculated on-demand using existing `calculateMeterUsage()` method for display purposes
+- Files changed:
+  - `apps/backend/src/services/billing-usage.service.ts` (updated updateUsage method)
+- **Learnings for future iterations:**
+  - Per-publication billing tracks maximum subscriber count per ESP connection separately, then sums them for total billing
+  - This approach ensures accurate billing when users have multiple publications with different subscriber counts
+  - The `calculatePerPublicationMaxUsage()` method uses SyncHistory records to find maximum subscriber count per publication during billing period
+  - When updating existing billing usage records, only update `maxSubscriberCount` if the new calculated total is higher (tracks maximum during period)
+  - Backward compatibility can be maintained by keeping method signatures unchanged while updating internal logic
+  - The `calculateMeterUsage()` method is available for calculating 10k units on-demand when needed for display purposes
+---

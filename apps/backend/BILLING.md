@@ -2,55 +2,61 @@
 
 ## Overview
 
-The billing system implements usage-based subscription billing with Stripe integration. Users are charged monthly based on the maximum number of subscribers (summed across all their ESP connections) during each billing period.
+The billing system implements usage-based subscription billing with Stripe metered billing integration. Users are charged monthly based on the maximum number of subscribers per publication (summed across all their ESP connections) during each billing period. Usage is reported to Stripe meters in real-time after each sync, and Stripe automatically handles invoicing at the end of each billing period.
 
 ## Pricing Model
 
-**Tiered Pricing Structure:**
-- **$5** for the first 10,000 subscribers
-- **$1** per each additional 10,000 subscribers
+**Metered Billing Structure:**
+- Usage is measured in units of 10,000 subscribers
+- Each unit represents 10,000 subscribers (rounded up)
+- Stripe handles pricing based on the meter configuration
 
-**Examples:**
-- 5,000 subscribers = $5
-- 15,000 subscribers = $6 ($5 base + $1 for additional 10k)
-- 25,000 subscribers = $7 ($5 base + $2 for additional 20k)
-- 100,000 subscribers = $14 ($5 base + $9 for additional 90k)
+**Unit Calculation:**
+- Subscriber count is converted to 10k units using `Math.ceil()` (always rounds up)
+- Examples:
+  - 5,000 subscribers = 1 unit (5,000 / 10,000 = 0.5 → 1)
+  - 15,000 subscribers = 2 units (15,000 / 10,000 = 1.5 → 2)
+  - 20,000 subscribers = 2 units (20,000 / 10,000 = 2.0 → 2)
+  - 25,000 subscribers = 3 units (25,000 / 10,000 = 2.5 → 3)
+  - 100,000 subscribers = 10 units (100,000 / 10,000 = 10.0 → 10)
 
-**Implementation:** `BillingCalculationService.calculateAmount()`
+**Implementation:** `BillingUsageService.calculateMeterUsage()`
 
 ## Architecture
 
 ### Key Components
 
-#### 1. **BillingCalculationService** (`src/services/billing-calculation.service.ts`)
-- Calculates billing amount based on subscriber count
-- Implements tiered pricing logic
-- Handles edge cases (0 subscribers, very large numbers)
-
-#### 2. **BillingUsageService** (`src/services/billing-usage.service.ts`)
-- Tracks maximum subscriber count during each billing period
+#### 1. **BillingUsageService** (`src/services/billing-usage.service.ts`)
+- Tracks maximum subscriber count per publication during each billing period
+- Calculates per-publication maximums from SyncHistory records
+- Converts total usage to 10k units (rounded up) for Stripe meter
 - Creates/updates `BillingUsage` records for calendar months
-- Calculates billing amounts using `BillingCalculationService`
 - Filters billing history to show only past periods
 
-#### 3. **BillingProcessor** (`src/processors/billing.processor.ts`)
-- Scheduled job that runs on the 1st of each month at 00:00 UTC
-- Processes billing for all users with active subscriptions
-- Creates Stripe invoices and charges customers
-- Updates billing usage records with invoice information
-
-#### 4. **StripeService** (`src/services/stripe.service.ts`)
+#### 2. **StripeService** (`src/services/stripe.service.ts`)
 - Manages Stripe customer creation
-- Creates and manages subscriptions
+- Creates subscriptions with metered billing using Stripe meter
+- Reports usage to Stripe meter after each sync
 - Creates checkout sessions and customer portal sessions
-- Handles invoice creation and finalization
+- Handles webhook events
 
-#### 5. **BillingController** (`src/controllers/billing.controller.ts`)
+#### 3. **SubscriberSyncService** (`src/services/subscriber-sync.service.ts`)
+- Syncs subscribers from ESPs to database
+- After each successful sync, calculates per-publication max usage
+- Reports usage to Stripe meter in real-time
+- Handles meter reporting errors gracefully (doesn't fail sync)
+
+#### 4. **BillingController** (`src/controllers/billing.controller.ts`)
 - REST API endpoints for billing operations
 - Webhook handler for Stripe events
 - Checkout session creation
 - Customer portal session creation
 - Billing status, usage, and history endpoints
+
+#### 5. **BillingProcessor** (`src/processors/billing.processor.ts`)
+- Simplified monthly job (if still needed for historical tracking)
+- Note: Stripe handles invoicing automatically for metered billing
+- May be used for creating usage records for historical purposes only
 
 ### Database Entities
 
@@ -58,82 +64,143 @@ The billing system implements usage-based subscription billing with Stripe integ
 One-to-one relationship with User. Tracks:
 - Stripe customer ID
 - Stripe subscription ID
+- **Stripe subscription item ID** (required for meter reporting)
 - Subscription status (active, canceled, past_due, etc.)
 - Current billing period dates
 - Cancellation flags
 
 #### **BillingUsage** (`src/entities/billing-usage.entity.ts`)
 One record per user per month. Tracks:
-- `maxSubscriberCount`: Highest subscriber count during the billing period
-- `calculatedAmount`: Billing amount for that month
-- `status`: pending → invoiced → paid/failed
-- `stripeInvoiceId`: Links to Stripe invoice
+- `maxSubscriberCount`: Sum of maximum subscriber counts from all publications
+- `calculatedAmount`: Billing amount for that month (for display purposes)
+- `status`: pending → invoiced → paid/failed (updated via webhooks)
+- `stripeInvoiceId`: Links to Stripe invoice (populated by webhooks)
 - `billingPeriodStart`/`billingPeriodEnd`: Calendar month boundaries
 
 **Unique Constraint:** `userId + billingPeriodStart` (prevents duplicate records)
 
+#### **SyncHistory** (`src/entities/sync-history.entity.ts`)
+Tracks each sync operation. Includes:
+- `subscriberCount`: Subscriber count at the time of sync (used for per-publication max calculation)
+- `espConnectionId`: Links to ESP connection
+- `status`: success or failed
+- `startedAt`/`completedAt`: Sync timing
+
 ## Data Flow
 
-### Real-Time Usage Tracking
+### Real-Time Usage Tracking and Meter Reporting
 
 ```
 User Syncs Subscribers
         │
         ▼
-SubscriberSyncService.syncSubscribers()
+SubscriberSyncProcessor.process()
   - Syncs subscribers from ESP
-  - Counts total subscribers (sum across all ESP connections)
-  - Calls BillingUsageService.updateUsage()
+  - Records subscriber count in SyncHistory
         │
         ▼
-BillingUsageService.updateUsage()
-  - Finds/creates BillingUsage for current month
-  - Updates maxSubscriberCount (only if new count is higher)
-  - Calculates amount via BillingCalculationService
-  - Saves to database
+SubscriberSyncService.syncSubscribers()
+  - After successful sync:
+    1. Counts total subscribers (for BillingUsage tracking)
+    2. Calculates per-publication max usage for current billing period
+    3. Sums maximums from all publications
+    4. Converts to 10k units (rounded up)
+    5. Reports to Stripe meter
+        │
+        ├─► BillingUsageService.updateUsage()
+        │   - Updates maxSubscriberCount (sum of all publications)
+        │   - Saves to database
+        │
+        └─► StripeService.reportUsageToMeter()
+            - Reports usage units to Stripe meter
+            - Stripe uses "last value" for billing period
 ```
 
-**Key Point:** The system tracks the **maximum** subscriber count during the billing period, not the current count. This ensures users are charged for their peak usage.
+**Key Points:**
+1. **Per-Publication Maximum**: For each ESP connection, finds the maximum subscriber count during the billing period from SyncHistory records
+2. **Sum of Maximums**: Sums the maximum from each publication (not the current total)
+3. **10k Unit Conversion**: Always rounds up (25,000 = 3 units, not 2.5)
+4. **Real-Time Reporting**: Usage is reported to Stripe immediately after each sync
+5. **Stripe Handles Billing**: Stripe automatically invoices at the end of the billing period based on the last reported usage value
 
-### Monthly Billing Process
+### Per-Publication Maximum Calculation
 
 ```
-Monthly Billing Job (1st of month, 00:00 UTC)
+For each ESP connection (publication):
+  1. Query SyncHistory records within billing period
+  2. Find maximum subscriberCount from successful syncs
+  3. If no sync history, use current subscriber count as fallback
+  4. Store max per connection in Map<connectionId, maxCount>
+
+Sum all maximums:
+  totalMax = sum(maxCount for each connection)
+
+Convert to 10k units:
+  units = Math.ceil(totalMax / 10000)
+
+Report to Stripe meter:
+  Stripe uses the last reported value for the billing period
+```
+
+### Monthly Billing (Automatic by Stripe)
+
+```
+End of Billing Period
         │
         ▼
-BillingProcessor.process()
-  For each active subscription:
-    1. Get previous month's BillingUsage
-    2. Create Stripe invoice item with calculated amount
-    3. Finalize invoice (charge customer)
-    4. Update BillingUsage: status='invoiced', store invoiceId
-    5. Create new BillingUsage for current month
+Stripe automatically:
+  1. Uses last reported usage value from meter
+  2. Calculates invoice amount based on meter pricing
+  3. Charges customer
+  4. Sends webhook events (invoice.paid, invoice.payment_failed)
+        │
+        ▼
+BillingController.handleWebhook()
+  - Updates BillingUsage.status based on invoice events
+  - Links invoice ID to BillingUsage record
 ```
 
-**Scheduling:** Uses BullMQ repeatable jobs with cron expression: `0 0 1 * *` (1st day of month at 00:00 UTC)
+**Note:** No manual monthly billing job is needed. Stripe handles invoicing automatically for metered billing.
 
 ## Billing Period Structure
 
 - **Calendar Month**: 1st day to last day of the month
 - **One Record Per Month**: Each user has exactly one `BillingUsage` record per calendar month
 - **Unique Constraint**: Prevents duplicate records for the same user/month
+- **Stripe Billing**: Stripe uses the last reported usage value during the period for invoicing
 
 ## Integration Points
 
 ### 1. Subscriber Sync Integration
 
 When subscribers are synced (`SubscriberSyncService.syncSubscribers()`):
-1. After successful sync, counts total subscribers across all user's ESP connections
-2. Calls `BillingUsageService.updateUsage(userId, totalSubscriberCount)`
-3. Updates happen even if some individual subscribers fail to process
+
+1. **Sync Process**:
+   - Fetches subscribers from ESP
+   - Stores/updates subscribers in database
+   - Records subscriber count in `SyncHistory.subscriberCount`
+
+2. **Usage Calculation**:
+   - Calculates per-publication max usage for current billing period
+   - Uses `BillingUsageService.calculatePerPublicationMaxUsage()` to find max per ESP connection
+   - Sums maximums from all publications
+   - Converts to 10k units using `BillingUsageService.calculateMeterUsage()`
+
+3. **Meter Reporting**:
+   - Gets user's subscription and subscription item ID
+   - Calls `StripeService.reportUsageToMeter()` with calculated units
+   - Errors are logged but don't fail the sync operation
+
+4. **Usage Tracking**:
+   - Updates `BillingUsage` record with total subscriber count (for display purposes)
 
 ### 2. Stripe Webhook Integration
 
 Webhook events handled (`BillingController.handleWebhook()`):
-- `customer.subscription.created` → Creates/updates `BillingSubscription`
-- `customer.subscription.updated` → Updates subscription status and period dates
+- `customer.subscription.created` → Creates/updates `BillingSubscription`, stores subscription item ID
+- `customer.subscription.updated` → Updates subscription status, period dates, and subscription item ID
 - `customer.subscription.deleted` → Marks subscription as canceled
-- `invoice.paid` → Updates `BillingUsage.status = 'paid'`
+- `invoice.paid` → Updates `BillingUsage.status = 'paid'`, links invoice ID
 - `invoice.payment_failed` → Updates `BillingUsage.status = 'failed'`
 
 ### 3. Subscription Guard
@@ -162,78 +229,106 @@ Webhook events handled (`BillingController.handleWebhook()`):
 Required Stripe configuration:
 - `STRIPE_SECRET_KEY` - Stripe API secret key
 - `STRIPE_WEBHOOK_SECRET` - Webhook signature verification secret
-- `STRIPE_PRICE_ID` - Stripe Price ID for subscriptions
+- `STRIPE_METER_ID` - Stripe meter ID for usage-based billing (e.g., `mtr_test_61U0JOA60MfGd9xVI41L1FsRxaYQT7S4`)
+
+**Note:** `STRIPE_PRICE_ID` is no longer used with metered billing. The meter ID is used instead.
 
 ## Key Features
 
-### 1. Maximum Tracking
-Only the highest subscriber count during a billing period is charged. If a user:
-- Starts with 5,000 subscribers
-- Grows to 15,000 mid-month
-- Drops to 10,000 by month end
+### 1. Per-Publication Maximum Tracking
+For each ESP connection (publication), the system tracks the maximum subscriber count during the billing period. The maximums are then summed across all publications.
 
-They are charged for 15,000 subscribers (the maximum).
+**Example:**
+- Publication A: Max 5,000 subscribers during period
+- Publication B: Max 3,000 subscribers during period
+- **Total for billing: 8,000 subscribers = 1 unit** (8,000 / 10,000 = 0.8 → 1)
 
-### 2. Multi-ESP Support
-Subscriber count is summed across **all** user's ESP connections. If a user has:
-- beehiiv connection with 5,000 subscribers
-- Kit connection with 3,000 subscribers
+### 2. Real-Time Meter Reporting
+Usage is reported to Stripe meter immediately after each sync. Stripe uses the **last reported value** during the billing period for invoicing.
 
-Total count = 8,000 subscribers for billing purposes.
+**Important:** If a user syncs multiple times during a period, only the last reported value is used for billing. This means:
+- If user reports 2 units, then 3 units, then 1 unit → Stripe bills for 1 unit (last value)
+- The system should report the maximum usage, not incremental changes
 
-### 3. Grace Period
+### 3. Round-Up Logic
+Always rounds up to the nearest 10k unit:
+- 25,000 subscribers = 3 units (not 2.5)
+- 15,000 subscribers = 2 units (not 1.5)
+- 20,000 subscribers = 2 units (exactly 2.0)
+
+### 4. Multi-ESP Support
+Subscriber count is calculated per publication, then summed:
+- Each ESP connection is tracked separately
+- Maximum subscriber count per connection during the period
+- Sum of all maximums = total for billing
+
+### 5. Grace Period
 Users with canceled subscriptions retain access until `currentPeriodEnd`. The `SubscriptionGuard` checks:
 - Subscription is active, OR
 - Subscription is canceled but `currentPeriodEnd` is in the future
 
-### 4. Idempotent Billing
-Monthly billing job:
-- Skips records already marked as `invoiced`
-- Can be safely re-run if needed
-- Logs warnings for missing usage records (doesn't fail entire job)
-
-### 5. Error Handling
-- Individual user billing failures don't stop the entire job
-- Failed invoices are marked with `status = 'failed'`
+### 6. Error Handling
+- Meter reporting errors are logged but don't fail the sync operation
+- Sync can complete successfully even if meter reporting fails
 - Webhook events update payment status automatically
 
 ## Frontend Integration
 
 ### Current Month Usage
-- Displays `maxSubscriberCount` and `calculatedAmount` for current month
+- Displays `maxSubscriberCount` (sum of per-publication maximums) for current month
+- Shows calculated amount (for display purposes)
 - Updates in real-time as subscribers are synced
 
 ### Billing History
 - Shows past 12 months of billing periods
 - Filtered to exclude future periods (`billingPeriodStart <= current date`)
 - Displays period dates, subscriber count, amount, status, and invoice links
+- Invoice links open Stripe customer portal
 
 ### Subscription Status
 - Shows active/canceled status
 - Displays current period end date
 - Shows cancellation flags if applicable
 
-## Testing Considerations
+## Meter Reporting Details
 
-### Manual Billing Trigger
-For testing, you can manually trigger billing by:
-1. Creating a job in the billing queue with `MonthlyBillingJobData`
-2. Specifying `billingPeriodStart` and `billingPeriodEnd` in job data
-3. The processor will use these dates instead of calculating from current date
+### How Stripe Meters Work
+- Stripe meters track usage over time
+- Usage is reported via `subscriptionItems.createUsageRecord()`
+- Stripe uses the **last reported value** during the billing period for invoicing
+- Multiple reports in the same period overwrite previous values (last one wins)
+
+### Reporting Strategy
+After each sync:
+1. Calculate current maximum usage (per-publication max, summed, converted to units)
+2. Report to Stripe meter with current timestamp
+3. Stripe stores this as the latest usage value
+4. At period end, Stripe invoices based on the last reported value
+
+**Important Consideration:** Since Stripe uses the last value, the system should report the maximum usage seen during the period, not incremental changes. The current implementation calculates the max from SyncHistory, which ensures the correct maximum is reported.
+
+## Testing Considerations
 
 ### Stripe Test Mode
 - Use Stripe test keys for development
+- Test meter ID: `mtr_test_61U0JOA60MfGd9xVI41L1FsRxaYQT7S4`
 - Test webhooks using Stripe CLI: `stripe listen --forward-to localhost:4000/billing/webhook`
 - Test checkout sessions with test card numbers
+
+### Manual Meter Testing
+- Trigger syncs and verify usage is reported to Stripe
+- Check Stripe dashboard to see usage records
+- Verify invoices are created automatically at period end
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Billing job not running**
-   - Check BullMQ queue status
-   - Verify cron schedule in `BillingSchedulerService`
-   - Check logs for job execution
+1. **Usage not being reported to meter**
+   - Check `STRIPE_METER_ID` is configured correctly
+   - Verify subscription has `stripeSubscriptionItemId` set
+   - Check sync is completing successfully
+   - Review logs for meter reporting errors
 
 2. **Webhook not receiving events**
    - Verify `STRIPE_WEBHOOK_SECRET` is correct
@@ -241,23 +336,31 @@ For testing, you can manually trigger billing by:
    - Use Stripe CLI for local testing
 
 3. **Invoices not being created**
-   - Verify `STRIPE_PRICE_ID` is configured
-   - Check user has active subscription
-   - Verify `BillingUsage` record exists for previous month
+   - Stripe handles invoicing automatically for metered billing
+   - Check Stripe dashboard for subscription status
+   - Verify usage records are being reported (check Stripe dashboard)
+   - Check subscription is active
 
-4. **Usage not updating**
-   - Check sync is completing successfully
-   - Verify `BillingUsageService.updateUsage()` is being called
-   - Check database for `BillingUsage` records
+4. **Incorrect usage amounts**
+   - Verify per-publication max calculation is working
+   - Check SyncHistory records have `subscriberCount` populated
+   - Verify 10k unit conversion (should always round up)
+   - Check that maximums are being calculated correctly per publication
+
+5. **Subscription item ID missing**
+   - Check webhook handlers are storing subscription item ID
+   - Verify subscription was created with meter (not price ID)
+   - Check `BillingSubscription.stripeSubscriptionItemId` field
 
 ## Related Files
 
-- `src/services/billing-calculation.service.ts` - Pricing calculation
-- `src/services/billing-usage.service.ts` - Usage tracking
+- `src/services/billing-usage.service.ts` - Usage tracking and meter calculation
 - `src/services/billing-subscription.service.ts` - Subscription management
-- `src/services/stripe.service.ts` - Stripe API integration
-- `src/controllers/billing.controller.ts` - API endpoints
-- `src/processors/billing.processor.ts` - Monthly billing job
+- `src/services/stripe.service.ts` - Stripe API integration and meter reporting
+- `src/services/subscriber-sync.service.ts` - Sync integration with meter reporting
+- `src/controllers/billing.controller.ts` - API endpoints and webhooks
+- `src/processors/billing.processor.ts` - Monthly billing job (simplified for metered billing)
 - `src/guards/subscription.guard.ts` - Subscription access control
 - `src/entities/billing-subscription.entity.ts` - Subscription entity
 - `src/entities/billing-usage.entity.ts` - Usage tracking entity
+- `src/entities/sync-history.entity.ts` - Sync history with subscriber count tracking
