@@ -16,3 +16,23 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Turborepo automatically recognizes new workspaces once added to root package.json
   - Use `yarn lint` and `yarn build` to verify changes don't break existing code
 ---
+
+## 2026-01-18 15:25 - US-002
+- Created `packages/shared/package.json` with name `@subscriber-nest/shared`, version, and proper exports configuration for all subdirectories (entities, dto, services, events, interfaces, types)
+- Created `packages/shared/tsconfig.json` with TypeScript configuration matching backend settings (commonjs, ES2022 target, decorators enabled)
+- Created index.ts files for all subdirectories with empty exports to make them valid TypeScript modules
+- Configured TypeScript paths in `apps/backend/tsconfig.json` to include `@subscriber-nest/shared` and `@subscriber-nest/shared/*` aliases pointing to `../../packages/shared/src`
+- Root `package.json` already had `packages/*` in workspaces from US-001
+- Files changed:
+  - `packages/shared/package.json` - Created with exports configuration
+  - `packages/shared/tsconfig.json` - Created with TypeScript config
+  - `packages/shared/src/index.ts` - Main entry point
+  - `packages/shared/src/{entities,dto,services,events,interfaces,types}/index.ts` - Subdirectory entry points
+  - `apps/backend/tsconfig.json` - Added path aliases for shared package
+- **Learnings for future iterations:**
+  - Empty TypeScript files need `export {};` to be recognized as modules
+  - Shared package exports should use both `types` and `default` fields in package.json exports for proper TypeScript support
+  - TypeScript path aliases in tsconfig.json use relative paths from the tsconfig.json location
+  - Turborepo automatically builds all packages in workspaces when running `yarn build`
+  - Package name should use scoped format `@subscriber-nest/shared` for monorepo packages
+---
