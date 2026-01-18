@@ -7,7 +7,7 @@ import {
   Headers,
 } from "@nestjs/common";
 import { IsEmail, IsString, Length } from "class-validator";
-import { AuthService } from "./auth.service";
+import { AuthService } from "./services/auth.service";
 import { AuthGuard } from "./guards/auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { User } from "@subscriber-nest/shared/entities";

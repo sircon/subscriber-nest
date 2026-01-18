@@ -178,3 +178,41 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn lint --filter=api` to verify code style after copying controllers
   - Typecheck will show errors for missing dependencies until services/guards/decorators are copied
 ---
+
+## 2026-01-18 15:34 - US-009
+- Copied all 9 API services from `apps/backend/src/services/` to `apps/api/src/services/`:
+  - SubscriberService
+  - SubscriberExportService
+  - EspConnectionService
+  - AuthService
+  - EmailService
+  - StripeService
+  - BillingSubscriptionService
+  - BillingUsageService
+  - BillingCalculationService
+- Also copied `SyncHistoryService` (not explicitly listed in PRD but required by esp-connection.controller.ts)
+- Copied dependencies required by services:
+  - `BeehiivConnector` to `apps/api/src/connectors/`
+  - `IEspConnector` interface to `apps/api/src/interfaces/`
+  - `esp.interface.ts` to `apps/api/src/interfaces/`
+  - `VerificationCodeEmail` template to `apps/api/src/emails/`
+- Fixed import paths in controllers:
+  - Updated `auth.controller.ts` to import `AuthService` from `./services/auth.service`
+  - Updated `billing.controller.ts` to import `AuthService` from `../services/auth.service`
+- All services already use shared package imports (`@subscriber-nest/shared/entities`, `@subscriber-nest/shared/dto`, `@subscriber-nest/shared/services`) - no updates needed
+- Files changed:
+  - Created 10 service files in `apps/api/src/services/`
+  - Created `apps/api/src/connectors/beehiiv.connector.ts`
+  - Created `apps/api/src/interfaces/esp-connector.interface.ts` and `esp.interface.ts`
+  - Created `apps/api/src/emails/verification-code-email.tsx`
+  - Updated `apps/api/src/auth.controller.ts` - Fixed AuthService import path
+  - Updated `apps/api/src/controllers/billing.controller.ts` - Fixed AuthService import path
+- **Learnings for future iterations:**
+  - Services copied from backend already use shared package imports (from previous stories), so no import updates needed
+  - When copying services, also copy their dependencies (connectors, interfaces, email templates)
+  - Controllers may reference services that aren't explicitly listed in the PRD but are required for functionality (e.g., SyncHistoryService)
+  - Service import paths in controllers need to be updated to point to `services/` subdirectory
+  - Lint passes for all copied services
+  - Typecheck errors for guards/decorators are expected until US-010 is completed
+  - Use `yarn lint --filter=api` to verify code style after copying services
+---

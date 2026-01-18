@@ -31,7 +31,7 @@ import {
 } from "@subscriber-nest/shared/entities";
 import { AuthGuard } from "../guards/auth.guard";
 import { CurrentUser } from "../decorators/current-user.decorator";
-import { AuthService } from "../auth.service";
+import { AuthService } from "../services/auth.service";
 
 @Controller("billing")
 export class BillingController {
