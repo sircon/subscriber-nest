@@ -346,3 +346,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - When creating API client functions, define TypeScript interfaces for all request/response types at the top of the file
   - Suspense fallback should match the structure of the actual component for better UX during loading
 ---
+
+## 2026-01-19 - US-018
+- Updated `api-key/page.tsx` to redirect to `/onboarding/stripe` after ESP connection creation (instead of completing onboarding immediately)
+- Removed `completeOnboarding` call and `login` context update from API key step
+- Updated `auth.service.ts` `completeOnboarding` method to check for active subscription using `BillingSubscriptionService.hasActiveSubscription()` before marking user as onboarded
+- Method throws `BadRequestException` with message "Active subscription required to complete onboarding" if no active subscription exists
+- Injected `BillingSubscriptionService` into `AuthService` constructor (service already registered in AppModule)
+- Middleware already allows access to `/onboarding/stripe` for authenticated but not onboarded users (route starts with `/onboarding` which is in `onboardingRoutes` array)
+- Removed unused imports (`authApi`, `login` from useAuth) from api-key page
+- Files changed:
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` (updated redirect logic, removed onboarding completion)
+  - `apps/backend/src/auth.service.ts` (added subscription check to completeOnboarding)
+- **Learnings for future iterations:**
+  - When updating onboarding flow, ensure middleware route patterns match (routes starting with `/onboarding` are automatically allowed for authenticated but not onboarded users)
+  - Services must be registered in module providers before they can be injected into other services
+  - Use `BadRequestException` for business logic validation errors (like missing subscription requirement)
+  - When removing functionality from a component, remember to remove unused imports to avoid lint errors
+  - The onboarding completion endpoint should validate all prerequisites (like active subscription) before marking user as onboarded
+---
