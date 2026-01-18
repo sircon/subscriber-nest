@@ -95,3 +95,28 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - All DTOs should be exported from `packages/shared/src/dto/index.ts`
   - Use `turbo run build --filter=backend --filter=@subscriber-nest/shared` to verify compilation
 ---
+
+## 2026-01-18 15:25 - US-005
+- Moved `EncryptionService` from `apps/backend/src/services/` to `packages/shared/src/services/`
+- Added `@nestjs/common` and `@nestjs/config` as dependencies to `packages/shared/package.json`
+- Updated `packages/shared/src/services/index.ts` to export `EncryptionService`
+- Updated all backend imports (6 files) to use `@subscriber-nest/shared/services` instead of relative paths:
+  - Controllers: subscriber
+  - Services: subscriber-mapper, subscriber-sync, esp-connection, subscriber-export
+  - app.module.ts
+- Deleted old EncryptionService file from backend
+- Files changed:
+  - `packages/shared/package.json` - Added NestJS dependencies
+  - Created `packages/shared/src/services/encryption.service.ts`
+  - Updated `packages/shared/src/services/index.ts` to export EncryptionService
+  - Updated 6 files in `apps/backend/src/` to use shared package imports
+  - Deleted `apps/backend/src/services/encryption.service.ts`
+- **Learnings for future iterations:**
+  - When moving services to shared package, add their dependencies (e.g., `@nestjs/common`, `@nestjs/config`) to shared package.json
+  - Services that depend on NestJS decorators (like `@Injectable()`) can be moved to shared package as long as dependencies are added
+  - When moving services, update imports in: controllers, services, processors, and app.module.ts
+  - Use `@subscriber-nest/shared/services` import path for all service imports after moving to shared package
+  - All services should be exported from `packages/shared/src/services/index.ts`
+  - Run `yarn install` after adding dependencies to shared package
+  - Use `yarn workspace @subscriber-nest/shared typecheck` and `yarn exec tsc --noEmit` in backend to verify compilation
+---
