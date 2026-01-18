@@ -28,6 +28,7 @@ import { BillingSubscriptionService } from "./services/billing-subscription.serv
 import { StripeService } from "./services/stripe.service";
 import { BillingCalculationService } from "./services/billing-calculation.service";
 import { EspConnectionService } from "./services/esp-connection.service";
+import { SyncEventListenerService } from "./services/sync-event-listener.service";
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { EspConnectionService } from "./services/esp-connection.service";
     StripeService,
     BillingCalculationService,
     EspConnectionService,
+    SyncEventListenerService,
   ],
 })
 export class AppModule {}

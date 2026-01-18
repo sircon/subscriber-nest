@@ -509,3 +509,23 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - API service now decoupled from queue implementation - worker service will handle queue job creation from events
   - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify changes
 ---
+
+## 2026-01-18 15:55 - US-025
+- Created `SyncEventListenerService` in `apps/worker/src/services/` that subscribes to `SyncRequestedEvent` using `@OnEvent('SyncRequestedEvent')` decorator
+- Listener service injects `subscriber-sync` queue using `@InjectQueue('subscriber-sync')` and adds `sync-publication` job when event is received
+- Listener logs received events with ESP connection ID and user ID
+- Registered `SyncEventListenerService` in worker service AppModule providers
+- Files changed:
+  - `apps/worker/src/services/sync-event-listener.service.ts` - Created event listener service
+  - `apps/worker/src/app.module.ts` - Added SyncEventListenerService import and registration
+- **Learnings for future iterations:**
+  - Event listeners in NestJS use `@OnEvent('EventClassName')` decorator to subscribe to events
+  - Event listener services must be registered in AppModule providers for dependency injection to work
+  - Use `@InjectQueue('queue-name')` from `@nestjs/bullmq` to inject queue instances in services
+  - Queue type is `Queue` from `bullmq` package
+  - Event listener methods receive the event instance as parameter (e.g., `handleSyncRequested(event: SyncRequestedEvent)`)
+  - Event emitter module was already configured in worker service AppModule from US-023, so no module configuration changes needed
+  - Use `queue.add('job-name', jobData)` to add jobs to BullMQ queues
+  - Event listeners should log received events for debugging and monitoring
+  - Use `yarn workspace worker typecheck`, `turbo run lint --filter=worker`, and `turbo run build --filter=worker` to verify event listener implementation
+---
