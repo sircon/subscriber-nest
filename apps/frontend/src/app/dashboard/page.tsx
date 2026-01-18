@@ -2,11 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { dashboardApi, espConnectionApi, DashboardStats, SyncHistory } from '@/lib/api';
+import {
+  dashboardApi,
+  espConnectionApi,
+  DashboardStats,
+  SyncHistory,
+} from '@/lib/api';
 
 const providerNames: Record<string, string> = {
   kit: 'Kit',
@@ -37,31 +55,38 @@ export default function DashboardPage() {
         // Fetch stats and connections in parallel
         const [statsData, connections] = await Promise.all([
           dashboardApi.getStats(token, () => router.push('/login')),
-          espConnectionApi.getUserConnections(token, () => router.push('/login')),
+          espConnectionApi.getUserConnections(token, () =>
+            router.push('/login')
+          ),
         ]);
 
         setStats(statsData);
 
         // Fetch sync history for all connections
         if (connections.length > 0) {
-          const syncHistoryPromises = connections.map((conn) =>
-            espConnectionApi
-              .getSyncHistory(conn.id, token, () => router.push('/login'), 50)
-              .then((history) =>
-                history.map((h) => ({
-                  ...h,
-                  espName: `${providerNames[conn.espType] || conn.espType} (${conn.publicationId})`,
-                }))
-              )
-              .catch(() => []) // Silently handle errors for individual connections
+          const syncHistoryPromises = connections.map(
+            (conn) =>
+              espConnectionApi
+                .getSyncHistory(conn.id, token, () => router.push('/login'), 50)
+                .then((history) =>
+                  history.map((h) => ({
+                    ...h,
+                    espName: `${providerNames[conn.espType] || conn.espType} (${conn.publicationId})`,
+                  }))
+                )
+                .catch(() => []) // Silently handle errors for individual connections
           );
 
           const allSyncHistory = await Promise.all(syncHistoryPromises);
-          
+
           // Flatten and sort by startedAt DESC
           const mergedHistory = allSyncHistory
             .flat()
-            .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+            .sort(
+              (a, b) =>
+                new Date(b.startedAt).getTime() -
+                new Date(a.startedAt).getTime()
+            )
             .slice(0, 50); // Keep only top 50
 
           setSyncHistory(mergedHistory);
@@ -99,9 +124,10 @@ export default function DashboardPage() {
 
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    
+
     return formatDateTime(dateString);
   };
 
@@ -143,21 +169,27 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardDescription>Total ESPs</CardDescription>
-            <CardTitle className="text-4xl">{stats?.totalEspConnections || 0}</CardTitle>
+            <CardTitle className="text-4xl">
+              {stats?.totalEspConnections || 0}
+            </CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>Total Subscribers</CardDescription>
-            <CardTitle className="text-4xl">{stats?.totalSubscribers || 0}</CardTitle>
+            <CardTitle className="text-4xl">
+              {stats?.totalSubscribers || 0}
+            </CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>Last Sync</CardDescription>
-            <CardTitle className="text-2xl">{formatLastSync(stats?.lastSyncTime || null)}</CardTitle>
+            <CardTitle className="text-2xl">
+              {formatLastSync(stats?.lastSyncTime || null)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -173,7 +205,8 @@ export default function DashboardPage() {
         <CardContent>
           {syncHistory.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              No sync history yet. Sync your ESP connections to see activity here.
+              No sync history yet. Sync your ESP connections to see activity
+              here.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -190,24 +223,36 @@ export default function DashboardPage() {
                 <TableBody>
                   {syncHistory.map((history) => (
                     <TableRow key={history.id}>
-                      <TableCell className="font-medium">{history.espName}</TableCell>
+                      <TableCell className="font-medium">
+                        {history.espName}
+                      </TableCell>
                       <TableCell>
                         <Badge
-                          variant={history.status === 'success' ? 'default' : 'destructive'}
+                          variant={
+                            history.status === 'success'
+                              ? 'default'
+                              : 'destructive'
+                          }
                           className={
                             history.status === 'success'
                               ? 'bg-green-500 hover:bg-green-600'
                               : ''
                           }
                         >
-                          {history.status.charAt(0).toUpperCase() + history.status.slice(1)}
+                          {history.status.charAt(0).toUpperCase() +
+                            history.status.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDateTime(history.startedAt)}</TableCell>
-                      <TableCell>{formatDateTime(history.completedAt)}</TableCell>
+                      <TableCell>
+                        {formatDateTime(history.completedAt)}
+                      </TableCell>
                       <TableCell>
                         {history.status === 'failed' && history.errorMessage ? (
-                          <span className="text-sm text-destructive max-w-xs truncate block" title={history.errorMessage}>
+                          <span
+                            className="text-sm text-destructive max-w-xs truncate block"
+                            title={history.errorMessage}
+                          >
                             {history.errorMessage}
                           </span>
                         ) : (

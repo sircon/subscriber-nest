@@ -2,24 +2,22 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const alertVariants = cva(
-  'relative w-full rounded-lg border p-4',
-  {
-    variants: {
-      variant: {
-        default: 'bg-background text-foreground',
-        destructive: 'bg-destructive/10 border-destructive/20 text-destructive',
-        warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-      },
+const alertVariants = cva('relative w-full rounded-lg border p-4', {
+  variants: {
+    variant: {
+      default: 'bg-background text-foreground',
+      destructive: 'bg-destructive/10 border-destructive/20 text-destructive',
+      warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
     },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
 
 export interface AlertProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof alertVariants> {}
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(

@@ -64,7 +64,10 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   );
 };
 
-const DialogContent: React.FC<DialogContentProps> = ({ children, className }) => {
+const DialogContent: React.FC<DialogContentProps> = ({
+  children,
+  className,
+}) => {
   return (
     <div
       className={cn(
@@ -87,18 +90,22 @@ const DialogHeader: React.FC<DialogHeaderProps> = ({ children, className }) => {
 
 const DialogTitle: React.FC<DialogTitleProps> = ({ children, className }) => {
   return (
-    <h2 className={cn('text-lg font-semibold leading-none tracking-tight', className)}>
+    <h2
+      className={cn(
+        'text-lg font-semibold leading-none tracking-tight',
+        className
+      )}
+    >
       {children}
     </h2>
   );
 };
 
-const DialogDescription: React.FC<DialogDescriptionProps> = ({ children, className }) => {
-  return (
-    <p className={cn('text-sm text-gray-600', className)}>
-      {children}
-    </p>
-  );
+const DialogDescription: React.FC<DialogDescriptionProps> = ({
+  children,
+  className,
+}) => {
+  return <p className={cn('text-sm text-gray-600', className)}>{children}</p>;
 };
 
 const DialogFooter: React.FC<DialogFooterProps> = ({ children, className }) => {

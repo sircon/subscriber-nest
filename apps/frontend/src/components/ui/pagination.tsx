@@ -23,7 +23,7 @@ export function Pagination({
   }
 
   // Calculate range of items being shown
-  const startItem = ((currentPage - 1) * itemsPerPage) + 1;
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const handlePrevious = () => {
@@ -39,7 +39,11 @@ export function Pagination({
   };
 
   // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void, disabled: boolean) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent,
+    action: () => void,
+    disabled: boolean
+  ) => {
     if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       action();
@@ -47,7 +51,7 @@ export function Pagination({
   };
 
   return (
-    <div 
+    <div
       className="flex items-center justify-between mt-4"
       role="navigation"
       aria-label="Pagination"
@@ -73,7 +77,7 @@ export function Pagination({
         </Button>
 
         {/* Current page info */}
-        <div 
+        <div
           className="text-sm text-gray-600"
           aria-current="page"
           aria-label={`Page ${currentPage} of ${totalPages}`}
@@ -86,7 +90,9 @@ export function Pagination({
           variant="outline"
           size="sm"
           onClick={handleNext}
-          onKeyDown={(e) => handleKeyDown(e, handleNext, currentPage === totalPages)}
+          onKeyDown={(e) =>
+            handleKeyDown(e, handleNext, currentPage === totalPages)
+          }
           disabled={currentPage === totalPages}
           aria-label="Go to next page"
         >

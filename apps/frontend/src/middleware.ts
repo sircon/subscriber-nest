@@ -16,8 +16,13 @@ export function middleware(request: NextRequest) {
   // Get auth token and user from cookies
   const token = request.cookies.get('auth_token')?.value;
   const userCookie = request.cookies.get('user')?.value;
-  
-  let user: { id: string; email: string; isOnboarded: boolean; deleteRequestedAt?: Date | string | null } | null = null;
+
+  let user: {
+    id: string;
+    email: string;
+    isOnboarded: boolean;
+    deleteRequestedAt?: Date | string | null;
+  } | null = null;
   if (userCookie) {
     try {
       user = JSON.parse(userCookie);
@@ -31,13 +36,18 @@ export function middleware(request: NextRequest) {
   const isOnboarded = user?.isOnboarded ?? false;
 
   // Check if current path is a public route
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
   // Check if current path is an onboarding route
-  const isOnboardingRoute = onboardingRoutes.some(route => pathname.startsWith(route));
-  
+  const isOnboardingRoute = onboardingRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
   // Check if current path is a protected route
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || 
+  const isProtectedRoute =
+    protectedRoutes.some((route) => pathname.startsWith(route)) ||
     (!isPublicRoute && !isOnboardingRoute && pathname !== '/');
 
   // If not authenticated and trying to access protected route, redirect to login
@@ -47,7 +57,12 @@ export function middleware(request: NextRequest) {
   }
 
   // If authenticated but not onboarded and trying to access protected route (not onboarding), redirect to onboarding
-  if (isAuthenticated && !isOnboarded && isProtectedRoute && !isOnboardingRoute) {
+  if (
+    isAuthenticated &&
+    !isOnboarded &&
+    isProtectedRoute &&
+    !isOnboardingRoute
+  ) {
     const onboardingUrl = new URL('/onboarding', request.url);
     return NextResponse.redirect(onboardingUrl);
   }
@@ -59,7 +74,13 @@ export function middleware(request: NextRequest) {
   }
 
   // If authenticated and onboarded and trying to access onboarding, redirect to dashboard
-  if (isAuthenticated && isOnboarded && isOnboardingRoute) {
+  // Exception: allow access to /onboarding/stripe for onboarded users (they can set up subscription from billing page)
+  if (
+    isAuthenticated &&
+    isOnboarded &&
+    isOnboardingRoute &&
+    !pathname.startsWith('/onboarding/stripe')
+  ) {
     const dashboardUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(dashboardUrl);
   }
@@ -69,7 +90,7 @@ export function middleware(request: NextRequest) {
   if (isAuthenticated && user?.deleteRequestedAt) {
     const isDeletionPage = pathname.startsWith('/account-deletion');
     const isExportEndpoint = pathname.includes('/subscribers/export');
-    
+
     if (!isDeletionPage && !isExportEndpoint) {
       const deletionUrl = new URL('/account-deletion', request.url);
       return NextResponse.redirect(deletionUrl);

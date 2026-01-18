@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -94,7 +100,7 @@ export default function NewEspConnectionPage() {
         token,
         () => {
           router.push('/login');
-        },
+        }
       );
 
       // Step 2: Automatically trigger sync
@@ -111,7 +117,9 @@ export default function NewEspConnectionPage() {
       // Step 3: Redirect to ESP detail page
       router.push(`/dashboard/esp/${connection.id}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to create ESP connection. Please try again.');
+      setError(
+        err.message || 'Failed to create ESP connection. Please try again.'
+      );
       setLoading(false);
     }
   };
@@ -177,7 +185,9 @@ export default function NewEspConnectionPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to ESP Selection
         </Button>
-        <h1 className="text-3xl font-semibold mb-2">Connect {espTypes.find((e) => e.id === selectedEspType)?.name}</h1>
+        <h1 className="text-3xl font-semibold mb-2">
+          Connect {espTypes.find((e) => e.id === selectedEspType)?.name}
+        </h1>
         <p className="text-muted-foreground">
           Enter your API credentials to connect your account
         </p>
@@ -206,7 +216,9 @@ export default function NewEspConnectionPage() {
                 className={validationErrors.apiKey ? 'border-destructive' : ''}
               />
               {validationErrors.apiKey && (
-                <p className="text-sm text-destructive">{validationErrors.apiKey}</p>
+                <p className="text-sm text-destructive">
+                  {validationErrors.apiKey}
+                </p>
               )}
             </div>
 
@@ -221,7 +233,9 @@ export default function NewEspConnectionPage() {
                 value={publicationId}
                 onChange={(e) => setPublicationId(e.target.value)}
                 disabled={loading}
-                className={validationErrors.publicationId ? 'border-destructive' : ''}
+                className={
+                  validationErrors.publicationId ? 'border-destructive' : ''
+                }
               />
               {validationErrors.publicationId && (
                 <p className="text-sm text-destructive">

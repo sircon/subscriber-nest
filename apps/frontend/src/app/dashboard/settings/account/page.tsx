@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -45,7 +51,11 @@ export default function AccountSettingsPage() {
       );
       setDeleteDialogOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to request account deletion');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to request account deletion'
+      );
     } finally {
       setDeleteLoading(false);
     }
@@ -86,14 +96,15 @@ export default function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account Information</CardTitle>
-            <CardDescription>
-              Your account details
-            </CardDescription>
+            <CardDescription>Your account details</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Email Address
                 </label>
                 <Input
@@ -123,9 +134,10 @@ export default function AccountSettingsPage() {
             <div className="space-y-4">
               <Alert variant="destructive">
                 <AlertDescription>
-                  <strong>Warning:</strong> This action cannot be undone. Once you request account
-                  deletion, your account will be permanently deleted after 30 days. During this
-                  grace period, you can export your data. Your subscription will be canceled
+                  <strong>Warning:</strong> This action cannot be undone. Once
+                  you request account deletion, your account will be permanently
+                  deleted after 30 days. During this grace period, you can
+                  export your data. Your subscription will be canceled
                   immediately.
                 </AlertDescription>
               </Alert>
@@ -148,7 +160,8 @@ export default function AccountSettingsPage() {
           <DialogHeader>
             <DialogTitle>Delete Account</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete your account? This action cannot be undone.
+              Are you sure you want to delete your account? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -159,10 +172,15 @@ export default function AccountSettingsPage() {
                     <strong>What happens when you delete your account:</strong>
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
-                    <li>Your account will be deleted after a 30-day grace period</li>
+                    <li>
+                      Your account will be deleted after a 30-day grace period
+                    </li>
                     <li>You can export your data during the grace period</li>
                     <li>Your subscription will be canceled immediately</li>
-                    <li>All your data (ESP connections, subscribers, sync history, billing records) will be permanently deleted</li>
+                    <li>
+                      All your data (ESP connections, subscribers, sync history,
+                      billing records) will be permanently deleted
+                    </li>
                   </ul>
                 </div>
               </AlertDescription>

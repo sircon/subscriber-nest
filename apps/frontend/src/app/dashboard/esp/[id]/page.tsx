@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { espConnectionApi, subscriberApi, billingApi, EspConnection, PaginatedSubscribers, SyncHistory, BillingStatusResponse } from '@/lib/api';
+import {
+  espConnectionApi,
+  subscriberApi,
+  billingApi,
+  EspConnection,
+  PaginatedSubscribers,
+  SyncHistory,
+  BillingStatusResponse,
+} from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -38,14 +46,20 @@ export default function EspDetailPage() {
 
   const [connection, setConnection] = useState<EspConnection | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncHistory[]>([]);
-  const [subscribers, setSubscribers] = useState<PaginatedSubscribers | null>(null);
+  const [subscribers, setSubscribers] = useState<PaginatedSubscribers | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Unmask state management
-  const [unmaskedEmails, setUnmaskedEmails] = useState<Map<string, string>>(new Map());
+  const [unmaskedEmails, setUnmaskedEmails] = useState<Map<string, string>>(
+    new Map()
+  );
   const [unmaskingIds, setUnmaskingIds] = useState<Set<string>>(new Set());
-  const [unmaskErrors, setUnmaskErrors] = useState<Map<string, string>>(new Map());
+  const [unmaskErrors, setUnmaskErrors] = useState<Map<string, string>>(
+    new Map()
+  );
 
   // Export state management
   const [isExporting, setIsExporting] = useState(false);
@@ -56,7 +70,9 @@ export default function EspDetailPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Subscription status state
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<
+    boolean | null
+  >(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
 
   // Pagination state from URL
@@ -75,7 +91,13 @@ export default function EspDetailPage() {
         const [connectionData, syncData, subscribersData] = await Promise.all([
           espConnectionApi.getConnection(id as string, token),
           espConnectionApi.getSyncHistory(id as string, token, undefined, 1),
-          espConnectionApi.getSubscribers(id as string, token, undefined, currentPage, itemsPerPage),
+          espConnectionApi.getSubscribers(
+            id as string,
+            token,
+            undefined,
+            currentPage,
+            itemsPerPage
+          ),
         ]);
 
         setConnection(connectionData);
@@ -83,7 +105,11 @@ export default function EspDetailPage() {
         setSubscribers(subscribersData);
       } catch (err) {
         console.error('Error fetching ESP detail data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load ESP connection details');
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load ESP connection details'
+        );
       } finally {
         setLoading(false);
       }
@@ -102,7 +128,8 @@ export default function EspDetailPage() {
 
       setCheckingSubscription(true);
       try {
-        const status: BillingStatusResponse = await billingApi.getBillingStatus(token);
+        const status: BillingStatusResponse =
+          await billingApi.getBillingStatus(token);
         setHasActiveSubscription(status.hasActiveSubscription);
       } catch (err) {
         console.error('Error checking subscription status:', err);
@@ -163,7 +190,7 @@ export default function EspDetailPage() {
       const newUnmaskedEmails = new Map(unmaskedEmails);
       newUnmaskedEmails.delete(subscriberId);
       setUnmaskedEmails(newUnmaskedEmails);
-      
+
       // Clear any error for this subscriber
       const newErrors = new Map(unmaskErrors);
       newErrors.delete(subscriberId);
@@ -176,7 +203,7 @@ export default function EspDetailPage() {
 
     // Set loading state
     setUnmaskingIds((prev) => new Set(prev).add(subscriberId));
-    
+
     // Clear previous error if any
     const newErrors = new Map(unmaskErrors);
     newErrors.delete(subscriberId);
@@ -184,16 +211,17 @@ export default function EspDetailPage() {
 
     try {
       const response = await subscriberApi.unmaskEmail(subscriberId, token);
-      
+
       // Update unmasked emails map
       const newUnmaskedEmails = new Map(unmaskedEmails);
       newUnmaskedEmails.set(subscriberId, response.email);
       setUnmaskedEmails(newUnmaskedEmails);
     } catch (err) {
       console.error('Error unmasking email:', err);
-      
+
       // Store error message for this subscriber
-      const errorMessage = err instanceof Error ? err.message : 'Failed to unmask email';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to unmask email';
       const newErrorMap = new Map(unmaskErrors);
       newErrorMap.set(subscriberId, errorMessage);
       setUnmaskErrors(newErrorMap);
@@ -217,7 +245,7 @@ export default function EspDetailPage() {
       const { blob, filename } = await espConnectionApi.exportSubscribers(
         id as string,
         format,
-        token,
+        token
       );
 
       // Create a download link and trigger download
@@ -227,15 +255,16 @@ export default function EspDetailPage() {
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting subscribers:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to export subscribers';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to export subscribers';
       setExportError(errorMessage);
-      
+
       // Clear error after 5 seconds
       setTimeout(() => setExportError(null), 5000);
     } finally {
@@ -252,14 +281,19 @@ export default function EspDetailPage() {
     try {
       // Trigger sync - response includes updated connection
       const response = await espConnectionApi.triggerSync(id as string, token);
-      
+
       // Update connection state with the response
       setConnection(response.connection);
 
       // Optionally refresh sync history after a short delay to see the new sync record
       setTimeout(async () => {
         try {
-          const syncData = await espConnectionApi.getSyncHistory(id as string, token, undefined, 1);
+          const syncData = await espConnectionApi.getSyncHistory(
+            id as string,
+            token,
+            undefined,
+            1
+          );
           setSyncHistory(syncData);
         } catch (err) {
           // Silently fail - sync history refresh is optional
@@ -268,9 +302,10 @@ export default function EspDetailPage() {
       }, 1000);
     } catch (err) {
       console.error('Error triggering sync:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to trigger sync';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to trigger sync';
       setSyncError(errorMessage);
-      
+
       // Clear error after 5 seconds
       setTimeout(() => setSyncError(null), 5000);
     } finally {
@@ -315,8 +350,12 @@ export default function EspDetailPage() {
   }
 
   // Calculate subscriber counts by status
-  const activeCount = subscribers.data.filter((s) => s.status === 'active').length;
-  const unsubscribedCount = subscribers.data.filter((s) => s.status === 'unsubscribed').length;
+  const activeCount = subscribers.data.filter(
+    (s) => s.status === 'active'
+  ).length;
+  const unsubscribedCount = subscribers.data.filter(
+    (s) => s.status === 'unsubscribed'
+  ).length;
   const lastSync = syncHistory[0];
 
   return (
@@ -422,12 +461,8 @@ export default function EspDetailPage() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          {syncError && (
-            <p className="text-sm text-red-600">{syncError}</p>
-          )}
-          {exportError && (
-            <p className="text-sm text-red-600">{exportError}</p>
-          )}
+          {syncError && <p className="text-sm text-red-600">{syncError}</p>}
+          {exportError && <p className="text-sm text-red-600">{exportError}</p>}
         </div>
       </div>
 
@@ -458,8 +493,11 @@ export default function EspDetailPage() {
                 <p className="text-lg font-semibold">
                   {formatDate(lastSync.completedAt)}
                 </p>
-                <Badge className={`mt-2 ${lastSync.status === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
-                  {lastSync.status.charAt(0).toUpperCase() + lastSync.status.slice(1)}
+                <Badge
+                  className={`mt-2 ${lastSync.status === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}
+                >
+                  {lastSync.status.charAt(0).toUpperCase() +
+                    lastSync.status.slice(1)}
                 </Badge>
               </div>
             ) : (
@@ -480,7 +518,8 @@ export default function EspDetailPage() {
               {getSyncStatusBadge(connection.syncStatus)}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {connection.status.charAt(0).toUpperCase() + connection.status.slice(1)}
+              {connection.status.charAt(0).toUpperCase() +
+                connection.status.slice(1)}
             </p>
           </CardContent>
         </Card>
@@ -495,10 +534,16 @@ export default function EspDetailPage() {
           <CardContent>
             <div className="space-y-1">
               <p className="text-sm">
-                <span className="font-semibold text-green-600">{activeCount}</span> Active
+                <span className="font-semibold text-green-600">
+                  {activeCount}
+                </span>{' '}
+                Active
               </p>
               <p className="text-sm">
-                <span className="font-semibold text-gray-600">{unsubscribedCount}</span> Unsubscribed
+                <span className="font-semibold text-gray-600">
+                  {unsubscribedCount}
+                </span>{' '}
+                Unsubscribed
               </p>
             </div>
           </CardContent>
@@ -525,7 +570,10 @@ export default function EspDetailPage() {
               <TableBody>
                 {subscribers.data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-gray-500"
+                    >
                       No subscribers found
                     </TableCell>
                   </TableRow>
@@ -534,13 +582,15 @@ export default function EspDetailPage() {
                     const isUnmasked = unmaskedEmails.has(subscriber.id);
                     const isUnmasking = unmaskingIds.has(subscriber.id);
                     const unmaskError = unmaskErrors.get(subscriber.id);
-                    
+
                     return (
                       <TableRow key={subscriber.id}>
                         <TableCell className="font-mono text-sm">
                           <div className="flex items-center gap-2">
                             <span>
-                              {isUnmasked ? unmaskedEmails.get(subscriber.id) : subscriber.maskedEmail}
+                              {isUnmasked
+                                ? unmaskedEmails.get(subscriber.id)
+                                : subscriber.maskedEmail}
                             </span>
                             <TooltipProvider>
                               <Tooltip>
@@ -549,7 +599,9 @@ export default function EspDetailPage() {
                                     variant="ghost"
                                     size="sm"
                                     className="h-6 w-6 p-0"
-                                    onClick={() => handleUnmaskToggle(subscriber.id)}
+                                    onClick={() =>
+                                      handleUnmaskToggle(subscriber.id)
+                                    }
                                     disabled={isUnmasking}
                                   >
                                     {isUnmasking ? (
@@ -565,8 +617,8 @@ export default function EspDetailPage() {
                                   {isUnmasking
                                     ? 'Loading...'
                                     : isUnmasked
-                                    ? 'Mask email'
-                                    : 'Unmask email'}
+                                      ? 'Mask email'
+                                      : 'Unmask email'}
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -581,8 +633,12 @@ export default function EspDetailPage() {
                         </TableCell>
                         <TableCell>{subscriber.firstName || '-'}</TableCell>
                         <TableCell>{subscriber.lastName || '-'}</TableCell>
-                        <TableCell>{getStatusBadge(subscriber.status)}</TableCell>
-                        <TableCell>{formatDate(subscriber.subscribedAt)}</TableCell>
+                        <TableCell>
+                          {getStatusBadge(subscriber.status)}
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(subscriber.subscribedAt)}
+                        </TableCell>
                       </TableRow>
                     );
                   })

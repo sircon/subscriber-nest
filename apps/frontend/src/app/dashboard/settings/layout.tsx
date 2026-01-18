@@ -10,7 +10,7 @@ export default function SettingsLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   // Determine active tab based on current pathname
   const getActiveTab = () => {
     if (pathname === '/dashboard/settings/billing') {
@@ -36,11 +36,17 @@ export default function SettingsLayout({
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-gray-600">Manage your application preferences and account</p>
+        <p className="text-gray-600">
+          Manage your application preferences and account
+        </p>
       </div>
 
       {/* Navigation Tabs */}
-      <Tabs value={getActiveTab()} onValueChange={handleTabChange} className="w-full">
+      <Tabs
+        value={getActiveTab()}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
         <TabsList className="mb-6">
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
@@ -48,9 +54,7 @@ export default function SettingsLayout({
       </Tabs>
 
       {/* Content Area */}
-      <div className="mt-6">
-        {children}
-      </div>
+      <div className="mt-6">{children}</div>
     </div>
   );
 }

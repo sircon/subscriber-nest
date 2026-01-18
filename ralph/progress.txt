@@ -608,3 +608,25 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Subscription status check should happen in separate useEffect from main data fetching to avoid blocking page load
   - Always handle subscription check errors gracefully - default to inactive (fail-safe) if check fails
 ---
+
+## 2026-01-19 - US-029
+- Updated SubscriptionWarningBanner component with professional custom styling
+- Replaced Alert variant="warning" with custom div using amber color scheme matching dashboard design system
+- Applied gradient background (from-amber-500/10 via-amber-500/8 to-amber-500/10) with subtle border (border-amber-500/20)
+- Updated "Manage Subscription" button from variant="outline" to variant="default" with primary colors for better contrast and clickability
+- Improved visual hierarchy: added space-y-1.5 for text spacing, gap-3 for button spacing, better padding (p-5)
+- Enhanced button styling with shadow effects (shadow-sm, hover:shadow-md) and transition animations
+- Updated dismiss button styling with amber-themed hover states
+- Maintained all existing functionality: dismissible with localStorage persistence, subscription status checking
+- Removed unused Alert component imports
+- Files changed:
+  - `apps/frontend/src/components/subscription-warning-banner.tsx` (updated styling)
+- **Learnings for future iterations:**
+  - When replacing shadcn component variants with custom styling, use Tailwind utility classes that match the design system color palette
+  - Amber colors (amber-500/10, amber-200, amber-100/90) work well for warning banners in dark themes
+  - Gradient backgrounds (bg-gradient-to-r) with opacity create subtle, professional visual effects
+  - Use backdrop-blur-sm for modern glassmorphism effects on banners
+  - Button variant="default" with primary colors provides better contrast than outline variants for important actions
+  - Always run prettier to fix formatting issues before committing
+  - Custom styled components should maintain the same functionality as the original (dismissible, localStorage, etc.)
+---

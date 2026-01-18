@@ -1,6 +1,6 @@
 /**
  * API client for SubscriberNest backend
- * 
+ *
  * Provides typed functions for all backend endpoints with automatic
  * authentication token handling and 401 error management.
  */
@@ -126,7 +126,7 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
   token: string | null = null,
-  onUnauthorized?: OnUnauthorizedCallback,
+  onUnauthorized?: OnUnauthorizedCallback
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -149,7 +149,10 @@ async function apiRequest<T>(
       onUnauthorized();
     }
     // Redirect to login if we're not already there
-    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.pathname.startsWith('/login')
+    ) {
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');
@@ -157,7 +160,9 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API request failed: ${response.statusText}`);
+    throw new Error(
+      errorData.message || `API request failed: ${response.statusText}`
+    );
   }
 
   return response.json();
@@ -192,7 +197,7 @@ export const authApi = {
    */
   getCurrentUser: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<GetCurrentUserResponse> => {
     return apiRequest<GetCurrentUserResponse>(
       '/auth/me',
@@ -200,7 +205,7 @@ export const authApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -209,7 +214,7 @@ export const authApi = {
    */
   logout: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<LogoutResponse> => {
     return apiRequest<LogoutResponse>(
       '/auth/logout',
@@ -217,7 +222,7 @@ export const authApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -226,7 +231,7 @@ export const authApi = {
    */
   completeOnboarding: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<CompleteOnboardingResponse> => {
     return apiRequest<CompleteOnboardingResponse>(
       '/auth/complete-onboarding',
@@ -234,7 +239,7 @@ export const authApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 };
@@ -256,7 +261,7 @@ export const espConnectionApi = {
   createConnection: async (
     data: CreateEspConnectionRequest,
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<CreateEspConnectionResponse> => {
     return apiRequest<CreateEspConnectionResponse>(
       '/esp-connections',
@@ -265,7 +270,7 @@ export const espConnectionApi = {
         body: JSON.stringify(data),
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -274,7 +279,7 @@ export const espConnectionApi = {
    */
   getUserConnections: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<EspConnection[]> => {
     return apiRequest<EspConnection[]>(
       '/esp-connections',
@@ -282,7 +287,7 @@ export const espConnectionApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -292,7 +297,7 @@ export const espConnectionApi = {
   triggerSync: async (
     connectionId: string,
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<TriggerSyncResponse> => {
     return apiRequest<TriggerSyncResponse>(
       `/esp-connections/${connectionId}/sync`,
@@ -300,7 +305,7 @@ export const espConnectionApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -311,7 +316,7 @@ export const espConnectionApi = {
     connectionId: string,
     token: string | null,
     onUnauthorized?: OnUnauthorizedCallback,
-    limit?: number,
+    limit?: number
   ): Promise<SyncHistory[]> => {
     const url = `/esp-connections/${connectionId}/sync-history${limit ? `?limit=${limit}` : ''}`;
     return apiRequest<SyncHistory[]>(
@@ -320,7 +325,7 @@ export const espConnectionApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -330,7 +335,7 @@ export const espConnectionApi = {
   getConnection: async (
     connectionId: string,
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<EspConnection> => {
     return apiRequest<EspConnection>(
       `/esp-connections/${connectionId}`,
@@ -338,7 +343,7 @@ export const espConnectionApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -351,13 +356,13 @@ export const espConnectionApi = {
     onUnauthorized?: OnUnauthorizedCallback,
     page?: number,
     limit?: number,
-    status?: string,
+    status?: string
   ): Promise<PaginatedSubscribers> => {
     const params = new URLSearchParams();
     if (page) params.append('page', page.toString());
     if (limit) params.append('limit', limit.toString());
     if (status) params.append('status', status);
-    
+
     const url = `/esp-connections/${connectionId}/subscribers${params.toString() ? `?${params.toString()}` : ''}`;
     return apiRequest<PaginatedSubscribers>(
       url,
@@ -365,7 +370,7 @@ export const espConnectionApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -377,26 +382,32 @@ export const espConnectionApi = {
     connectionId: string,
     format: 'csv' | 'json' | 'xlsx',
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<{ blob: Blob; filename: string }> => {
     const headers: Record<string, string> = {};
-    
+
     // Add auth token if provided
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}/esp-connections/${connectionId}/subscribers/export?format=${format}`, {
-      method: 'GET',
-      headers: headers as HeadersInit,
-    });
+    const response = await fetch(
+      `${API_URL}/esp-connections/${connectionId}/subscribers/export?format=${format}`,
+      {
+        method: 'GET',
+        headers: headers as HeadersInit,
+      }
+    );
 
     // Handle 401 Unauthorized
     if (response.status === 401) {
       if (onUnauthorized) {
         onUnauthorized();
       }
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.startsWith('/login')
+      ) {
         window.location.href = '/login';
       }
       throw new Error('Unauthorized');
@@ -404,7 +415,9 @@ export const espConnectionApi = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Export failed: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `Export failed: ${response.statusText}`
+      );
     }
 
     // Extract filename from Content-Disposition header
@@ -431,7 +444,7 @@ export const dashboardApi = {
    */
   getStats: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<DashboardStats> => {
     return apiRequest<DashboardStats>(
       '/dashboard/stats',
@@ -439,7 +452,7 @@ export const dashboardApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 };
@@ -458,7 +471,7 @@ export const subscriberApi = {
   unmaskEmail: async (
     subscriberId: string,
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<UnmaskEmailResponse> => {
     return apiRequest<UnmaskEmailResponse>(
       `/subscribers/${subscriberId}/unmask`,
@@ -466,7 +479,7 @@ export const subscriberApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 };
@@ -547,7 +560,7 @@ export const billingApi = {
    */
   createCheckoutSession: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<CreateCheckoutSessionResponse> => {
     return apiRequest<CreateCheckoutSessionResponse>(
       '/billing/create-checkout-session',
@@ -555,7 +568,7 @@ export const billingApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -564,7 +577,7 @@ export const billingApi = {
    */
   createPortalSession: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<CreatePortalSessionResponse> => {
     return apiRequest<CreatePortalSessionResponse>(
       '/billing/create-portal-session',
@@ -572,7 +585,7 @@ export const billingApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -581,7 +594,7 @@ export const billingApi = {
    */
   getBillingStatus: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<BillingStatusResponse> => {
     return apiRequest<BillingStatusResponse>(
       '/billing/status',
@@ -589,7 +602,7 @@ export const billingApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -598,7 +611,7 @@ export const billingApi = {
    */
   getCurrentUsage: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<CurrentUsageResponse> => {
     return apiRequest<CurrentUsageResponse>(
       '/billing/usage',
@@ -606,7 +619,7 @@ export const billingApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -616,7 +629,7 @@ export const billingApi = {
   getBillingHistory: async (
     token: string | null,
     onUnauthorized?: OnUnauthorizedCallback,
-    limit?: number,
+    limit?: number
   ): Promise<BillingHistoryItem[]> => {
     const url = `/billing/history${limit ? `?limit=${limit}` : ''}`;
     return apiRequest<BillingHistoryItem[]>(
@@ -625,7 +638,7 @@ export const billingApi = {
         method: 'GET',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 
@@ -635,7 +648,7 @@ export const billingApi = {
   verifyCheckoutSession: async (
     token: string | null,
     sessionId: string,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<VerifyCheckoutSessionResponse> => {
     return apiRequest<VerifyCheckoutSessionResponse>(
       '/billing/verify-checkout-session',
@@ -644,7 +657,7 @@ export const billingApi = {
         body: JSON.stringify({ sessionId }),
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 };
@@ -662,7 +675,7 @@ export const accountApi = {
    */
   deleteAccount: async (
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback,
+    onUnauthorized?: OnUnauthorizedCallback
   ): Promise<DeleteAccountResponse> => {
     return apiRequest<DeleteAccountResponse>(
       '/account/delete',
@@ -670,7 +683,7 @@ export const accountApi = {
         method: 'POST',
       },
       token,
-      onUnauthorized,
+      onUnauthorized
     );
   },
 };
