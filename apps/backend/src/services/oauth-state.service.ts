@@ -22,12 +22,14 @@ export class OAuthStateService {
    * @param userId - The user ID
    * @param espType - The ESP type (kit or mailchimp)
    * @param redirectUri - Optional redirect URI to return to after OAuth callback
+   * @param isOnboarding - Whether this OAuth flow is part of the onboarding process
    * @returns The generated state string
    */
   async createState(
     userId: string,
     espType: EspType,
-    redirectUri?: string
+    redirectUri?: string,
+    isOnboarding: boolean = false
   ): Promise<string> {
     // Generate a random 32-byte state string (64 hex characters)
     const state = crypto.randomBytes(32).toString('hex');
@@ -42,6 +44,7 @@ export class OAuthStateService {
       espType,
       state,
       redirectUri: redirectUri || null,
+      isOnboarding,
       expiresAt,
     });
 
@@ -60,12 +63,12 @@ export class OAuthStateService {
    *
    * @param state - The state string to validate
    * @param espType - The ESP type to validate against
-   * @returns User ID and optional redirect URI
+   * @returns User ID, optional redirect URI, and isOnboarding flag
    */
   async validateState(
     state: string,
     espType: EspType
-  ): Promise<{ userId: string; redirectUri?: string }> {
+  ): Promise<{ userId: string; redirectUri?: string; isOnboarding: boolean }> {
     const oauthState = await this.oauthStateRepository.findOne({
       where: { state, espType },
     });
@@ -88,6 +91,7 @@ export class OAuthStateService {
     return {
       userId: oauthState.userId,
       redirectUri: oauthState.redirectUri || undefined,
+      isOnboarding: oauthState.isOnboarding,
     };
   }
 

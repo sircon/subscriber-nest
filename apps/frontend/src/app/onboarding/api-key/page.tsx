@@ -53,7 +53,8 @@ function ApiKeyForm() {
         token,
         () => {
           router.push('/login');
-        }
+        },
+        true // Pass onboarding=true for onboarding flow
       );
       // initiateOAuth will redirect the browser, so we don't need to do anything else
     } catch (err) {

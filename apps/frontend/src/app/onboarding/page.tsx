@@ -81,9 +81,14 @@ export default function OnboardingPage() {
     }
 
     try {
-      await espConnectionApi.initiateOAuth(provider, token, () => {
-        router.push('/login');
-      });
+      await espConnectionApi.initiateOAuth(
+        provider,
+        token,
+        () => {
+          router.push('/login');
+        },
+        true // Pass onboarding=true for onboarding flow
+      );
       // initiateOAuth will redirect the browser, so we don't need to do anything else
     } catch (err) {
       console.error('Failed to initiate OAuth:', err);

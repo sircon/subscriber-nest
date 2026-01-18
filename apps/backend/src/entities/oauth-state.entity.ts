@@ -36,6 +36,9 @@ export class OAuthState {
   @Column({ type: 'text', nullable: true })
   redirectUri: string | null;
 
+  @Column({ type: 'boolean', default: false })
+  isOnboarding: boolean;
+
   @Column({ type: 'timestamp' })
   expiresAt: Date;
 

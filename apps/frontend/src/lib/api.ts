@@ -460,7 +460,8 @@ export const espConnectionApi = {
   initiateOAuth: async (
     provider: 'kit' | 'mailchimp',
     token: string | null,
-    onUnauthorized?: OnUnauthorizedCallback
+    onUnauthorized?: OnUnauthorizedCallback,
+    onboarding?: boolean
   ): Promise<void> => {
     if (!token) {
       throw new Error('Authentication token is required');
@@ -470,14 +471,17 @@ export const espConnectionApi = {
       Authorization: `Bearer ${token}`,
     };
 
-    const response = await fetch(
-      `${API_URL}/esp-connections/oauth/initiate/${provider}`,
-      {
-        method: 'GET',
-        headers: headers as HeadersInit,
-        redirect: 'manual', // Don't follow redirect automatically, we'll handle it
-      }
-    );
+    // Build URL with optional onboarding query parameter
+    let url = `${API_URL}/esp-connections/oauth/initiate/${provider}`;
+    if (onboarding) {
+      url += '?onboarding=true';
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers as HeadersInit,
+      redirect: 'manual', // Don't follow redirect automatically, we'll handle it
+    });
 
     // Handle 401 Unauthorized
     if (response.status === 401) {

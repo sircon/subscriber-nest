@@ -81,6 +81,7 @@ export class EspConnectionController {
   @Get('oauth/initiate/:provider')
   async initiateOAuth(
     @Param('provider') provider: string,
+    @Query('onboarding') onboarding: string | undefined,
     @CurrentUser() user: User,
     @Res() res: Response
   ): Promise<void> {
@@ -115,11 +116,15 @@ export class EspConnectionController {
       // Build redirect URI
       const redirectUri = `${backendUrl}/api/esp-connections/oauth/callback/${provider}`;
 
+      // Check if this is an onboarding flow
+      const isOnboarding = onboarding === 'true' || onboarding === '1';
+
       // Create OAuth state
       const state = await this.oauthStateService.createState(
         user.id,
         espType,
-        redirectUri
+        redirectUri,
+        isOnboarding
       );
 
       // Build authorization URL
@@ -191,7 +196,7 @@ export class EspConnectionController {
         throw error;
       }
 
-      const { userId, redirectUri } = stateValidation;
+      const { userId, redirectUri, isOnboarding } = stateValidation;
 
       // Get OAuth configuration
       let oauthConfig;
@@ -330,8 +335,15 @@ export class EspConnectionController {
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
 
-      // Redirect to frontend success page (ESP detail page)
-      const successUrl = `${frontendUrl}/dashboard/esp/${savedConnection.id}?oauth=success`;
+      // Redirect based on whether this is an onboarding flow
+      let successUrl: string;
+      if (isOnboarding) {
+        // Redirect to Stripe onboarding step
+        successUrl = `${frontendUrl}/onboarding/stripe`;
+      } else {
+        // Redirect to ESP detail page
+        successUrl = `${frontendUrl}/dashboard/esp/${savedConnection.id}?oauth=success`;
+      }
       res.redirect(successUrl);
     } catch (error) {
       // Handle BadRequestException (400 - invalid provider, missing params, invalid state)
