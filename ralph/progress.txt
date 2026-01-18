@@ -702,3 +702,22 @@ Started: Sun Jan 18 12:24:26 CET 2026
   - Stripe meter usage reporting is done via `subscriptionItems.createUsageRecord()` with subscription item ID and quantity
   - The meter ID from environment variable is not directly used in `createUsageRecord()` - it's configured on the subscription item when created
 ---
+
+## 2026-01-19 - US-034
+- Updated `StripeService.createSubscription()` method to use meter-based pricing instead of price-based pricing
+- Changed from using `STRIPE_PRICE_ID` to using `STRIPE_METER_ID` from environment variable
+- Updated subscription creation to use `price_data` with `meter` field referencing the meter ID
+- Set `usage_type: 'metered'` in `recurring` object for usage-based billing
+- Used type assertion `as any` for `price_data` object since Stripe TypeScript types may not include all meter-related fields
+- Maintained existing error handling pattern with `InternalServerErrorException`
+- Typecheck passes: `turbo run build --filter=backend` completes successfully
+- Lint passes: `turbo run lint --filter=backend` completes successfully
+- Files changed:
+  - `apps/backend/src/services/stripe.service.ts` (updated createSubscription method)
+- **Learnings for future iterations:**
+  - Stripe subscriptions with meters use `price_data` with `meter` field instead of `price` field
+  - When using meters, set `recurring.usage_type: 'metered'` in `price_data` for usage-based billing
+  - Stripe TypeScript types may not include all meter-related fields in `price_data` - use type assertion `as any` when necessary
+  - Meter ID is configured in environment variable (`STRIPE_METER_ID`) and referenced directly in subscription creation
+  - Subscription items with meters automatically track usage and bill based on reported usage records
+---

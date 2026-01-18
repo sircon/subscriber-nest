@@ -95,22 +95,36 @@ export class StripeService {
    * Create a Stripe subscription with monthly billing cycle and metered billing
    * @param customerId - Stripe customer ID
    * @returns Stripe subscription object
-   * @throws InternalServerErrorException if Stripe API call fails or price ID is not configured
+   * @throws InternalServerErrorException if Stripe API call fails or meter ID is not configured
    */
   async createSubscription(customerId: string): Promise<Stripe.Subscription> {
     try {
-      const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
-      if (!priceId) {
+      // Use meter ID for metered billing
+      const meterId = this.meterId;
+      if (!meterId) {
         throw new InternalServerErrorException(
-          'STRIPE_PRICE_ID environment variable is required to create subscriptions'
+          'STRIPE_METER_ID environment variable is required to create subscriptions'
         );
       }
 
+      // Use type assertion for price_data since Stripe TypeScript types may not include all meter-related fields
       const subscription = await this.stripe.subscriptions.create({
         customer: customerId,
         items: [
           {
-            price: priceId,
+            price_data: {
+              currency: 'usd',
+              recurring: {
+                interval: 'month',
+                usage_type: 'metered',
+              },
+              billing_scheme: 'per_unit',
+              product_data: {
+                name: 'SubscriberNest Usage',
+              },
+              // Reference the meter ID for metered billing
+              meter: meterId,
+            } as any,
           },
         ],
       });
