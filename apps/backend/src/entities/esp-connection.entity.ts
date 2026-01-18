@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Subscriber } from './subscriber.entity';
 import { User } from './user.entity';
+import { SyncHistory } from './sync-history.entity';
 
 export enum EspType {
   BEEHIIV = 'beehiiv',
@@ -82,4 +83,7 @@ export class EspConnection {
 
   @OneToMany(() => Subscriber, (subscriber) => subscriber.espConnection)
   subscribers: Subscriber[];
+
+  @OneToMany(() => SyncHistory, (syncHistory) => syncHistory.espConnection)
+  syncHistory: SyncHistory[];
 }

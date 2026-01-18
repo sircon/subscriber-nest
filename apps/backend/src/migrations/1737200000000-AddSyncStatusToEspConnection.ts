@@ -13,15 +13,21 @@ export class AddSyncStatusToEspConnection1737200000000
       END $$;
     `);
 
-    // Add syncStatus column to esp_connections table
-    await queryRunner.addColumn(
-      'esp_connections',
-      new TableColumn({
-        name: 'syncStatus',
-        type: 'esp_sync_status_enum',
-        default: "'idle'",
-      }),
-    );
+    // Check if column exists before adding
+    const table = await queryRunner.getTable('esp_connections');
+    const columnExists = table?.columns.find((col) => col.name === 'syncStatus');
+
+    if (!columnExists) {
+      // Add syncStatus column to esp_connections table
+      await queryRunner.addColumn(
+        'esp_connections',
+        new TableColumn({
+          name: 'syncStatus',
+          type: 'esp_sync_status_enum',
+          default: "'idle'",
+        }),
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
