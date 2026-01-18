@@ -729,3 +729,26 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Job names must match exactly between schedulers/listeners (where jobs are added) and processors (where jobs are processed)
   - Use `yarn workspace worker typecheck`, `turbo run build --filter=worker`, and `turbo run lint --filter=worker` to verify worker service
 ---
+
+## 2026-01-19 - US-036
+- Verified all 3 cron jobs are registered in worker service AppModule: SyncSchedulerService, BillingSchedulerService, AccountDeletionSchedulerService
+- Verified all cron jobs use correct schedule patterns:
+  - SyncSchedulerService: `@Cron("0 0 * * *", { timeZone: "UTC" })` - midnight UTC daily ✓
+  - BillingSchedulerService: `@Cron("0 0 1 * *", { timeZone: "UTC" })` - 1st day of month at 00:00 UTC ✓
+  - AccountDeletionSchedulerService: `@Cron("0 0 * * *", { timeZone: "UTC" })` - daily at 00:00 UTC ✓
+- Verified ScheduleModule.forRoot() is imported in AppModule (required for cron decorators to work)
+- Verified typecheck passes (`yarn workspace worker typecheck`)
+- Verified build passes (`turbo run build --filter=worker`)
+- Verified lint passes (`turbo run lint --filter=worker`)
+- Files changed:
+  - No code changes (verification only)
+- **Learnings for future iterations:**
+  - All three scheduler services use `@Cron()` decorator from `@nestjs/schedule` with correct cron patterns and UTC timezone
+  - Cron jobs are automatically registered when services are registered in AppModule providers - no manual initialization needed
+  - ScheduleModule.forRoot() must be imported in AppModule imports array for cron decorators to work
+  - Cron pattern `"0 0 * * *"` runs daily at midnight UTC (minute 0, hour 0, every day)
+  - Cron pattern `"0 0 1 * *"` runs on 1st day of month at 00:00 UTC (minute 0, hour 0, day 1, every month)
+  - All scheduler services handle errors gracefully with try-catch blocks (log errors but don't crash)
+  - Scheduler services inject queues using `@InjectQueue('queue-name')` to add jobs when cron jobs run
+  - Use `yarn workspace worker typecheck`, `turbo run build --filter=worker`, and `turbo run lint --filter=worker` to verify cron job configuration
+---
