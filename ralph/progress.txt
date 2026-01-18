@@ -297,3 +297,15 @@ Started: Sun Jan 18 15:17:58 CET 2026
   - Use `yarn workspace api typecheck`, `turbo run lint --filter=api`, and `turbo run build --filter=api` to verify main.ts configuration
   - API service can start successfully once database and Redis connections are configured
 ---
+
+## 2026-01-18 15:40 - US-014
+- Created worker service directory structure at `apps/worker/src/` with required subdirectories (processors, services)
+- Directory structure mirrors the backend structure for easy migration of processors and services
+- Files changed:
+  - Created directory structure: `apps/worker/src/{processors,services}/`
+- **Learnings for future iterations:**
+  - Empty directories are not tracked by git until files are added (this is expected behavior)
+  - Worker service directory structure mirrors backend structure to facilitate migration
+  - Use `yarn lint` and `yarn build` to verify changes don't break existing code
+  - Typecheck passes automatically when there are no TypeScript files to check
+---
