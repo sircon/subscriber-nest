@@ -41,6 +41,9 @@ import { BillingController } from './controllers/billing.controller';
 import { AccountController } from './controllers/account.controller';
 import { AccountDeletionProcessor } from './processors/account-deletion.processor';
 import { AccountDeletionSchedulerService } from './services/account-deletion-scheduler.service';
+import { OAuthStateService } from './services/oauth-state.service';
+import { OAuthStateCleanupProcessor } from './processors/oauth-state-cleanup.processor';
+import { OAuthStateSchedulerService } from './services/oauth-state-scheduler.service';
 
 @Module({
   imports: [
@@ -104,6 +107,16 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
         },
       },
     }),
+    BullModule.registerQueue({
+      name: 'oauth-state-cleanup',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
   ],
   controllers: [
     AppController,
@@ -137,6 +150,9 @@ import { AccountDeletionSchedulerService } from './services/account-deletion-sch
     BillingSchedulerService,
     AccountDeletionProcessor,
     AccountDeletionSchedulerService,
+    OAuthStateService,
+    OAuthStateCleanupProcessor,
+    OAuthStateSchedulerService,
   ],
   exports: [EmailService],
 })

@@ -54,3 +54,28 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - The migration pattern for adding enum columns uses TypeORM's `getTable()` to check existence, then raw SQL `ADD COLUMN IF NOT EXISTS`
   - TypeORM's synchronize mode in development can create tables, so migrations should be idempotent
 ---
+
+## Sun Jan 18 21:54:09 CET 2026 - US-003
+- Created OAuthStateService with all required methods: `createState()`, `validateState()`, and `deleteState()`
+- `createState()` generates a random 32-byte state string using `crypto.randomBytes()` and stores it with 10-minute expiry
+- `validateState()` validates state token, checks expiry, and returns user info (throws NotFoundException if invalid/expired)
+- `deleteState()` removes state after use
+- Added `cleanupExpiredStates()` method for scheduled cleanup job
+- Created OAuthStateCleanupProcessor to handle cleanup jobs via BullMQ
+- Created OAuthStateSchedulerService that schedules hourly cleanup job (runs at minute 0 of every hour)
+- Registered oauth-state-cleanup queue in BullModule
+- All services and processor registered in app.module.ts
+- Files changed:
+  - `apps/backend/src/services/oauth-state.service.ts` (new)
+  - `apps/backend/src/processors/oauth-state-cleanup.processor.ts` (new)
+  - `apps/backend/src/services/oauth-state-scheduler.service.ts` (new)
+  - `apps/backend/src/app.module.ts` (updated)
+- **Learnings for future iterations:**
+  - Scheduled jobs in this codebase use BullMQ queues with `@InjectQueue` and `OnModuleInit` pattern
+  - Processors extend `WorkerHost` and implement `process()` method
+  - Scheduler services check for existing repeatable jobs before scheduling to avoid duplicates
+  - Use `crypto.randomBytes()` for generating secure random strings (32 bytes = 64 hex characters)
+  - State validation should check expiry and delete expired states to prevent reuse
+  - Always register new queues in `BullModule.registerQueue()` and processors/services in `providers` array
+  - Cron pattern "0 * * * *" means "every hour at minute 0"
+---
