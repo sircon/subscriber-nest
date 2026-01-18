@@ -355,3 +355,32 @@ Started: Sun Jan 18 21:49:22 CET 2026
   - OAuth initiation automatically redirects browser, so no need for manual navigation after calling `initiateOAuth()`
   - Always run `yarn format` before committing to fix prettier formatting issues
 ---
+
+## Sun Jan 19 2026 - US-017
+- Updated onboarding flow to support OAuth connections and redirect to Stripe step after OAuth success
+- Added `isOnboarding` boolean field to OAuthState entity to track if OAuth flow is part of onboarding
+- Created migration `1768744200000-AddIsOnboardingToOAuthState.ts` to add `isOnboarding` column to `oauth_states` table
+- Updated OAuthStateService to accept and store `isOnboarding` flag in `createState()` method
+- Updated OAuthStateService `validateState()` to return `isOnboarding` flag
+- Updated OAuth initiate endpoint to accept optional `onboarding` query parameter
+- Updated OAuth callback endpoint to check `isOnboarding` flag and redirect to `/onboarding/stripe` if true, otherwise redirect to ESP detail page
+- Updated frontend API client `initiateOAuth()` to accept optional `onboarding` parameter and pass it as query parameter
+- Updated onboarding pages (`/onboarding/page.tsx` and `/onboarding/api-key/page.tsx`) to pass `onboarding=true` when initiating OAuth
+- Migration executed successfully, all typechecks pass, lint passes
+- Files changed:
+  - `apps/backend/src/entities/oauth-state.entity.ts` (added isOnboarding field)
+  - `apps/backend/src/migrations/1768744200000-AddIsOnboardingToOAuthState.ts` (new)
+  - `apps/backend/src/services/oauth-state.service.ts` (updated to handle isOnboarding)
+  - `apps/backend/src/controllers/esp-connection.controller.ts` (updated to accept onboarding param and redirect accordingly)
+  - `apps/frontend/src/lib/api.ts` (updated initiateOAuth to accept onboarding parameter)
+  - `apps/frontend/src/app/onboarding/page.tsx` (pass onboarding=true)
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` (pass onboarding=true)
+  - `apps/frontend/next-env.d.ts` (fixed prettier linting issue)
+- **Learnings for future iterations:**
+  - Use boolean flags in OAuth state to track flow context (e.g., onboarding vs regular connection)
+  - OAuth callback redirects can be conditional based on flow context stored in OAuth state
+  - When adding new fields to entities, always create migrations with `IF NOT EXISTS` for idempotency
+  - Frontend API client functions can accept optional parameters to customize backend behavior
+  - OAuth flows initiated from onboarding should redirect to onboarding steps, not dashboard pages
+  - The `isOnboarding` flag is stored in the database and retrieved during state validation, allowing the callback to make routing decisions
+---
