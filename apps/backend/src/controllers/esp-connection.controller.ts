@@ -28,7 +28,15 @@ export class EspConnectionController {
     private readonly espConnectionService: EspConnectionService,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue,
-  ) {}
+  ) { }
+
+  @Get()
+  async listConnections(
+    @CurrentUser() user: User,
+  ): Promise<Omit<EspConnection, 'encryptedApiKey'>[]> {
+    const connections = await this.espConnectionService.findAllByUserId(user.id);
+    return connections.map(({ encryptedApiKey, ...connection }) => connection);
+  }
 
   @Get(':id')
   async getConnection(

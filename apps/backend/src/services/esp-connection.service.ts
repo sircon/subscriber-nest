@@ -13,7 +13,7 @@ export class EspConnectionService {
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
-  ) {}
+  ) { }
 
   /**
    * Gets the appropriate ESP connector based on ESP type
@@ -78,6 +78,18 @@ export class EspConnectionService {
     const savedConnection = await this.espConnectionRepository.save(espConnection);
 
     return savedConnection;
+  }
+
+  /**
+   * Finds all ESP connections for a user
+   * @param userId - The ID of the user
+   * @returns Array of ESP connections belonging to the user
+   */
+  async findAllByUserId(userId: string): Promise<EspConnection[]> {
+    return this.espConnectionRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   /**

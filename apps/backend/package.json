@@ -9,12 +9,15 @@
     "start:debug": "nest start --debug --watch",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "clean": "rm -rf dist",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/data-source.ts",
-    "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts"
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "yarn run typeorm -- migration:generate -d src/data-source.ts",
+    "db:migrate": "yarn run typeorm -- migration:run -d src/data-source.ts",
+    "db:revert": "yarn run typeorm -- migration:revert -d src/data-source.ts",
+    "db:reset": "yarn run typeorm schema:drop -d src/data-source.ts && yarn db:migrate"
   },
   "dependencies": {
+    "@bull-board/api": "^6.16.2",
+    "@bull-board/express": "^6.16.2",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.12",
