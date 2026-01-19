@@ -384,3 +384,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API endpoints remain compatible between v1 and v4 (same structure: /publications, /publications/{id}/subscribers)
   - Backend build passes with v4 API update
 ---
+
+## Mon Jan 19, 2026 - US-028
+- **What was implemented**: Updated Mailchimp connector to add API documentation link and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/mailchimp.connector.ts` - Added API documentation link and version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Mailchimp API v3.0 is the current version (verified January 2026)
+  - API documentation URL: https://mailchimp.com/developer/marketing/api/
+  - All API endpoints in the connector correctly use v3.0 via baseUrl (e.g., `https://{dc}.api.mailchimp.com/3.0`)
+  - Mailchimp uses datacenter-specific URLs - must fetch datacenter code from OAuth metadata endpoint first
+  - No API version update was needed - v3.0 is current
+  - Backend build passes
+---

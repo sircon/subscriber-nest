@@ -516,8 +516,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API documentation link (https://mailchimp.com/developer/marketing/api/). Verified v3.0 is the current API version. All API calls use v3.0 correctly via baseUrl. Backend build passes."
     },
     {
       "id": "US-029",
