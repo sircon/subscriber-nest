@@ -1,6 +1,15 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
+import { BillingSubscription } from '../../../libs/database/src/entities/billing-subscription.entity';
+import { BillingUsage } from '../../../libs/database/src/entities/billing-usage.entity';
+import { EspConnection } from '../../../libs/database/src/entities/esp-connection.entity';
+import { OAuthState } from '../../../libs/database/src/entities/oauth-state.entity';
+import { Session } from '../../../libs/database/src/entities/session.entity';
+import { Subscriber } from '../../../libs/database/src/entities/subscriber.entity';
+import { SyncHistory } from '../../../libs/database/src/entities/sync-history.entity';
+import { User } from '../../../libs/database/src/entities/user.entity';
+import { VerificationCode } from '../../../libs/database/src/entities/verification-code.entity';
 
 dotenv.config();
 
@@ -11,7 +20,17 @@ export const AppDataSource = new DataSource({
   username: process.env.DATABASE_USER ?? 'postgres',
   password: process.env.DATABASE_PASSWORD ?? 'postgres',
   database: process.env.DATABASE_NAME ?? 'subscriber_nest',
-  entities: [join(process.cwd(), 'libs/database/src/**/*.entity.ts')],
+  entities: [
+    BillingSubscription,
+    BillingUsage,
+    EspConnection,
+    OAuthState,
+    Session,
+    Subscriber,
+    SyncHistory,
+    User,
+    VerificationCode,
+  ],
   migrations: [join(process.cwd(), 'dist/api/apps/api/src/migrations/*.js')],
   synchronize: false,
 });
