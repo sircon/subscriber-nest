@@ -16,6 +16,20 @@ export enum EspType {
   BEEHIIV = 'beehiiv',
   KIT = 'kit',
   MAILCHIMP = 'mailchimp',
+  CAMPAIGN_MONITOR = 'campaign_monitor',
+  EMAIL_OCTOPUS = 'email_octopus',
+  OMEDA = 'omeda',
+  GHOST = 'ghost',
+  SPARKPOST = 'sparkpost',
+  ACTIVE_CAMPAIGN = 'active_campaign',
+  CUSTOMER_IO = 'customer_io',
+  SAILTHRU = 'sailthru',
+  MAILERLITE = 'mailerlite',
+  POSTUP = 'postup',
+  CONSTANT_CONTACT = 'constant_contact',
+  ITERABLE = 'iterable',
+  SENDGRID = 'sendgrid',
+  BREVO = 'brevo',
 }
 
 export enum EspConnectionStatus {
