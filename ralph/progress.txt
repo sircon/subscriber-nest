@@ -15,6 +15,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - ActiveCampaign uses "accountName|apiKey" format for compound API key; base URL is `https://{accountName}.api-us1.com/api/3`
 - Customer.io uses Bearer token auth, supports US/EU regions with "eu|" prefix; segment membership returns IDs only (need to fetch profiles separately)
 - Sailthru uses signature-based auth (MD5 hash of secret + sorted values); API key format "apiKey|apiSecret"; subscriber export uses job-based approach
+- MailerLite uses Bearer token auth; API URL `https://connect.mailerlite.com/api`; cursor-based pagination via links.next or meta.next_cursor
 
 ---
 
@@ -157,4 +158,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - List details include `email_count` for subscriber counts
   - Status inferred from: optout_email (unsubscribed), hardbounce_time (bounced), valid (invalid)
   - Profile data contains first_name, last_name, or name field for full name
+---
+
+## Mon Jan 19, 2026 - US-010
+- **What was implemented**: Created MailerLite ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/mailerlite.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - MailerLite uses Bearer token authentication (Authorization: Bearer {api_key})
+  - API base URL is `https://connect.mailerlite.com/api` (MailerLite Connect/New API)
+  - Publications = groups; GET /groups endpoint returns all groups
+  - Subscribers: GET /subscribers with filter[group]={group_id} to filter by group
+  - Uses cursor-based pagination via links.next or meta.next_cursor
+  - Group details include `active_count` for subscriber counts
+  - Status values: active, unsubscribed, bounced, junk, unconfirmed
+  - First name may be in fields.name or fields.first_name
+  - Tags returned as array of objects with name property
 ---
