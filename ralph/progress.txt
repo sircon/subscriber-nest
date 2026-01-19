@@ -701,3 +701,17 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - OAuth flow is unchanged (will be updated in US-056)
   - Frontend build and TypeScript checks pass successfully
 ---
+
+## Mon Jan 19, 2026 - US-053
+- **What was implemented**: Updated ESP detail page to display list names instead of IDs and added list management functionality
+- **Files changed**:
+  - `apps/frontend/src/app/dashboard/esp/[id]/page.tsx` - Added list name display, "Selected Lists" card, "Manage Lists" dialog with ListSelector component, fetch available lists functionality, and update selected lists API integration
+- **Learnings for future iterations:**
+  - Created helper function `getListNames()` that returns listNames array if available, falls back to publicationIds, then publicationId for backward compatibility
+  - List names are displayed in header (showing count and names if <= 3), "Selected Lists" card, and OAuth connection details section
+  - "Manage Lists" button opens a Dialog with ListSelector component that fetches available lists on demand
+  - List selection updates are saved immediately via `updateSelectedLists()` API call, with success/error messages displayed
+  - Success message auto-hides after 3 seconds and closes dialog, error messages auto-clear after 5 seconds
+  - UI uses 'lists' terminology throughout for consistency, even though backend may call them publications/segments depending on ESP
+  - Frontend build passes successfully
+---

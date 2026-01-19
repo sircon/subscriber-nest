@@ -950,7 +950,7 @@
         "UI uses 'lists' terminology throughout"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "UI uses 'lists' terminology. Displays names from listNames field, falls back to IDs if names not available."
     },
     {
