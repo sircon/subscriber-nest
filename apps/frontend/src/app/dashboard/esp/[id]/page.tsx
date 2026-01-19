@@ -45,6 +45,7 @@ import {
   Download,
   RefreshCw,
   Trash2,
+  Settings,
 } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import {
@@ -53,6 +54,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ListSelector } from '@/components/ListSelector';
+import { List } from '@/lib/api';
 
 export default function EspDetailPage() {
   const { id } = useParams();
@@ -98,6 +101,15 @@ export default function EspDetailPage() {
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
+
+  // List management state
+  const [showManageLists, setShowManageLists] = useState(false);
+  const [availableLists, setAvailableLists] = useState<List[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [listsError, setListsError] = useState<string | null>(null);
+  const [isUpdatingLists, setIsUpdatingLists] = useState(false);
+  const [listUpdateSuccess, setListUpdateSuccess] = useState(false);
+  const [listUpdateError, setListUpdateError] = useState<string | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -377,6 +389,73 @@ export default function EspDetailPage() {
     }
   };
 
+  const handleManageLists = async () => {
+    if (!token || !id) return;
+
+    setShowManageLists(true);
+    setLoadingLists(true);
+    setListsError(null);
+
+    try {
+      const lists = await espConnectionApi.getLists(id as string, token);
+      setAvailableLists(lists);
+    } catch (err) {
+      console.error('Error fetching available lists:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch available lists';
+      setListsError(errorMessage);
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  const handleUpdateSelectedLists = async (selectedListIds: string[]) => {
+    if (!token || !id) return;
+
+    setIsUpdatingLists(true);
+    setListUpdateError(null);
+    setListUpdateSuccess(false);
+
+    try {
+      const updatedConnection = await espConnectionApi.updateSelectedLists(
+        id as string,
+        { selectedListIds },
+        token
+      );
+      setConnection(updatedConnection);
+      setListUpdateSuccess(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setListUpdateSuccess(false);
+        setShowManageLists(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Error updating selected lists:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update selected lists';
+      setListUpdateError(errorMessage);
+      // Clear error after 5 seconds
+      setTimeout(() => setListUpdateError(null), 5000);
+    } finally {
+      setIsUpdatingLists(false);
+    }
+  };
+
+  // Helper function to get list names for display
+  const getListNames = (): string[] => {
+    if (connection?.listNames && connection.listNames.length > 0) {
+      return connection.listNames;
+    }
+    // Fallback to IDs if names not available
+    if (connection?.publicationIds && connection.publicationIds.length > 0) {
+      return connection.publicationIds;
+    }
+    if (connection?.publicationId) {
+      return [connection.publicationId];
+    }
+    return [];
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -442,16 +521,20 @@ export default function EspDetailPage() {
         <div>
           <h1 className="text-3xl font-bold">{connection.espType}</h1>
           <div className="flex items-center gap-2 mt-1">
-            {connection.publicationId && (
-              <p className="text-gray-600">{connection.publicationId}</p>
-            )}
-            {connection.publicationIds &&
-              connection.publicationIds.length > 0 && (
-                <p className="text-gray-600">
-                  {connection.publicationIds.length} publication
-                  {connection.publicationIds.length !== 1 ? 's' : ''}
-                </p>
-              )}
+            {(() => {
+              const listNames = getListNames();
+              if (listNames.length > 0) {
+                return (
+                  <p className="text-gray-600">
+                    {listNames.length} list{listNames.length !== 1 ? 's' : ''}
+                    {listNames.length <= 3 && (
+                      <span className="ml-1">: {listNames.join(', ')}</span>
+                    )}
+                  </p>
+                );
+              }
+              return null;
+            })()}
             <Badge
               variant={
                 connection.authMethod === 'oauth' ? 'default' : 'secondary'
@@ -645,6 +728,106 @@ export default function EspDetailPage() {
         </Card>
       </div>
 
+      {/* Selected Lists Card */}
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Selected Lists</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManageLists}
+              disabled={loadingLists}
+            >
+              {loadingLists ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Lists
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const listNames = getListNames();
+            if (listNames.length > 0) {
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {listNames.map((listName, index) => (
+                    <Badge key={index} variant="outline" className="text-sm">
+                      {listName}
+                    </Badge>
+                  ))}
+                </div>
+              );
+            }
+            return (
+              <p className="text-sm text-gray-500">
+                No lists selected. Click "Manage Lists" to select lists to sync.
+              </p>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Manage Lists Dialog */}
+      <Dialog open={showManageLists} onOpenChange={setShowManageLists}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Lists</DialogTitle>
+            <DialogDescription>
+              Select which lists to sync from this ESP connection. Changes will
+              be saved immediately.
+            </DialogDescription>
+          </DialogHeader>
+          {listUpdateSuccess && (
+            <Alert className="border-green-500 bg-green-50">
+              <AlertTitle className="text-green-800">Success!</AlertTitle>
+              <AlertDescription className="text-green-700">
+                Selected lists have been updated successfully.
+              </AlertDescription>
+            </Alert>
+          )}
+          {listUpdateError && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{listUpdateError}</AlertDescription>
+            </Alert>
+          )}
+          <ListSelector
+            lists={availableLists}
+            selectedListIds={
+              connection?.publicationIds || connection?.publicationId
+                ? connection.publicationIds || [connection.publicationId!]
+                : []
+            }
+            onSelectionChange={handleUpdateSelectedLists}
+            loading={loadingLists}
+            error={listsError}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowManageLists(false);
+                setListsError(null);
+                setListUpdateError(null);
+                setListUpdateSuccess(false);
+              }}
+              disabled={isUpdatingLists}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* OAuth Connection Details Card */}
       {connection.authMethod === 'oauth' && (
         <Card className="mb-8">
@@ -687,25 +870,26 @@ export default function EspDetailPage() {
                 </p>
               </div>
 
-              {/* Connected Publications */}
+              {/* Connected Lists */}
               <div className="md:col-span-2">
                 <p className="text-sm font-medium text-gray-600 mb-2">
-                  Connected Publications
+                  Connected Lists
                 </p>
-                {connection.publicationIds &&
-                connection.publicationIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {connection.publicationIds.map((pubId, index) => (
-                      <Badge key={index} variant="outline">
-                        {pubId}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : connection.publicationId ? (
-                  <Badge variant="outline">{connection.publicationId}</Badge>
-                ) : (
-                  <p className="text-sm text-gray-500">No publications</p>
-                )}
+                {(() => {
+                  const listNames = getListNames();
+                  if (listNames.length > 0) {
+                    return (
+                      <div className="flex flex-wrap gap-2">
+                        {listNames.map((listName, index) => (
+                          <Badge key={index} variant="outline">
+                            {listName}
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <p className="text-sm text-gray-500">No lists</p>;
+                })()}
               </div>
             </div>
           </CardContent>
