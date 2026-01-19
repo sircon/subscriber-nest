@@ -8,6 +8,9 @@ import { Publication, SubscriberData } from './esp.interface';
 /**
  * Mailchimp ESP Connector
  * Implements the IEspConnector interface for Mailchimp API integration using OAuth authentication
+ * 
+ * API Documentation: https://mailchimp.com/developer/marketing/api/
+ * API Version: v3.0 (current as of January 2026)
  */
 @Injectable()
 export class MailchimpConnector implements IEspConnector {
