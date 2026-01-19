@@ -72,21 +72,22 @@ function HeroSection() {
         <div className="max-w-3xl mx-auto text-center mb-16">
           {/* Badge */}
           <div className="animate-fade-up inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-8">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Sync subscribers in seconds</span>
+            <Shield className="w-3.5 h-3.5" />
+            <span>Protect your most valuable asset</span>
           </div>
 
           {/* Headline */}
           <h1 className="animate-fade-up delay-100 text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] mb-6">
-            Your subscribers,{' '}
-            <span className="text-gradient italic">always</span> accessible
+            Keep your audience{' '}
+            <span className="text-gradient italic">safe</span> and backed up
           </h1>
 
           {/* Subheadline */}
           <p className="animate-fade-up delay-200 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Connect your Email Service Provider, sync your subscriber list
-            automatically, and export anytime. Simple backup for your most
-            valuable asset.
+            Your audience is your most valuable asset—keep it safe. We sync
+            daily to maintain a secure backup of your updated list. Download
+            anytime or import to another ESP if yours has issues. Your
+            subscribers, always protected.
           </p>
 
           {/* CTA */}
@@ -97,11 +98,11 @@ function HeroSection() {
               asChild
             >
               <Link href="/login">
-                Get Started Free <ArrowRight className="w-4 h-4" />
+                Get Started <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
             <span className="text-sm text-muted-foreground">
-              No credit card required
+              Credit card required to start
             </span>
           </div>
         </div>
@@ -203,7 +204,7 @@ function HeroSection() {
         {/* Features row */}
         <div className="animate-fade-up delay-700 flex flex-wrap justify-center gap-8 mt-16 text-sm text-muted-foreground">
           {[
-            { icon: RefreshCw, text: 'Auto-sync daily' },
+            { icon: RefreshCw, text: 'Synced every day' },
             { icon: Download, text: 'Export anytime' },
             { icon: Shield, text: 'Secure & encrypted' },
           ].map(({ icon: Icon, text }) => (
@@ -225,10 +226,11 @@ function PricingSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">
-            Simple, transparent pricing
+            Affordable pricing designed for everyone
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            One plan. No hidden fees. Scale as your list grows.
+            We cover our costs while keeping it accessible. One plan, no hidden
+            fees—protecting your audience shouldn't break the bank.
           </p>
         </div>
 
@@ -267,6 +269,8 @@ function PricingSection() {
                     'Unlimited ESP connections',
                     'Daily automatic sync',
                     'Export to CSV, JSON, or Excel',
+                    'Always have a backup—download your updated list anytime',
+                    'Import to another ESP if yours has issues',
                     'Encrypted subscriber data',
                     'Email support',
                   ].map((feature) => (
@@ -293,12 +297,18 @@ function PricingSection() {
                 </div>
 
                 {/* CTA */}
-                <Button size="lg" className="w-full gap-2 text-base h-14">
-                  Start your free trial <ArrowRight className="w-4 h-4" />
+                <Button
+                  size="lg"
+                  className="w-full gap-2 text-base h-14"
+                  asChild
+                >
+                  <Link href="/login">
+                    Get Started <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground mt-4">
-                  14-day free trial · Cancel anytime
+                  Credit card required to start
                 </p>
               </div>
             </div>
@@ -374,6 +384,11 @@ function FAQSection() {
         'Yes! Export your complete subscriber list anytime in CSV, JSON, or Excel format. There are no limits on exports. This is your data — we make it easy to use however you need.',
     },
     {
+      question: 'How does the backup and download feature protect my audience?',
+      answer:
+        'Every day, we automatically sync and create a secure backup of your updated subscriber list. You can download this backup anytime—think of it as insurance for your most valuable asset. If your ESP has technical issues, goes down, or you need to switch providers, you always have a current copy ready to import. Your audience is protected, no matter what happens with your ESP.',
+    },
+    {
       question: 'What if my ESP changes or I want to switch?',
       answer:
         "No problem. You can connect multiple ESPs and switch between them anytime. We keep historical data so you don't lose anything when transitioning between providers.",
@@ -386,7 +401,7 @@ function FAQSection() {
     {
       question: 'Is there a free tier?',
       answer:
-        "We offer a 14-day free trial with full access to all features. After that, it's $5/month for up to 10,000 subscribers. We keep it simple — one plan with all features included.",
+        "We keep it simple with one affordable plan: $5/month for up to 10,000 subscribers. All features are included. A credit card is required to start, but our pricing is designed to be accessible to everyone. We cover our costs while keeping it affordable—protecting your audience shouldn't break the bank.",
     },
   ];
 
