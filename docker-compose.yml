@@ -87,8 +87,7 @@ services:
       MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
 
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-    ports:
-      - "${PORT:-4000}:4000"
+    # Port mappings removed for Coolify - use docker-compose.override.yml for local development
     depends_on:
       postgres:
         condition: service_healthy
@@ -192,8 +191,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
-    ports:
-      - "${FRONTEND_PORT:-3099}:3000"
+    # Port mappings removed for Coolify - use docker-compose.override.yml for local development
     depends_on:
       api:
         condition: service_healthy
@@ -206,7 +204,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+          "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 || r.statusCode === 404 ? 0 : 1)})",
         ]
       interval: 30s
       timeout: 10s

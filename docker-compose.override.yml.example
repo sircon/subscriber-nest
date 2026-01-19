@@ -1,0 +1,22 @@
+# LOCAL DEVELOPMENT ONLY
+#
+# Copy this file to docker-compose.override.yml for local development:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#
+# Docker Compose automatically merges docker-compose.override.yml with docker-compose.yml
+# This file is git-ignored, so your local port mappings won't affect production
+
+version: '3.8'
+
+services:
+  api:
+    ports:
+      - "${PORT:-4000}:4000"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3099}:3000"
+
+  worker:
+    ports:
+      - "${WORKER_PORT:-4001}:4001"

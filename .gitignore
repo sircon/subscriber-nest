@@ -11,6 +11,9 @@ dist
 .env.local
 .env.*.local
 
+# Docker Compose overrides (local development)
+docker-compose.override.yml
+
 # IDE / OS
 .idea
 .DS_Store
