@@ -787,7 +787,7 @@
         "Document that this interface represents lists/segments/publications depending on ESP terminology"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "The Publication interface is a code-level abstraction that represents lists (email octopus), segments (mailchimp), publications (beehiiv), etc. We keep the interface name for code consistency."
     },
     {

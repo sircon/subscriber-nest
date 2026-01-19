@@ -333,3 +333,15 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Different ESPs use different terminology (lists, segments, publications), but we store display names in listNames for UI consistency
   - The publicationIds field name is kept for backward compatibility, but listNames stores the human-readable names
 ---
+
+## Mon Jan 19, 2026 - US-044
+- **What was implemented**: Updated Publication interface to include metadata fields and comprehensive documentation
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/esp.interface.ts` - Enhanced Publication interface with optional common fields (subscriberCount, description, createdAt) and detailed documentation
+- **Learnings for future iterations:**
+  - The Publication interface is a code-level abstraction that represents different concepts depending on ESP: lists (Email Octopus, MailerLite, etc.), segments (Mailchimp), publications (Beehiiv, Kit), products (Omeda), recipient lists (SparkPost), contact lists (ActiveCampaign, Customer.io), clients' lists (Campaign Monitor), and site (Ghost)
+  - Common optional fields used across connectors: subscriberCount/contactCount, description, createdAt, listType
+  - The index signature `[key: string]: any` allows ESP-specific fields while maintaining type safety for common fields
+  - All 17 ESP connectors are compatible with the updated interface (verified via backend build)
+  - Interface documentation clarifies ESP terminology differences for future developers
+---
