@@ -1,29 +1,32 @@
-version: '3.8'
-
 services:
+  # PostgreSQL Database
   postgres:
     image: postgres:16.6
     container_name: postgres_subscriber_nest
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: subscriber_nest
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE_NAME:-subscriber_nest}
     ports:
-      - "5434:5432"
+      - "${DATABASE_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
+    networks:
+      - subscriber_nest_network
 
+  # Redis for BullMQ queues
   redis:
-    image: redis:latest
+    image: redis:7-alpine
     container_name: redis_subscriber_nest
     ports:
-      - "6380:6379"
+      - "${REDIS_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -31,9 +34,188 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    networks:
+      - subscriber_nest_network
+
+  # Backend API Service
+  api:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.api
+    container_name: api_subscriber_nest
+    environment:
+      # Server
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-4000}
+
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_NAME: ${DATABASE_NAME:-subscriber_nest}
+      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_METER_ID: ${STRIPE_METER_ID}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+
+      # Resend Email
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@nest.miguelncorreia.com}
+
+      # OAuth (optional)
+      KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
+      KIT_OAUTH_CLIENT_SECRET: ${KIT_OAUTH_CLIENT_SECRET:-}
+      KIT_OAUTH_AUTHORIZATION_URL: ${KIT_OAUTH_AUTHORIZATION_URL:-}
+      KIT_OAUTH_TOKEN_URL: ${KIT_OAUTH_TOKEN_URL:-}
+      KIT_OAUTH_SCOPES: ${KIT_OAUTH_SCOPES:-}
+
+      MAILCHIMP_OAUTH_CLIENT_ID: ${MAILCHIMP_OAUTH_CLIENT_ID:-}
+      MAILCHIMP_OAUTH_CLIENT_SECRET: ${MAILCHIMP_OAUTH_CLIENT_SECRET:-}
+      MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
+      MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
+      MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
+    ports:
+      - "${PORT:-4000}:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - subscriber_nest_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend Worker Service
+  worker:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.worker
+    container_name: worker_subscriber_nest
+    environment:
+      # Server
+      NODE_ENV: ${NODE_ENV:-production}
+      WORKER_PORT: ${WORKER_PORT:-4001}
+
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_NAME: ${DATABASE_NAME:-subscriber_nest}
+      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_METER_ID: ${STRIPE_METER_ID}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+
+      # Resend Email
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@nest.miguelncorreia.com}
+
+      # OAuth (optional)
+      KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
+      KIT_OAUTH_CLIENT_SECRET: ${KIT_OAUTH_CLIENT_SECRET:-}
+      KIT_OAUTH_AUTHORIZATION_URL: ${KIT_OAUTH_AUTHORIZATION_URL:-}
+      KIT_OAUTH_TOKEN_URL: ${KIT_OAUTH_TOKEN_URL:-}
+      KIT_OAUTH_SCOPES: ${KIT_OAUTH_SCOPES:-}
+
+      MAILCHIMP_OAUTH_CLIENT_ID: ${MAILCHIMP_OAUTH_CLIENT_ID:-}
+      MAILCHIMP_OAUTH_CLIENT_SECRET: ${MAILCHIMP_OAUTH_CLIENT_SECRET:-}
+      MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
+      MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
+      MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
+    ports:
+      - "${WORKER_PORT:-4001}:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - subscriber_nest_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Next.js Service
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    container_name: frontend_subscriber_nest
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - subscriber_nest_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+
+networks:
+  subscriber_nest_network:
+    driver: bridge

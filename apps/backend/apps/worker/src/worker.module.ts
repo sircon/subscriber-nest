@@ -16,8 +16,10 @@ import { AccountDeletionSchedulerService } from './schedulers/account-deletion-s
 import { BillingSchedulerService } from './schedulers/billing-scheduler.service';
 import { OAuthStateSchedulerService } from './schedulers/oauth-state-scheduler.service';
 import { OAuthTokenRefreshSchedulerService } from './schedulers/oauth-token-refresh-scheduler.service';
+import { HealthController } from './health.controller';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
