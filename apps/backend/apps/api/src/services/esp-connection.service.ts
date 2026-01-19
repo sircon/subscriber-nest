@@ -3,6 +3,21 @@ import { BeehiivConnector } from '@app/core/esp/beehiiv.connector';
 import { KitConnector } from '@app/core/esp/kit.connector';
 import { MailchimpConnector } from '@app/core/esp/mailchimp.connector';
 import { IEspConnector } from '@app/core/esp/esp-connector.interface';
+// New connectors
+import { ActiveCampaignConnector } from '@app/core/esp/active-campaign.connector';
+import { BrevoConnector } from '@app/core/esp/brevo.connector';
+import { CampaignMonitorConnector } from '@app/core/esp/campaign-monitor.connector';
+import { ConstantContactConnector } from '@app/core/esp/constant-contact.connector';
+import { CustomerIoConnector } from '@app/core/esp/customer-io.connector';
+import { EmailOctopusConnector } from '@app/core/esp/email-octopus.connector';
+import { GhostConnector } from '@app/core/esp/ghost.connector';
+import { IterableConnector } from '@app/core/esp/iterable.connector';
+import { MailerLiteConnector } from '@app/core/esp/mailerlite.connector';
+import { OmedaConnector } from '@app/core/esp/omeda.connector';
+import { PostUpConnector } from '@app/core/esp/postup.connector';
+import { SailthruConnector } from '@app/core/esp/sailthru.connector';
+import { SendGridConnector } from '@app/core/esp/sendgrid.connector';
+import { SparkPostConnector } from '@app/core/esp/sparkpost.connector';
 import {
   EspConnection,
   EspConnectionStatus,
@@ -26,20 +41,66 @@ export class EspConnectionService {
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
+    // Existing connectors
     private beehiivConnector: BeehiivConnector,
     private kitConnector: KitConnector,
     private mailchimpConnector: MailchimpConnector,
+    // New connectors
+    private activeCampaignConnector: ActiveCampaignConnector,
+    private brevoConnector: BrevoConnector,
+    private campaignMonitorConnector: CampaignMonitorConnector,
+    private constantContactConnector: ConstantContactConnector,
+    private customerIoConnector: CustomerIoConnector,
+    private emailOctopusConnector: EmailOctopusConnector,
+    private ghostConnector: GhostConnector,
+    private iterableConnector: IterableConnector,
+    private mailerLiteConnector: MailerLiteConnector,
+    private omedaConnector: OmedaConnector,
+    private postUpConnector: PostUpConnector,
+    private sailthruConnector: SailthruConnector,
+    private sendGridConnector: SendGridConnector,
+    private sparkPostConnector: SparkPostConnector,
     private oauthTokenRefreshService: OAuthTokenRefreshService
   ) { }
 
   private getConnector(espType: EspType): IEspConnector {
     switch (espType) {
+      // Existing connectors
       case EspType.BEEHIIV:
         return this.beehiivConnector;
       case EspType.KIT:
         return this.kitConnector;
       case EspType.MAILCHIMP:
         return this.mailchimpConnector;
+      // New connectors
+      case EspType.ACTIVE_CAMPAIGN:
+        return this.activeCampaignConnector;
+      case EspType.BREVO:
+        return this.brevoConnector;
+      case EspType.CAMPAIGN_MONITOR:
+        return this.campaignMonitorConnector;
+      case EspType.CONSTANT_CONTACT:
+        return this.constantContactConnector;
+      case EspType.CUSTOMER_IO:
+        return this.customerIoConnector;
+      case EspType.EMAIL_OCTOPUS:
+        return this.emailOctopusConnector;
+      case EspType.GHOST:
+        return this.ghostConnector;
+      case EspType.ITERABLE:
+        return this.iterableConnector;
+      case EspType.MAILERLITE:
+        return this.mailerLiteConnector;
+      case EspType.OMEDA:
+        return this.omedaConnector;
+      case EspType.POSTUP:
+        return this.postUpConnector;
+      case EspType.SAILTHRU:
+        return this.sailthruConnector;
+      case EspType.SENDGRID:
+        return this.sendGridConnector;
+      case EspType.SPARKPOST:
+        return this.sparkPostConnector;
       default:
         throw new BadRequestException(`Unsupported ESP type: ${espType}`);
     }
