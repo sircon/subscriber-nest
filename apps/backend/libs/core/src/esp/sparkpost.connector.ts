@@ -12,6 +12,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * for managing subscriber data. Authentication is done via API key in the Authorization header.
  *
  * API Documentation: https://developers.sparkpost.com/api/
+ * API Version: v1 (current as of January 2026)
  */
 @Injectable()
 export class SparkPostConnector implements IEspConnector {

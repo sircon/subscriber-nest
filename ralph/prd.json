@@ -601,8 +601,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API version note. Verified SparkPost v1 is the current API version (verified January 2026). All API calls use v1 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
     },
     {
       "id": "US-034",
