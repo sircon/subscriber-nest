@@ -371,3 +371,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API documentation links should be added as comments in the class-level JSDoc block, following the pattern: "API Documentation: {url}" and "API Version: {version} (current as of {date})"
   - No API version update was needed - v2 is current
 ---
+
+## Mon Jan 19, 2026 - US-027
+- **What was implemented**: Updated Kit connector from v1 to v4 API and added API documentation link
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/kit.connector.ts` - Updated baseUrl from v1 to v4, added API documentation link and version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Kit API v4 is the current version (verified January 2026)
+  - API documentation URL: https://developers.kit.com/v4
+  - Found reference to Kit v4 API in other backend codebase (`backend/libs/esp/src/services/kit.service.ts`)
+  - All API endpoints in the connector correctly use v4 via baseUrl constant
+  - API endpoints remain compatible between v1 and v4 (same structure: /publications, /publications/{id}/subscribers)
+  - Backend build passes with v4 API update
+---

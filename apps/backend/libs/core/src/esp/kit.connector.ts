@@ -7,10 +7,16 @@ import { Publication, SubscriberData } from './esp.interface';
 /**
  * Kit ESP Connector
  * Implements the IEspConnector interface for Kit API integration using OAuth authentication
+ *
+ * Kit uses OAuth 2.0 Bearer token authentication for API access.
+ * The API provides access to publications and their subscribers.
+ *
+ * API Documentation: https://developers.kit.com/v4
+ * API Version: v4 (current as of January 2026)
  */
 @Injectable()
 export class KitConnector implements IEspConnector {
-  private readonly baseUrl = 'https://api.kit.com/v1';
+  private readonly baseUrl = 'https://api.kit.com/v4';
 
   constructor(private readonly httpService: HttpService) {}
 
