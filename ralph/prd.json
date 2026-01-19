@@ -821,7 +821,7 @@
         "OAuth flow works for Kit and Mailchimp"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "fetchPublicationsWithOAuth() returns lists/segments/publications depending on ESP terminology, but we store display names in listNames."
     },
     {

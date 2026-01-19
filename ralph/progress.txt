@@ -596,3 +596,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - All 17 ESP connectors implement fetchPublications() method, so this works for all ESP types
   - Backend build passes with the changes
 ---
+
+## Mon Jan 19, 2026 - US-046
+- **What was implemented**: Updated OAuth connection flow to fetch and store list names alongside publication IDs
+- **Files changed**:
+  - `apps/backend/apps/api/src/services/esp-connection.service.ts` - Updated createOAuthConnection() method to fetch lists using connector.fetchPublicationsWithOAuth(), extract IDs and names, and store both publicationIds and listNames in database
+- **Learnings for future iterations:**
+  - fetchPublicationsWithOAuth() method returns lists/segments/publications depending on ESP terminology (same as fetchPublications() but for OAuth connections)
+  - Error handling is graceful - if fetchPublicationsWithOAuth() fails, OAuth connection creation continues with null listNames (user can update lists later)
+  - Default behavior: all lists are selected (publicationIds contains all IDs from fetchPublicationsWithOAuth())
+  - The OAuth flow now mirrors the API key flow (createConnection) in terms of list fetching and storage
+  - Both Kit and Mailchimp connectors support fetchPublicationsWithOAuth() method
+  - Backend build passes with the changes
+---
