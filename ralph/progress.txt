@@ -14,6 +14,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - SparkPost uses API key directly in Authorization header, supports US/EU regions with "eu|" prefix
 - ActiveCampaign uses "accountName|apiKey" format for compound API key; base URL is `https://{accountName}.api-us1.com/api/3`
 - Customer.io uses Bearer token auth, supports US/EU regions with "eu|" prefix; segment membership returns IDs only (need to fetch profiles separately)
+- Sailthru uses signature-based auth (MD5 hash of secret + sorted values); API key format "apiKey|apiSecret"; subscriber export uses job-based approach
 
 ---
 
@@ -137,4 +138,23 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Customer attributes use Unix timestamps (seconds) for dates like `created_at`
   - Status inferred from `unsubscribed`, `email_bounced`, `email_pending` boolean fields
   - Custom fields are stored in flat structure on customer object
+---
+
+## Mon Jan 19, 2026 - US-009
+- **What was implemented**: Created Sailthru ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/sailthru.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Sailthru uses signature-based authentication with API key and secret pair
+  - API key format: "apiKey|apiSecret" (compound format separated by pipe)
+  - Signature = MD5(secret + sorted_values_concatenated) for request signing
+  - API base URL: `https://api.sailthru.com`
+  - Lists are identified by name (not numeric ID) in Sailthru
+  - GET /list returns all lists, GET /list?list={name} for specific list details
+  - Subscriber export requires job-based approach: POST /job with job='export_list_data'
+  - Must poll job status until complete, then download export file from export_url
+  - Export format is JSON lines (one JSON object per line)
+  - List details include `email_count` for subscriber counts
+  - Status inferred from: optout_email (unsubscribed), hardbounce_time (bounced), valid (invalid)
+  - Profile data contains first_name, last_name, or name field for full name
 ---

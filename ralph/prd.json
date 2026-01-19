@@ -174,7 +174,7 @@
         "Integration test passes with mock Sailthru API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
