@@ -968,7 +968,7 @@
         "Code comments clarify that publicationIds contains list IDs (terminology varies by ESP)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "publicationIds field name is kept for backward compatibility, but it contains list IDs. Different ESPs call them lists/segments/publications."
     },
     {

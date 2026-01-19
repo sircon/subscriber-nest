@@ -715,3 +715,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - UI uses 'lists' terminology throughout for consistency, even though backend may call them publications/segments depending on ESP
   - Frontend build passes successfully
 ---
+
+## Mon Jan 19, 2026 - US-054
+- **What was implemented**: Updated SubscriberSyncService to sync subscribers from all selected lists (publicationIds array) instead of just a single publicationId
+- **Files changed**:
+  - `apps/backend/libs/core/src/sync/subscriber-sync.service.ts` - Updated API key flow to iterate over publicationIds array, create sync history per publication, handle errors per list, and aggregate subscriber counts
+  - `apps/backend/apps/worker/src/processors/subscriber-sync.processor.ts` - Removed sync history creation for API key connections (service now handles it per publication), updated error handling to work for both API key and OAuth connections
+- **Learnings for future iterations:**
+  - API key connections now follow the same pattern as OAuth connections: iterate over publicationIds array and sync each list separately
+  - Sync history is created per publication in the service for both API key and OAuth connections (not in the processor)
+  - Error handling per list: if one list fails to sync, other lists continue syncing (graceful degradation)
+  - The publicationIds field name is kept for backward compatibility, but it contains list IDs (terminology varies by ESP: lists, segments, publications)
+  - Backward compatibility: falls back to single publicationId if publicationIds array is not available
+  - Subscriber counts are aggregated across all successfully synced lists
+  - Sync history tracks which lists were synced, their success/failure status, and subscriber counts per list
+  - Processor now checks sync history for both API key and OAuth connections to determine overall sync status
+  - Backend build passes successfully
+---
