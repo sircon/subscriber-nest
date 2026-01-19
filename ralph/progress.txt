@@ -103,3 +103,20 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Task PRD files in `tasks/` directory contain project references in their introduction sections that should be updated during rebranding
   - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
 ---
+
+## 2026-01-19 - US-009
+- Updated Docker Compose configuration from SubscriberNest to AudienceSafe
+- Container names updated: postgres_subscriber_nest → postgres_audience_safe, redis_subscriber_nest → redis_audience_safe, api_subscriber_nest → api_audience_safe, worker_subscriber_nest → worker_audience_safe, frontend_subscriber_nest → frontend_audience_safe
+- Network name updated: subscriber_nest_network → audience_safe_network
+- Default database name updated: subscriber_nest → audience_safe (in POSTGRES_DB and DATABASE_NAME defaults)
+- Default email addresses updated: onboarding@nest.miguelncorreia.com → onboarding@audiencesafe.com (in both api and worker services)
+- Files changed: `docker-compose.yml`
+- **Learnings for future iterations:**
+  - Docker Compose file is located at the root level (`docker-compose.yml`)
+  - Container names follow the pattern `{service}_{project_name}` (e.g., `api_audience_safe`)
+  - Network name follows the pattern `{project_name}_network` (e.g., `audience_safe_network`)
+  - Default database name is set in both POSTGRES_DB (postgres service) and DATABASE_NAME (api and worker services)
+  - Default email addresses are set in RESEND_FROM_EMAIL environment variable for both api and worker services
+  - Docker Compose file can be validated using `docker compose config --quiet` command
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---
