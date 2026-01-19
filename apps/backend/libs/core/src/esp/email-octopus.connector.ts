@@ -8,16 +8,16 @@ import { Publication, SubscriberData } from './esp.interface';
  * Email Octopus ESP Connector
  * Implements the IEspConnector interface for Email Octopus API integration
  *
- * Email Octopus uses API key authentication passed as a query parameter.
+ * Email Octopus uses Bearer token authentication via the Authorization header.
  * The API provides access to lists (publications) and their contacts (subscribers).
  *
- * API Documentation: https://emailoctopus.com/api-documentation
+ * API Documentation: https://emailoctopus.com/api-documentation/v2
  */
 @Injectable()
 export class EmailOctopusConnector implements IEspConnector {
-  private readonly baseUrl = 'https://emailoctopus.com/api/1.6';
+  private readonly baseUrl = 'https://api.emailoctopus.com';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) { }
 
   /**
    * Validates an API key by making a test request to the Email Octopus API
@@ -30,11 +30,12 @@ export class EmailOctopusConnector implements IEspConnector {
     publicationId?: string
   ): Promise<boolean> {
     try {
+
       // Use /lists endpoint to validate API key
       const response = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/lists`, {
-          params: {
-            api_key: apiKey,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
           },
         })
       );
@@ -46,8 +47,8 @@ export class EmailOctopusConnector implements IEspConnector {
           try {
             const listResponse = await firstValueFrom(
               this.httpService.get(`${this.baseUrl}/lists/${publicationId}`, {
-                params: {
-                  api_key: apiKey,
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
                 },
               })
             );
@@ -97,8 +98,10 @@ export class EmailOctopusConnector implements IEspConnector {
       while (hasMore) {
         const response = await firstValueFrom(
           this.httpService.get(`${this.baseUrl}/lists`, {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
             params: {
-              api_key: apiKey,
               limit,
               page,
             },
@@ -168,8 +171,10 @@ export class EmailOctopusConnector implements IEspConnector {
           this.httpService.get(
             `${this.baseUrl}/lists/${publicationId}/contacts`,
             {
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+              },
               params: {
-                api_key: apiKey,
                 limit,
                 page,
               },
@@ -248,8 +253,8 @@ export class EmailOctopusConnector implements IEspConnector {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/lists/${publicationId}`, {
-          params: {
-            api_key: apiKey,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
           },
         })
       );

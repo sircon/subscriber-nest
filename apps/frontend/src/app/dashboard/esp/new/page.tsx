@@ -15,26 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-
-type EspType = 'beehiiv' | 'kit' | 'mailchimp';
-
-const espTypes: { id: EspType; name: string; description: string }[] = [
-  {
-    id: 'beehiiv',
-    name: 'beehiiv',
-    description: 'Connect your beehiiv account to sync subscribers',
-  },
-  {
-    id: 'kit',
-    name: 'Kit',
-    description: 'Connect your Kit account to sync subscribers',
-  },
-  {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    description: 'Connect your Mailchimp account to sync subscribers',
-  },
-];
+import { espConfigs, type EspType, supportsOAuth, getEspConfig } from '@/lib/esp-config';
 
 export default function NewEspConnectionPage() {
   const router = useRouter();
@@ -50,8 +31,7 @@ export default function NewEspConnectionPage() {
   }>({});
 
   // Check if selected ESP type supports OAuth
-  const supportsOAuth =
-    selectedEspType === 'kit' || selectedEspType === 'mailchimp';
+  const hasOAuth = selectedEspType ? supportsOAuth(selectedEspType) : false;
 
   const handleEspTypeSelect = (espType: EspType) => {
     setSelectedEspType(espType);
@@ -169,8 +149,8 @@ export default function NewEspConnectionPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {espTypes.map((esp) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {espConfigs.map((esp) => (
             <Card
               key={esp.id}
               className="cursor-pointer hover:border-primary transition-colors"
@@ -214,7 +194,7 @@ export default function NewEspConnectionPage() {
           Back to ESP Selection
         </Button>
         <h1 className="text-3xl font-semibold mb-2">
-          Connect {espTypes.find((e) => e.id === selectedEspType)?.name}
+          Connect {getEspConfig(selectedEspType)?.name || selectedEspType}
         </h1>
         <p className="text-muted-foreground">
           Enter your API credentials to connect your account
@@ -225,13 +205,13 @@ export default function NewEspConnectionPage() {
         <CardHeader>
           <CardTitle>Connection Details</CardTitle>
           <CardDescription>
-            {supportsOAuth
+            {hasOAuth
               ? 'Connect your account securely using OAuth'
               : 'Please provide your API key and publication ID'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {supportsOAuth ? (
+          {hasOAuth ? (
             <div className="space-y-4">
               <div className="p-4 rounded-md bg-primary/10 border border-primary/20">
                 <p className="text-sm text-primary font-medium mb-2">
@@ -239,7 +219,7 @@ export default function NewEspConnectionPage() {
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
                   Connect your{' '}
-                  {espTypes.find((e) => e.id === selectedEspType)?.name} account
+                  {getEspConfig(selectedEspType)?.name || selectedEspType} account
                   securely using OAuth. No API keys needed!
                 </p>
                 {error && (

@@ -13,14 +13,7 @@ import {
 } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi } from '@/lib/api';
-
-type Provider = 'kit' | 'beehiiv' | 'mailchimp';
-
-const providerNames: Record<Provider, string> = {
-  kit: 'Kit',
-  beehiiv: 'beehiiv',
-  mailchimp: 'Mailchimp',
-};
+import { type EspType, supportsOAuth, getEspConfig } from '@/lib/esp-config';
 
 function ApiKeyForm() {
   const router = useRouter();
@@ -30,13 +23,32 @@ function ApiKeyForm() {
   const [publicationId, setPublicationId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const provider = (searchParams.get('provider') || '') as Provider;
+  const provider = (searchParams.get('provider') || '') as EspType;
 
   // Check if provider supports OAuth
-  const supportsOAuth = provider === 'kit' || provider === 'mailchimp';
+  const hasOAuth = supportsOAuth(provider);
 
   useEffect(() => {
-    if (!provider || !['kit', 'beehiiv', 'mailchimp'].includes(provider)) {
+    const validEspTypes: EspType[] = [
+      'beehiiv',
+      'kit',
+      'mailchimp',
+      'campaign_monitor',
+      'email_octopus',
+      'omeda',
+      'ghost',
+      'sparkpost',
+      'active_campaign',
+      'customer_io',
+      'sailthru',
+      'mailerlite',
+      'postup',
+      'constant_contact',
+      'iterable',
+      'sendgrid',
+      'brevo',
+    ];
+    if (!provider || !validEspTypes.includes(provider)) {
       router.push('/onboarding');
     }
   }, [provider, router]);
@@ -109,7 +121,8 @@ function ApiKeyForm() {
     }
   };
 
-  if (!provider || !['kit', 'beehiiv', 'mailchimp'].includes(provider)) {
+  const providerConfig = getEspConfig(provider);
+  if (!provider || !providerConfig) {
     return null; // Will redirect in useEffect
   }
 
@@ -119,22 +132,22 @@ function ApiKeyForm() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
-              Connect {providerNames[provider]}
+              Connect {providerConfig.name}
             </CardTitle>
             <CardDescription>
-              Enter your {providerNames[provider]} API key to sync your
+              Enter your {providerConfig.name} API key to sync your
               subscribers
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {supportsOAuth ? (
+            {hasOAuth ? (
               <div className="space-y-4">
                 <div className="p-4 rounded-md bg-primary/10 border border-primary/20">
                   <p className="text-sm text-primary font-medium mb-2">
                     Connect with OAuth
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Connect your {providerNames[provider]} account securely
+                    Connect your {providerConfig.name} account securely
                     using OAuth. No API keys needed!
                   </p>
                   <Button

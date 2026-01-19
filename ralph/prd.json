@@ -363,6 +363,93 @@
       "priority": 4,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Create centralized ESP configuration for frontend",
+      "description": "As a developer, I need a centralized ESP configuration file that defines all supported ESPs, their display names, descriptions, and OAuth support status to avoid duplication across frontend pages.",
+      "acceptanceCriteria": [
+        "Create esp-config.ts in apps/frontend/src/lib/",
+        "Define EspType type union with all 17 ESP types (3 existing + 14 new)",
+        "Create EspConfig interface with id, name, description, and supportsOAuth fields",
+        "Create espConfigs array with all 17 ESP configurations",
+        "Create helper functions: getEspConfig(), getEspName(), supportsOAuth(), getAllEspNames(), getFormattedEspList()",
+        "Typecheck passes",
+        "All ESPs have proper display names and descriptions"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Update onboarding page to show all ESPs",
+      "description": "As a user, I need to see all 17 supported ESPs on the onboarding page so I can select my email service provider during initial setup.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/onboarding/page.tsx to use esp-config.ts",
+        "Replace hardcoded provider list with espConfigs array",
+        "Update Provider type to use EspType from esp-config",
+        "Update grid layout to accommodate 17 ESPs (use lg:grid-cols-3)",
+        "OAuth buttons show for Kit and Mailchimp only",
+        "All other ESPs show 'Select' button that navigates to API key form",
+        "Typecheck passes",
+        "All 17 ESPs are visible and selectable"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Update new ESP connection page to show all ESPs",
+      "description": "As a user, I need to see all 17 supported ESPs on the new ESP connection page so I can add additional ESP connections from the dashboard.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/dashboard/esp/new/page.tsx to use esp-config.ts",
+        "Replace hardcoded espTypes array with espConfigs from esp-config",
+        "Update EspType type to use EspType from esp-config",
+        "Update grid layout to accommodate 17 ESPs (use lg:grid-cols-3)",
+        "OAuth flow works for Kit and Mailchimp",
+        "API key form works for all other ESPs",
+        "Typecheck passes",
+        "All 17 ESPs are visible and can be connected"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Update API key form page to support all ESPs",
+      "description": "As a user, I need the API key form page to accept all 17 ESP types so I can complete the onboarding or connection flow for any supported ESP.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/onboarding/api-key/page.tsx to use esp-config.ts",
+        "Replace Provider type with EspType from esp-config",
+        "Update provider validation to accept all 17 ESP types",
+        "Use getEspConfig() to get ESP display name and configuration",
+        "OAuth flow works for Kit and Mailchimp",
+        "API key form works for all other ESPs",
+        "Typecheck passes",
+        "All 17 ESPs can complete the API key form flow"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Update homepage FAQ to list all supported ESPs",
+      "description": "As a potential user, I need to see all supported ESPs listed in the homepage FAQ so I know if my email service provider is supported.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/page.tsx to import getFormattedEspList from esp-config",
+        "Update FAQ answer for 'What Email Service Providers do you support?' to use getFormattedEspList()",
+        "FAQ answer dynamically lists all 17 ESPs in a readable format",
+        "Format: 'We support ESP1, ESP2, ESP3, ..., and ESP17'",
+        "Typecheck passes",
+        "FAQ displays all supported ESPs correctly"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
     }
   ]
 }
