@@ -24,6 +24,21 @@ import { BeehiivConnector } from '../esp/beehiiv.connector';
 import { KitConnector } from '../esp/kit.connector';
 import { MailchimpConnector } from '../esp/mailchimp.connector';
 import { IEspConnector } from '../esp/esp-connector.interface';
+// New connectors
+import { ActiveCampaignConnector } from '../esp/active-campaign.connector';
+import { BrevoConnector } from '../esp/brevo.connector';
+import { CampaignMonitorConnector } from '../esp/campaign-monitor.connector';
+import { ConstantContactConnector } from '../esp/constant-contact.connector';
+import { CustomerIoConnector } from '../esp/customer-io.connector';
+import { EmailOctopusConnector } from '../esp/email-octopus.connector';
+import { GhostConnector } from '../esp/ghost.connector';
+import { IterableConnector } from '../esp/iterable.connector';
+import { MailerLiteConnector } from '../esp/mailerlite.connector';
+import { OmedaConnector } from '../esp/omeda.connector';
+import { PostUpConnector } from '../esp/postup.connector';
+import { SailthruConnector } from '../esp/sailthru.connector';
+import { SendGridConnector } from '../esp/sendgrid.connector';
+import { SparkPostConnector } from '../esp/sparkpost.connector';
 import { CreateSubscriberDto } from './create-subscriber.dto';
 import { SubscriberMapperService } from './subscriber-mapper.service';
 import { OAuthTokenRefreshService } from '../oauth/oauth-token-refresh.service';
@@ -43,9 +58,25 @@ export class SubscriberSyncService {
     @InjectRepository(SyncHistory)
     private syncHistoryRepository: Repository<SyncHistory>,
     private encryptionService: EncryptionService,
+    // Existing connectors
     private beehiivConnector: BeehiivConnector,
     private kitConnector: KitConnector,
     private mailchimpConnector: MailchimpConnector,
+    // New connectors
+    private activeCampaignConnector: ActiveCampaignConnector,
+    private brevoConnector: BrevoConnector,
+    private campaignMonitorConnector: CampaignMonitorConnector,
+    private constantContactConnector: ConstantContactConnector,
+    private customerIoConnector: CustomerIoConnector,
+    private emailOctopusConnector: EmailOctopusConnector,
+    private ghostConnector: GhostConnector,
+    private iterableConnector: IterableConnector,
+    private mailerLiteConnector: MailerLiteConnector,
+    private omedaConnector: OmedaConnector,
+    private postUpConnector: PostUpConnector,
+    private sailthruConnector: SailthruConnector,
+    private sendGridConnector: SendGridConnector,
+    private sparkPostConnector: SparkPostConnector,
     private oauthTokenRefreshService: OAuthTokenRefreshService,
     private subscriberMapperService: SubscriberMapperService,
     private billingUsageService: BillingUsageService,
@@ -61,12 +92,42 @@ export class SubscriberSyncService {
    */
   private getConnector(espType: EspType): IEspConnector {
     switch (espType) {
+      // Existing connectors
       case EspType.BEEHIIV:
         return this.beehiivConnector;
       case EspType.KIT:
         return this.kitConnector;
       case EspType.MAILCHIMP:
         return this.mailchimpConnector;
+      // New connectors
+      case EspType.ACTIVE_CAMPAIGN:
+        return this.activeCampaignConnector;
+      case EspType.BREVO:
+        return this.brevoConnector;
+      case EspType.CAMPAIGN_MONITOR:
+        return this.campaignMonitorConnector;
+      case EspType.CONSTANT_CONTACT:
+        return this.constantContactConnector;
+      case EspType.CUSTOMER_IO:
+        return this.customerIoConnector;
+      case EspType.EMAIL_OCTOPUS:
+        return this.emailOctopusConnector;
+      case EspType.GHOST:
+        return this.ghostConnector;
+      case EspType.ITERABLE:
+        return this.iterableConnector;
+      case EspType.MAILERLITE:
+        return this.mailerLiteConnector;
+      case EspType.OMEDA:
+        return this.omedaConnector;
+      case EspType.POSTUP:
+        return this.postUpConnector;
+      case EspType.SAILTHRU:
+        return this.sailthruConnector;
+      case EspType.SENDGRID:
+        return this.sendGridConnector;
+      case EspType.SPARKPOST:
+        return this.sparkPostConnector;
       default:
         throw new InternalServerErrorException(
           `Unsupported ESP type: ${espType}`
