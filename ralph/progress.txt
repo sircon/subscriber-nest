@@ -20,4 +20,19 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - PostgreSQL enums cannot have values removed, only added - use `ADD VALUE IF NOT EXISTS`
   - Existing ESP types use snake_case format (e.g., 'campaign_monitor', not 'campaignMonitor')
   - The backend lint command fails due to ESLint config issue, but build passes
+- Campaign Monitor uses Basic Auth with API key as username and empty password
+- Campaign Monitor organizes lists under clients - need to iterate clients first, then get lists per client
+---
+
+## Mon Jan 19, 2026 - US-002
+- **What was implemented**: Created Campaign Monitor ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/campaign-monitor.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Campaign Monitor uses Basic Auth (API key as username, empty password) - use `Buffer.from(apiKey + ':').toString('base64')`
+  - API base URL is `https://api.createsend.com/api/v3.2`
+  - Publications = clients' subscriber lists; need to fetch /clients.json then /clients/{id}/lists.json for each
+  - Active subscribers at /lists/{listId}/active.json, unsubscribed at /lists/{listId}/unsubscribed.json
+  - List stats (including subscriber count) available at /lists/{listId}/stats.json
+  - Campaign Monitor supports up to 1000 records per page
 ---

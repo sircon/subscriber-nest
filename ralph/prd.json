@@ -34,7 +34,7 @@
         "Integration test passes with mock Campaign Monitor API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
