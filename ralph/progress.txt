@@ -624,3 +624,18 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - All 17 ESP connectors support fetchPublications() or fetchPublicationsWithOAuth() methods, so the endpoint works for all ESP types
   - Backend build passes successfully
 ---
+
+## Mon Jan 19, 2026 - US-048
+- **What was implemented**: Created PUT /esp-connections/:id/lists endpoint to update selected lists for ESP connections
+- **Files changed**:
+  - `apps/backend/apps/api/src/dto/update-selected-lists.dto.ts` - New DTO for request body with selectedListIds validation
+  - `apps/backend/apps/api/src/services/esp-connection.service.ts` - Added updateSelectedLists() method that validates list IDs and updates publicationIds and listNames
+  - `apps/backend/apps/api/src/controllers/esp-connection.controller.ts` - Added PUT endpoint that handles request/response and error handling
+- **Learnings for future iterations:**
+  - The updateSelectedLists() service method validates list IDs by fetching available lists first, ensuring all provided IDs exist
+  - The method updates both publicationIds (array) and listNames (array) fields, and also updates publicationId (single) for backward compatibility
+  - Error handling follows the same pattern as other endpoints: NotFoundException (404), BadRequestException (400 with specific message for invalid IDs), ForbiddenException (403 for ownership issues), InternalServerErrorException (500)
+  - The endpoint works for all 17 ESP types because it uses fetchAvailableLists() which handles both API_KEY and OAUTH authentication methods
+  - The DTO uses class-validator decorators (@IsNotEmpty, @IsArray, @IsString) for request validation
+  - Backend build and TypeScript checks pass successfully
+---

@@ -856,7 +856,7 @@
         "Endpoint works for all 17 ESP types"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Endpoint uses '/lists' for clarity. Request body uses selectedListIds. Database still uses publicationIds field name for backward compatibility."
     },
     {
