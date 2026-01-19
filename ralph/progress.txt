@@ -75,3 +75,14 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Default from email address is set in email.service.ts with fallback to 'onboarding@audiencesafe.com' if RESEND_FROM_EMAIL env var is not set
   - Typecheck verified via `turbo run build --filter=backend` - passes successfully
 ---
+
+## 2026-01-19 - US-007
+- Updated Stripe product name from SubscriberNest to AudienceSafe
+- Stripe product name in createSubscription method updated from 'SubscriberNest Usage' to 'AudienceSafe Usage'
+- Files changed: `apps/backend/libs/core/src/billing/stripe.service.ts`
+- **Learnings for future iterations:**
+  - Stripe product name is defined in the `createSubscription` method of `StripeService` at `apps/backend/libs/core/src/billing/stripe.service.ts`
+  - The product name is set in the `product_data.name` field when creating a subscription with metered billing
+  - This product name appears in Stripe invoices and billing portal for users
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---
