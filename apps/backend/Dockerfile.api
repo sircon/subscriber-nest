@@ -32,6 +32,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY apps/backend ./apps/backend
 COPY package.json ./
+# Copy migration runner script
+COPY apps/backend/run-migrations.js ./apps/backend/run-migrations.js
 
 # Build API only
 WORKDIR /app/apps/backend
@@ -47,6 +49,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/apps/backend/dist/api ./dist
 # In yarn workspaces, all node_modules are hoisted to root, so only copy root node_modules
 COPY --from=builder /app/node_modules ./node_modules
+# Copy migration runner script
+COPY --from=builder /app/apps/backend/run-migrations.js ./run-migrations.js
 
 # Expose API port
 EXPOSE 4000
