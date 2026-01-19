@@ -482,8 +482,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API documentation link (https://developers.beehiiv.com/docs). Verified v2 is the current API version. All API calls use v2 correctly."
     },
     {
       "id": "US-027",

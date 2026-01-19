@@ -359,3 +359,15 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Connectors using v1 APIs (Kit, Customer.io, SparkPost) should be checked for v2+ availability
   - Audit document created at `ralph/esp-api-version-audit.md` for future reference
 ---
+
+## Mon Jan 19, 2026 - US-026
+- **What was implemented**: Updated beehiiv connector to add API documentation link and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/beehiiv.connector.ts` - Added API documentation link and version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Beehiiv API v2 is the current version (verified January 2026)
+  - API documentation URL: https://developers.beehiiv.com/docs
+  - All API endpoints in the connector correctly use v2 via baseUrl constant
+  - API documentation links should be added as comments in the class-level JSDoc block, following the pattern: "API Documentation: {url}" and "API Version: {version} (current as of {date})"
+  - No API version update was needed - v2 is current
+---
