@@ -26,3 +26,14 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - The metadata object contains `title` and `description` fields that control browser tab title and meta description
   - Typecheck is verified via `turbo run build --filter=frontend` which includes TypeScript compilation
 ---
+
+## 2026-01-19 - US-003
+- Updated dashboard welcome message from SubscriberNest to AudienceSafe
+- Welcome overlay message changed from "Welcome to SubscriberNest!" to "Welcome to AudienceSafe!"
+- Files changed: `apps/frontend/src/app/dashboard/page.tsx`
+- **Learnings for future iterations:**
+  - Dashboard welcome message is displayed in the `WelcomeOverlay` component within `apps/frontend/src/app/dashboard/page.tsx`
+  - The welcome overlay is shown when the `welcome=true` query parameter is present in the URL (typically after onboarding)
+  - The overlay auto-dismisses after 2 seconds
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+---
