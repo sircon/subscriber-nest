@@ -288,7 +288,9 @@ export class BillingController {
       const frontendUrl =
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
-      const successUrl = `${frontendUrl}/dashboard/settings?session_id={CHECKOUT_SESSION_ID}`;
+
+      // Build success and cancel URLs
+      const successUrl = `${frontendUrl}/onboarding/success?session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${frontendUrl}/onboarding/stripe?canceled=true`;
 
       let existingSubscription =
@@ -535,15 +537,25 @@ export class BillingController {
         );
       }
 
-      const subscriptionId = session.subscription;
-      if (!subscriptionId || typeof subscriptionId !== 'string') {
+      // Get subscription from session
+      // Note: session.subscription can be a string ID or an expanded Subscription object
+      const sessionSubscription = session.subscription;
+      if (!sessionSubscription) {
         throw new BadRequestException(
           'Checkout session does not have a subscription'
         );
       }
 
-      const stripeSubscription =
-        await this.stripeService.getSubscription(subscriptionId);
+      // Handle both expanded subscription object and string ID
+      let stripeSubscription: Stripe.Subscription;
+      if (typeof sessionSubscription === 'string') {
+        // Subscription is a string ID, need to retrieve it
+        stripeSubscription =
+          await this.stripeService.getSubscription(sessionSubscription);
+      } else {
+        // Subscription is already expanded
+        stripeSubscription = sessionSubscription;
+      }
 
       let billingSubscription =
         await this.billingSubscriptionService.findByUserId(user.id);

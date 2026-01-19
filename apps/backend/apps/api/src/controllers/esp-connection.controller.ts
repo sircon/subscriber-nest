@@ -76,6 +76,38 @@ export class EspConnectionController {
     }
   }
 
+  @Get(':id/subscriber-count')
+  async getSubscriberCount(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<{ count: number }> {
+    try {
+      // Get subscriber count from ESP API (validates ownership internally)
+      const count = await this.espConnectionService.getSubscriberCount(
+        id,
+        user.id
+      );
+      return { count };
+    } catch (error) {
+      // Handle NotFoundException from service (404)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection'
+        );
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve subscriber count'
+      );
+    }
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createConnection(

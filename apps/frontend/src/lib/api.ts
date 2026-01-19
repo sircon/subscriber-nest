@@ -348,6 +348,25 @@ export const espConnectionApi = {
   },
 
   /**
+   * Get subscriber count from ESP API for a connection
+   * This is a lightweight call that returns just the count
+   */
+  getSubscriberCount: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<{ count: number }> => {
+    return apiRequest<{ count: number }>(
+      `/esp-connections/${connectionId}/subscriber-count`,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized
+    );
+  },
+
+  /**
    * Get paginated subscribers for ESP connection
    */
   getSubscribers: async (

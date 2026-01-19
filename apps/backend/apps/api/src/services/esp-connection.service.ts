@@ -105,4 +105,26 @@ export class EspConnectionService {
     connection.syncStatus = syncStatus;
     return this.espConnectionRepository.save(connection);
   }
+
+  /**
+   * Gets the subscriber count from the ESP API for a specific connection
+   * This is a lightweight method that doesn't fetch all subscriber data
+   * @param id - The ID of the ESP connection
+   * @param userId - Optional user ID to validate ownership
+   * @returns The total number of subscribers from the ESP API
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided)
+   */
+  async getSubscriberCount(id: string, userId?: string): Promise<number> {
+    const connection = await this.findById(id, userId);
+
+    // Decrypt the API key
+    const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);
+
+    // Get the appropriate connector
+    const connector = this.getConnector(connection.espType);
+
+    // Get subscriber count from the ESP API
+    return connector.getSubscriberCount(apiKey, connection.publicationId);
+  }
 }

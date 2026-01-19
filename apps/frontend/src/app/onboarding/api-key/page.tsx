@@ -60,8 +60,8 @@ function ApiKeyForm() {
         throw new Error('Authentication required. Please log in again.');
       }
 
-      // Step 1: Create ESP connection
-      const connection = await espConnectionApi.createConnection(
+      // Create ESP connection
+      await espConnectionApi.createConnection(
         { espType: provider, apiKey, publicationId },
         token,
         () => {
@@ -70,20 +70,8 @@ function ApiKeyForm() {
         }
       );
 
-      // Step 2: Auto-trigger sync (don't block on errors)
-      if (connection?.id) {
-        try {
-          await espConnectionApi.triggerSync(connection.id, token, () => {
-            // Handle 401: already redirecting, ignore
-          });
-        } catch (syncErr) {
-          // Log sync error but don't block onboarding flow
-          console.error('Failed to trigger initial sync:', syncErr);
-          // User can manually trigger sync from dashboard
-        }
-      }
-
-      // Step 3: Redirect to Stripe onboarding step
+      // Redirect to Stripe onboarding step
+      // Sync will be triggered after payment is completed in /onboarding/success
       router.push('/onboarding/stripe');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

@@ -1,3 +1,4 @@
+import { BillingSubscriptionService } from '@app/core/billing/billing-subscription.service';
 import { SubscriberSyncService } from '@app/core/sync/subscriber-sync.service';
 import { EspConnection, EspSyncStatus } from '@app/database/entities/esp-connection.entity';
 import { Subscriber } from '@app/database/entities/subscriber.entity';
@@ -7,7 +8,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bullmq';
 import { Repository } from 'typeorm';
-
 
 export interface SyncPublicationJobData {
   espConnectionId: string;
@@ -25,7 +25,8 @@ export class SubscriberSyncProcessor extends WorkerHost {
     private syncHistoryRepository: Repository<SyncHistory>,
     @InjectRepository(Subscriber)
     private subscriberRepository: Repository<Subscriber>,
-    private subscriberSyncService: SubscriberSyncService
+    private subscriberSyncService: SubscriberSyncService,
+    private billingSubscriptionService: BillingSubscriptionService
   ) {
     super();
   }
@@ -41,6 +42,35 @@ export class SubscriberSyncProcessor extends WorkerHost {
       `Processing sync job ${job.id} for ESP connection ${espConnectionId}`
     );
 
+    // Check if user has an active subscription before processing
+    const espConnection = await this.espConnectionRepository.findOne({
+      where: { id: espConnectionId },
+    });
+
+    if (!espConnection) {
+      throw new Error(`ESP connection ${espConnectionId} not found`);
+    }
+
+    const hasActiveSubscription =
+      await this.billingSubscriptionService.hasActiveSubscription(
+        espConnection.userId
+      );
+
+    if (!hasActiveSubscription) {
+      this.logger.warn(
+        `Rejecting sync job for ESP connection ${espConnectionId}: user ${espConnection.userId} does not have an active subscription`
+      );
+      // Reset sync status to idle since we're not actually syncing
+      await this.espConnectionRepository.update(
+        { id: espConnectionId },
+        { syncStatus: EspSyncStatus.IDLE }
+      );
+      throw new Error(
+        'Active subscription required to sync subscribers. Please subscribe to continue.'
+      );
+    }
+
+    // Create sync history record at start with optimistic 'success' status
     const syncHistory = this.syncHistoryRepository.create({
       espConnectionId,
       status: SyncHistoryStatus.SUCCESS,

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -36,13 +36,48 @@ interface SyncHistoryWithEsp extends SyncHistory {
   espName: string;
 }
 
-export default function DashboardPage() {
+function WelcomeOverlay({ onComplete }: { onComplete: () => void }) {
+  useEffect(() => {
+    // Auto-dismiss after 2 seconds
+    const timer = setTimeout(() => {
+      onComplete();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">Welcome to SubscriberNest!</h2>
+          <p className="text-muted-foreground">Setting up your dashboard...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { token } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncHistoryWithEsp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    // Check for welcome param
+    const welcome = searchParams.get('welcome');
+    if (welcome === 'true') {
+      setShowWelcome(true);
+      // Remove the welcome param from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -131,20 +166,18 @@ export default function DashboardPage() {
     return formatDateTime(dateString);
   };
 
-  if (loading) {
+  // Show welcome overlay when coming from onboarding
+  if (showWelcome) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-secondary rounded w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="h-32 bg-secondary rounded"></div>
-            <div className="h-32 bg-secondary rounded"></div>
-            <div className="h-32 bg-secondary rounded"></div>
-          </div>
-          <div className="h-64 bg-secondary rounded"></div>
-        </div>
-      </div>
+      <>
+        <WelcomeOverlay onComplete={() => setShowWelcome(false)} />
+        <DashboardLoadingSkeleton />
+      </>
     );
+  }
+
+  if (loading) {
+    return <DashboardLoadingSkeleton />;
   }
 
   return (
@@ -268,5 +301,29 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function DashboardLoadingSkeleton() {
+  return (
+    <div className="p-6">
+      <div className="animate-pulse space-y-6">
+        <div className="h-8 bg-secondary rounded w-1/3"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-32 bg-secondary rounded"></div>
+          <div className="h-32 bg-secondary rounded"></div>
+          <div className="h-32 bg-secondary rounded"></div>
+        </div>
+        <div className="h-64 bg-secondary rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoadingSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
