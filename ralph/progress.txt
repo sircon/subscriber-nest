@@ -20,6 +20,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Constant Contact uses Bearer token auth with OAuth access token; API URL `https://api.cc.email/v3`; cursor-based pagination; contact_lists = publications, contacts = subscribers
 - Iterable uses Api-Key header auth; API URL `https://api.iterable.com/api`; lists = publications, users = subscribers; list sizes available in /lists response
 - SendGrid uses Bearer token auth; API URL `https://api.sendgrid.com/v3`; marketing/lists = publications, contacts searched via SEGQL query; list contact_count for counts
+- Brevo uses `api-key` header auth; API URL `https://api.brevo.com/v3`; contacts/lists = publications, contacts via list contacts endpoint; uniqueSubscribers for counts
 
 ---
 
@@ -244,4 +245,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Contact status inferred from: unsubscribed_at, email_status (bounced, invalid, spam_reported, pending)
   - Custom fields stored in `custom_fields` object on contact
   - Contacts include geo data: city, state_province_region, country, postal_code
+---
+
+## Mon Jan 19, 2026 - US-015
+- **What was implemented**: Created Brevo (formerly Sendinblue) ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/brevo.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Brevo uses `api-key` header for authentication (not Authorization header)
+  - API base URL is `https://api.brevo.com/v3`
+  - Publications = contacts/lists; GET /contacts/lists returns all lists with subscriber counts
+  - Subscribers: GET /contacts/lists/{listId}/contacts with limit/offset pagination
+  - List details include `uniqueSubscribers` and `totalSubscribers` for counts
+  - Status inferred from: emailBlacklisted (unsubscribed), hardBounced, softBounced, spamReported
+  - Attributes stored in `attributes` object (FIRSTNAME, LASTNAME, etc. - uppercase keys)
+  - Account validation via GET /account endpoint
+  - Max 50 lists per request, 500 contacts per request
 ---
