@@ -985,7 +985,7 @@
         "UI uses 'lists' terminology throughout"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "UI uses 'lists' terminology. Displays names from listNames field, falls back to IDs if names not available."
     },
     {
@@ -1003,8 +1003,8 @@
         "UI uses 'lists' terminology throughout"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "UI uses 'lists' terminology. Mailchimp returns segments via fetchPublicationsWithOAuth(), but we display them as lists."
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Mailchimp returns segments via fetchPublicationsWithOAuth(), but we display them as lists. OAuth callback now redirects to list selection page where users can choose which lists to sync before completing the connection."
     }
   ]
 }

@@ -732,3 +732,31 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Processor now checks sync history for both API key and OAuth connections to determine overall sync status
   - Backend build passes successfully
 ---
+
+## Mon Jan 19, 2026 - US-056
+- **What was implemented**: Updated OAuth callback flow to redirect to list selection page after token exchange, allowing users to select which lists to sync before completing OAuth connection
+- **Files changed**:
+  - `apps/backend/apps/api/src/controllers/esp-connection.controller.ts` - Modified OAuth callback to redirect to `/onboarding/oauth-lists` page with connection ID and onboarding flag
+  - `apps/frontend/src/app/onboarding/oauth-lists/page.tsx` - New page component that shows ListSelector after OAuth success, allows users to select lists, and redirects to appropriate next page (Stripe onboarding or ESP detail page)
+- **Learnings for future iterations:**
+  - OAuth callback creates connection with all lists selected by default (via createOAuthConnection which calls fetchPublicationsWithOAuth())
+  - List selection page accepts connectionId and isOnboarding query parameters to handle both onboarding and non-onboarding flows
+  - After user selects lists, connection is updated via updateSelectedLists() API endpoint, then redirects to next step
+  - UI uses 'lists' terminology throughout, even though Mailchimp returns segments via fetchPublicationsWithOAuth()
+  - The list selection page follows the same pattern as the API key flow for consistency
+  - Backend and frontend builds pass successfully
+---
+
+## Mon Jan 19, 2026 - US-055
+- **What was implemented**: Updated dashboard page and layout to display list names instead of publication IDs throughout the dashboard
+- **Files changed**:
+  - `apps/frontend/src/app/dashboard/page.tsx` - Updated sync history table to show list names instead of publicationId, added helper functions getListNames() and formatListNames(), replaced hardcoded providerNames with getEspName() from esp-config
+  - `apps/frontend/src/app/dashboard/layout.tsx` - Updated sidebar connection list to show list names instead of publicationId, added same helper functions, replaced hardcoded providerNames with getEspName() from esp-config
+- **Learnings for future iterations:**
+  - Use getEspName() from esp-config.ts instead of hardcoding provider names - it supports all 17 ESPs
+  - Helper function pattern for list names: check listNames first, fallback to publicationIds, then publicationId, return empty array if none
+  - Format list names for display: single list shows name, 2-3 lists show comma-separated, 4+ lists show count (e.g., "5 lists")
+  - Dashboard layout sidebar also displays list information - remember to update both page.tsx and layout.tsx when making dashboard-wide changes
+  - Sync history table shows ESP name with list names in parentheses (e.g., "Kit (Newsletter, Blog)")
+  - Frontend build passes successfully
+---
