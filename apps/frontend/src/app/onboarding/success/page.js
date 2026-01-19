@@ -1,246 +1,78 @@
 'use client';
-import {
-  jsx as _jsx,
-  jsxs as _jsxs,
-  Fragment as _Fragment,
-} from 'react/jsx-runtime';
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { billingApi, espConnectionApi } from '@/lib/api';
 function OnboardingSuccessContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { token, checkAuth } = useAuth();
-  const [status, setStatus] = useState('verifying');
-  const [error, setError] = useState(null);
-  const [progress, setProgress] = useState('Verifying payment...');
-  const handleSuccess = useCallback(async () => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    const sessionId = searchParams.get('session_id');
-    if (!sessionId) {
-      setError('No session ID found. Please try the checkout process again.');
-      setStatus('error');
-      return;
-    }
-    try {
-      // Step 1: Verify checkout session with backend
-      setProgress('Verifying payment...');
-      await billingApi.verifyCheckoutSession(token, sessionId, () => {
-        router.push('/login');
-      });
-      // Step 2: Refresh auth to update isOnboarded in cookies
-      setProgress('Updating account...');
-      await checkAuth();
-      // Step 3: Trigger sync for all ESP connections
-      setStatus('syncing');
-      setProgress('Starting initial sync...');
-      const connections = await espConnectionApi.getUserConnections(
-        token,
-        () => {
-          router.push('/login');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { token, checkAuth } = useAuth();
+    const [status, setStatus] = useState('verifying');
+    const [error, setError] = useState(null);
+    const [progress, setProgress] = useState('Verifying payment...');
+    const handleSuccess = useCallback(async () => {
+        if (!token) {
+            router.push('/login');
+            return;
         }
-      );
-      // Trigger sync for each connection (don't wait for completion, just queue them)
-      const syncPromises = connections.map((conn) =>
-        espConnectionApi
-          .triggerSync(conn.id, token, () => {})
-          .catch((err) => {
-            // Log sync errors but don't fail the whole process
-            console.error(
-              `Failed to trigger sync for connection ${conn.id}:`,
-              err
-            );
-          })
-      );
-      // Wait for all syncs to be queued
-      await Promise.all(syncPromises);
-      // Step 4: Success - redirect to dashboard immediately
-      setStatus('success');
-      setProgress('Setup complete! Redirecting to dashboard...');
-      // Redirect immediately with welcome param - dashboard will show loading state
-      // Using window.location.href ensures the middleware sees the updated cookies
-      window.location.href = '/dashboard?welcome=true';
-    } catch (err) {
-      console.error('Onboarding success error:', err);
-      setError(
-        err instanceof Error ? err.message : 'An error occurred during setup'
-      );
-      setStatus('error');
-    }
-  }, [token, searchParams, router, checkAuth]);
-  useEffect(() => {
-    handleSuccess();
-  }, [handleSuccess]);
-  return _jsx('div', {
-    className: 'min-h-screen flex items-center justify-center px-6 py-12',
-    children: _jsx('div', {
-      className: 'w-full max-w-md',
-      children: _jsxs(Card, {
-        children: [
-          _jsxs(CardHeader, {
-            children: [
-              _jsx(CardTitle, {
-                className: 'text-2xl',
-                children:
-                  status === 'error'
-                    ? 'Setup Error'
-                    : 'Setting up your account',
-              }),
-              _jsx(CardDescription, {
-                children:
-                  status === 'error'
-                    ? 'There was a problem completing your setup'
-                    : 'Please wait while we complete your setup...',
-              }),
-            ],
-          }),
-          _jsx(CardContent, {
-            className: 'space-y-4',
-            children:
-              status === 'error'
-                ? _jsxs(_Fragment, {
-                    children: [
-                      _jsx('div', {
-                        className:
-                          'p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm',
-                        children: error,
-                      }),
-                      _jsxs('div', {
-                        className: 'flex gap-2',
-                        children: [
-                          _jsx('button', {
-                            onClick: () => router.push('/onboarding/stripe'),
-                            className:
-                              'flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90',
-                            children: 'Try Again',
-                          }),
-                          _jsx('button', {
-                            onClick: () => router.push('/login'),
-                            className:
-                              'flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent',
-                            children: 'Go to Login',
-                          }),
-                        ],
-                      }),
-                    ],
-                  })
-                : _jsxs('div', {
-                    className: 'space-y-4',
-                    children: [
-                      _jsxs('div', {
-                        className: 'flex items-center gap-3',
-                        children: [
-                          _jsx('div', {
-                            className:
-                              'animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent',
-                          }),
-                          _jsx('span', {
-                            className: 'text-sm text-muted-foreground',
-                            children: progress,
-                          }),
-                        ],
-                      }),
-                      _jsxs('div', {
-                        className: 'space-y-2',
-                        children: [
-                          _jsxs('div', {
-                            className: 'flex items-center gap-2',
-                            children: [
-                              _jsx('div', {
-                                className: `h-2 w-2 rounded-full ${
-                                  status === 'verifying' ||
-                                  status === 'syncing' ||
-                                  status === 'success'
-                                    ? 'bg-green-500'
-                                    : 'bg-gray-300'
-                                }`,
-                              }),
-                              _jsx('span', {
-                                className: 'text-sm',
-                                children: 'Payment verified',
-                              }),
-                            ],
-                          }),
-                          _jsxs('div', {
-                            className: 'flex items-center gap-2',
-                            children: [
-                              _jsx('div', {
-                                className: `h-2 w-2 rounded-full ${
-                                  status === 'syncing' || status === 'success'
-                                    ? 'bg-green-500'
-                                    : 'bg-gray-300'
-                                }`,
-                              }),
-                              _jsx('span', {
-                                className: 'text-sm',
-                                children: 'Account activated',
-                              }),
-                            ],
-                          }),
-                          _jsxs('div', {
-                            className: 'flex items-center gap-2',
-                            children: [
-                              _jsx('div', {
-                                className: `h-2 w-2 rounded-full ${status === 'success' ? 'bg-green-500' : 'bg-gray-300'}`,
-                              }),
-                              _jsx('span', {
-                                className: 'text-sm',
-                                children: 'Initial sync started',
-                              }),
-                            ],
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-          }),
-        ],
-      }),
-    }),
-  });
+        const sessionId = searchParams.get('session_id');
+        if (!sessionId) {
+            setError('No session ID found. Please try the checkout process again.');
+            setStatus('error');
+            return;
+        }
+        try {
+            // Step 1: Verify checkout session with backend
+            setProgress('Verifying payment...');
+            await billingApi.verifyCheckoutSession(token, sessionId, () => {
+                router.push('/login');
+            });
+            // Step 2: Refresh auth to update isOnboarded in cookies
+            setProgress('Updating account...');
+            await checkAuth();
+            // Step 3: Trigger sync for all ESP connections
+            setStatus('syncing');
+            setProgress('Starting initial sync...');
+            const connections = await espConnectionApi.getUserConnections(token, () => {
+                router.push('/login');
+            });
+            // Trigger sync for each connection (don't wait for completion, just queue them)
+            const syncPromises = connections.map((conn) => espConnectionApi
+                .triggerSync(conn.id, token, () => { })
+                .catch((err) => {
+                // Log sync errors but don't fail the whole process
+                console.error(`Failed to trigger sync for connection ${conn.id}:`, err);
+            }));
+            // Wait for all syncs to be queued
+            await Promise.all(syncPromises);
+            // Step 4: Success - redirect to dashboard immediately
+            setStatus('success');
+            setProgress('Setup complete! Redirecting to dashboard...');
+            // Redirect immediately with welcome param - dashboard will show loading state
+            // Using window.location.href ensures the middleware sees the updated cookies
+            window.location.href = '/dashboard?welcome=true';
+        }
+        catch (err) {
+            console.error('Onboarding success error:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred during setup');
+            setStatus('error');
+        }
+    }, [token, searchParams, router, checkAuth]);
+    useEffect(() => {
+        handleSuccess();
+    }, [handleSuccess]);
+    return (_jsx("div", { className: "min-h-screen flex items-center justify-center px-6 py-12", children: _jsx("div", { className: "w-full max-w-md", children: _jsxs(Card, { children: [_jsxs(CardHeader, { children: [_jsx(CardTitle, { className: "text-2xl", children: status === 'error' ? 'Setup Error' : 'Setting up your account' }), _jsx(CardDescription, { children: status === 'error'
+                                    ? 'There was a problem completing your setup'
+                                    : 'Please wait while we complete your setup...' })] }), _jsx(CardContent, { className: "space-y-4", children: status === 'error' ? (_jsxs(_Fragment, { children: [_jsx("div", { className: "p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm", children: error }), _jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: () => router.push('/onboarding/stripe'), className: "flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90", children: "Try Again" }), _jsx("button", { onClick: () => router.push('/login'), className: "flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent", children: "Go to Login" })] })] })) : (_jsxs("div", { className: "space-y-4", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx("div", { className: "animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" }), _jsx("span", { className: "text-sm text-muted-foreground", children: progress })] }), _jsxs("div", { className: "space-y-2", children: [_jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: `h-2 w-2 rounded-full ${status === 'verifying' ||
+                                                        status === 'syncing' ||
+                                                        status === 'success'
+                                                        ? 'bg-green-500'
+                                                        : 'bg-gray-300'}` }), _jsx("span", { className: "text-sm", children: "Payment verified" })] }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: `h-2 w-2 rounded-full ${status === 'syncing' || status === 'success'
+                                                        ? 'bg-green-500'
+                                                        : 'bg-gray-300'}` }), _jsx("span", { className: "text-sm", children: "Account activated" })] }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: `h-2 w-2 rounded-full ${status === 'success' ? 'bg-green-500' : 'bg-gray-300'}` }), _jsx("span", { className: "text-sm", children: "Initial sync started" })] })] })] })) })] }) }) }));
 }
 export default function OnboardingSuccessPage() {
-  return _jsx(Suspense, {
-    fallback: _jsx('div', {
-      className: 'min-h-screen flex items-center justify-center px-6 py-12',
-      children: _jsx('div', {
-        className: 'w-full max-w-md',
-        children: _jsxs(Card, {
-          children: [
-            _jsx(CardHeader, {
-              children: _jsxs('div', {
-                className: 'animate-pulse',
-                children: [
-                  _jsx('div', {
-                    className: 'h-6 bg-secondary rounded w-3/4 mb-2',
-                  }),
-                  _jsx('div', { className: 'h-4 bg-secondary rounded w-1/2' }),
-                ],
-              }),
-            }),
-            _jsx(CardContent, {
-              children: _jsx('div', {
-                className: 'animate-pulse',
-                children: _jsx('div', {
-                  className: 'h-10 bg-secondary rounded',
-                }),
-              }),
-            }),
-          ],
-        }),
-      }),
-    }),
-    children: _jsx(OnboardingSuccessContent, {}),
-  });
+    return (_jsx(Suspense, { fallback: _jsx("div", { className: "min-h-screen flex items-center justify-center px-6 py-12", children: _jsx("div", { className: "w-full max-w-md", children: _jsxs(Card, { children: [_jsx(CardHeader, { children: _jsxs("div", { className: "animate-pulse", children: [_jsx("div", { className: "h-6 bg-secondary rounded w-3/4 mb-2" }), _jsx("div", { className: "h-4 bg-secondary rounded w-1/2" })] }) }), _jsx(CardContent, { children: _jsx("div", { className: "animate-pulse", children: _jsx("div", { className: "h-10 bg-secondary rounded" }) }) })] }) }) }), children: _jsx(OnboardingSuccessContent, {}) }));
 }

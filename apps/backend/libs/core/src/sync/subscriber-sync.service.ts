@@ -259,9 +259,9 @@ export class SubscriberSyncService {
 
       // Handle API key connections
       if (espConnection.authMethod === AuthMethod.API_KEY) {
-        if (!espConnection.encryptedApiKey || !espConnection.publicationId) {
+        if (!espConnection.encryptedApiKey) {
           throw new InternalServerErrorException(
-            'API key or publication ID is missing for this connection'
+            'API key is missing for this connection'
           );
         }
 
@@ -270,33 +270,120 @@ export class SubscriberSyncService {
           espConnection.encryptedApiKey
         );
 
-        // Fetch subscribers from ESP
-        const subscribers = await connector.fetchSubscribers(
-          apiKey,
-          espConnection.publicationId
-        );
+        // Get publication IDs to sync
+        // API key connections use publicationIds array, but fallback to single publicationId for backward compatibility
+        // Note: publicationIds contains list IDs (terminology varies by ESP: lists, segments, publications)
+        const publicationIds =
+          espConnection.publicationIds ||
+          (espConnection.publicationId ? [espConnection.publicationId] : []);
 
-        // Process each subscriber: map and upsert
-        for (const subscriberData of subscribers) {
+        if (publicationIds.length === 0) {
+          throw new InternalServerErrorException(
+            'No publication IDs available for this API key connection'
+          );
+        }
+
+        // Track sync results for each publication
+        const publicationSyncResults: Array<{
+          publicationId: string;
+          success: boolean;
+          subscriberCount: number;
+          error?: string;
+        }> = [];
+
+        // Sync each publication
+        for (const publicationId of publicationIds) {
+          // Create sync history record for this publication
+          const syncHistory = this.syncHistoryRepository.create({
+            espConnectionId,
+            publicationId,
+            status: SyncHistoryStatus.SUCCESS,
+            startedAt: new Date(),
+            completedAt: null,
+            errorMessage: null,
+          });
+          await this.syncHistoryRepository.save(syncHistory);
+
           try {
-            // Map ESP subscriber data to our database schema (no publicationId for API key connections)
-            const createSubscriberDto =
-              this.subscriberMapperService.mapToCreateSubscriberDto(
-                subscriberData,
-                espConnectionId,
-                null
-              );
+            // Fetch subscribers from ESP
+            const subscribers = await connector.fetchSubscribers(
+              apiKey,
+              publicationId
+            );
 
-            // Upsert subscriber (create if not exists, update if exists)
-            await this.upsertSubscriber(createSubscriberDto);
+            let subscriberCount = 0;
+
+            // Process each subscriber: map and upsert
+            for (const subscriberData of subscribers) {
+              try {
+                // Map ESP subscriber data to our database schema (include publicationId in metadata)
+                const createSubscriberDto =
+                  this.subscriberMapperService.mapToCreateSubscriberDto(
+                    subscriberData,
+                    espConnectionId,
+                    publicationId
+                  );
+
+                // Upsert subscriber (create if not exists, update if exists)
+                await this.upsertSubscriber(createSubscriberDto);
+                subscriberCount++;
+              } catch (error: any) {
+                // Log error for individual subscriber but continue processing others
+                this.logger.error(
+                  `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}, publication ${publicationId}:`,
+                  error.message
+                );
+                // Continue processing other subscribers even if one fails
+              }
+            }
+
+            // Update sync history with success
+            await this.syncHistoryRepository.update(
+              { id: syncHistory.id },
+              {
+                completedAt: new Date(),
+                subscriberCount,
+              }
+            );
+
+            publicationSyncResults.push({
+              publicationId,
+              success: true,
+              subscriberCount,
+            });
           } catch (error: any) {
-            // Log error for individual subscriber but continue processing others
+            // Log error for publication but continue syncing other publications
             this.logger.error(
-              `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}:`,
+              `Failed to sync publication ${publicationId} for connection ${espConnectionId}:`,
               error.message
             );
-            // Continue processing other subscribers even if one fails
+
+            // Update sync history with failure
+            await this.syncHistoryRepository.update(
+              { id: syncHistory.id },
+              {
+                status: SyncHistoryStatus.FAILED,
+                completedAt: new Date(),
+                errorMessage: error.message,
+              }
+            );
+
+            publicationSyncResults.push({
+              publicationId,
+              success: false,
+              subscriberCount: 0,
+              error: error.message,
+            });
+            // Continue syncing other publications even if one fails
           }
+        }
+
+        // Check if all publications failed
+        const allFailed = publicationSyncResults.every((r) => !r.success);
+        if (allFailed && publicationSyncResults.length > 0) {
+          throw new InternalServerErrorException(
+            `All publications failed to sync for connection ${espConnectionId}`
+          );
         }
       }
       // Handle OAuth connections
