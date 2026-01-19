@@ -1,21 +1,17 @@
 {
   "project": "SubscriberNest",
-  "branchName": "ralph/homepage-update",
-  "description": "Homepage Update - Audience Safety & Pricing Messaging - Update the SubscriberNest homepage to accurately reflect the pricing model (credit card required, no free trial), emphasize the audience safety value proposition, and highlight the backup/download feature as a key benefit.",
+  "branchName": "ralph/esp-connectors",
+  "description": "ESP Connectors for 14 Additional Email Service Providers - Add connectors for Campaign Monitor, Email Octopus, Omeda, Ghost, SparkPost, ActiveCampaign, Customer.io, Sailthru, MailerLite, PostUp, Constant Contact, Iterable, SendGrid, and Brevo",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Update hero section messaging",
-      "description": "As a visitor, I want to see accurate pricing and value proposition in the hero section so I understand what I'm signing up for.",
+      "title": "Add ESP types to database enum",
+      "description": "As a developer, I need to add all 14 new ESP types to the EspType enum so they can be stored in the database and referenced throughout the system.",
       "acceptanceCriteria": [
-        "Change headline to emphasize audience safety/protection angle",
-        "Update subheadline to mention daily sync and backup capability",
-        "Change CTA button from 'Get Started Free' to 'Get Started' or 'Sign Up Now'",
-        "Remove 'No credit card required' text",
-        "Add messaging about credit card requirement (e.g., 'Credit card required to start')",
-        "Update badge text if needed to align with new messaging",
+        "Add all 14 ESP types to EspType enum in esp-connection.entity.ts: CAMPAIGN_MONITOR = 'campaign_monitor', EMAIL_OCTOPUS = 'email_octopus', OMEDA = 'omeda', GHOST = 'ghost', SPARKPOST = 'sparkpost', ACTIVE_CAMPAIGN = 'active_campaign', CUSTOMER_IO = 'customer_io', SAILTHRU = 'sailthru', MAILERLITE = 'mailerlite', POSTUP = 'postup', CONSTANT_CONTACT = 'constant_contact', ITERABLE = 'iterable', SENDGRID = 'sendgrid', BREVO = 'brevo'",
+        "Generate and run database migration to update enum type",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "All enum values use kebab-case format matching existing pattern"
       ],
       "priority": 1,
       "passes": true,
@@ -23,118 +19,349 @@
     },
     {
       "id": "US-002",
-      "title": "Add audience safety messaging to hero subheadline",
-      "description": "As a visitor, I want to understand that my audience is my most valuable asset and this service protects it, so I see the core value proposition immediately.",
+      "title": "Create Campaign Monitor connector",
+      "description": "As a developer, I need a Campaign Monitor connector that implements IEspConnector to enable subscriber synchronization from Campaign Monitor.",
       "acceptanceCriteria": [
-        "Rewrite hero subheadline to emphasize audience as most important asset",
-        "Include messaging about keeping audience safe/secure",
-        "Mention backup capability (e.g., 'backup of your updated list')",
-        "Reference ability to download and import if ESP has issues",
-        "Keep copy concise and impactful",
+        "Create campaign-monitor.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock Campaign Monitor API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Update hero features row with daily sync messaging",
-      "description": "As a visitor, I want to see that subscribers are synced daily so I understand the service keeps my data current.",
+      "title": "Create Email Octopus connector",
+      "description": "As a developer, I need an Email Octopus connector that implements IEspConnector to enable subscriber synchronization from Email Octopus.",
       "acceptanceCriteria": [
-        "Update 'Auto-sync daily' feature text to emphasize frequency (e.g., 'Synced every day' or 'Daily automatic sync')",
-        "Ensure messaging is clear and prominent",
-        "Maintain visual consistency with existing feature icons",
+        "Create email-octopus.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock Email Octopus API"
       ],
-      "priority": 3,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Update pricing section to remove trial messaging",
-      "description": "As a visitor, I want to see accurate pricing information without misleading free trial claims so I can make an informed decision.",
+      "title": "Create Omeda connector",
+      "description": "As a developer, I need an Omeda connector that implements IEspConnector to enable subscriber synchronization from Omeda.",
       "acceptanceCriteria": [
-        "Remove 'Start your free trial' button text",
-        "Change CTA button to 'Get Started' or 'Sign Up Now'",
-        "Remove '14-day free trial · Cancel anytime' text below button",
-        "Add messaging about credit card requirement (e.g., 'Credit card required' or 'Start protecting your audience today')",
-        "Keep exact pricing ($5/month) prominently displayed",
-        "Add copy emphasizing affordability (e.g., 'Super affordable pricing to keep your audience safe')",
+        "Create omeda.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock Omeda API"
       ],
-      "priority": 4,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update pricing section header copy",
-      "description": "As a visitor, I want to see messaging that emphasizes affordability and accessibility so I understand the pricing is designed to be accessible to everyone.",
+      "title": "Create Ghost connector",
+      "description": "As a developer, I need a Ghost connector that implements IEspConnector to enable subscriber synchronization from Ghost.",
       "acceptanceCriteria": [
-        "Update pricing section header to mention affordability/accessibility",
-        "Add copy about covering costs while being accessible",
-        "Maintain professional tone while emphasizing value",
-        "Keep existing 'Simple, transparent pricing' if appropriate, or update to reflect new angle",
+        "Create ghost.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock Ghost API"
       ],
-      "priority": 5,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add backup/download benefit to features section",
-      "description": "As a visitor, I want to know about the backup and download capability so I understand I can always access my data even if my ESP has issues.",
+      "title": "Create SparkPost connector",
+      "description": "As a developer, I need a SparkPost connector that implements IEspConnector to enable subscriber synchronization from SparkPost.",
       "acceptanceCriteria": [
-        "Add backup/download feature to benefits/features list (not as primary hero feature)",
-        "Include messaging about downloading updated list anytime",
-        "Mention ability to import into another ESP if needed",
-        "Frame as safety/security benefit (e.g., 'Always have a backup')",
-        "Position as part of audience protection value proposition",
+        "Create sparkpost.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock SparkPost API"
       ],
-      "priority": 6,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Update FAQ section to remove trial references",
-      "description": "As a visitor, I want accurate information in the FAQ so I don't see conflicting messaging about free trials.",
+      "title": "Create ActiveCampaign connector",
+      "description": "As a developer, I need an ActiveCampaign connector that implements IEspConnector to enable subscriber synchronization from ActiveCampaign.",
       "acceptanceCriteria": [
-        "Update FAQ question about free tier to remove free trial mention",
-        "Change answer to reflect credit card required, no free trial",
-        "Emphasize affordable pricing and accessibility",
-        "Update any other FAQ answers that mention free trial",
-        "Ensure all FAQ answers are consistent with new messaging",
+        "Create active-campaign.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock ActiveCampaign API"
       ],
-      "priority": 7,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Add FAQ about backup/download feature",
-      "description": "As a visitor, I want to understand the backup and download capability so I know what happens if my ESP has issues.",
+      "title": "Create Customer.io connector",
+      "description": "As a developer, I need a Customer.io connector that implements IEspConnector to enable subscriber synchronization from Customer.io.",
       "acceptanceCriteria": [
-        "Add new FAQ question about backup/download feature",
-        "Answer should explain: daily sync creates backup, can download anytime, can import to another ESP",
-        "Frame as safety benefit for audience protection",
-        "Position as insurance against ESP issues",
+        "Create customer-io.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Integration test passes with mock Customer.io API"
       ],
-      "priority": 8,
-      "passes": true,
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Sailthru connector",
+      "description": "As a developer, I need a Sailthru connector that implements IEspConnector to enable subscriber synchronization from Sailthru.",
+      "acceptanceCriteria": [
+        "Create sailthru.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Sailthru API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create MailerLite connector",
+      "description": "As a developer, I need a MailerLite connector that implements IEspConnector to enable subscriber synchronization from MailerLite.",
+      "acceptanceCriteria": [
+        "Create mailerlite.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock MailerLite API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create PostUp connector",
+      "description": "As a developer, I need a PostUp connector that implements IEspConnector to enable subscriber synchronization from PostUp.",
+      "acceptanceCriteria": [
+        "Create postup.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock PostUp API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Constant Contact connector",
+      "description": "As a developer, I need a Constant Contact connector that implements IEspConnector to enable subscriber synchronization from Constant Contact.",
+      "acceptanceCriteria": [
+        "Create constant-contact.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Constant Contact API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create Iterable connector",
+      "description": "As a developer, I need an Iterable connector that implements IEspConnector to enable subscriber synchronization from Iterable.",
+      "acceptanceCriteria": [
+        "Create iterable.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Iterable API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Create SendGrid connector",
+      "description": "As a developer, I need a SendGrid connector that implements IEspConnector to enable subscriber synchronization from SendGrid.",
+      "acceptanceCriteria": [
+        "Create sendgrid.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock SendGrid API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Create Brevo connector",
+      "description": "As a developer, I need a Brevo connector that implements IEspConnector to enable subscriber synchronization from Brevo.",
+      "acceptanceCriteria": [
+        "Create brevo.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Brevo API"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Register all connectors in ESP module",
+      "description": "As a developer, I need all 14 new connectors registered in the ESP module so they can be injected and used by services.",
+      "acceptanceCriteria": [
+        "Import all 14 connector classes in esp.module.ts",
+        "Add all 14 connectors to providers array",
+        "Add all 14 connectors to exports array",
+        "Ensure proper dependency injection setup",
+        "Typecheck passes",
+        "Module compiles without errors"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Update EspConnectionService to support new connectors",
+      "description": "As a developer, I need the EspConnectionService to recognize and use all 14 new connectors when creating connections and syncing subscribers.",
+      "acceptanceCriteria": [
+        "Inject all 14 new connectors in EspConnectionService constructor",
+        "Add all 14 ESP types to getConnector() switch statement",
+        "Ensure each case returns the correct connector instance",
+        "Update error message to reflect all supported ESP types",
+        "Typecheck passes",
+        "All connectors are accessible through the service"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Update SubscriberSyncService to support new connectors",
+      "description": "As a developer, I need the SubscriberSyncService to recognize and use all 14 new connectors when syncing subscribers.",
+      "acceptanceCriteria": [
+        "Inject all 14 new connectors in SubscriberSyncService constructor",
+        "Add all 14 ESP types to getConnector() switch statement",
+        "Ensure each case returns the correct connector instance",
+        "Update error message to reflect all supported ESP types",
+        "Typecheck passes",
+        "All connectors work with sync functionality"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Create integration tests for all connectors",
+      "description": "As a developer, I need integration tests with mock ESP APIs to verify each connector works correctly with the expected API responses.",
+      "acceptanceCriteria": [
+        "Create test file esp-connectors.integration.spec.ts in appropriate test directory",
+        "Create mock API responses for each of the 14 ESPs",
+        "Test validateApiKey() for each connector with valid and invalid keys",
+        "Test fetchPublications() for each connector",
+        "Test fetchSubscribers() for each connector",
+        "Test getSubscriberCount() for each connector",
+        "Test error handling for each connector (401, 403, 429, 500 errors)",
+        "All integration tests pass",
+        "Tests use mock HTTP responses (not real API calls)"
+      ],
+      "priority": 4,
+      "passes": false,
       "notes": ""
     }
   ]

@@ -1,108 +1,23 @@
 # Ralph Progress Log
-Started: Mon Jan 19 08:58:03 CET 2026
+Started: Mon Jan 19 09:42:21 CET 2026
+
+## Codebase Patterns
+- ESP connectors are in `apps/backend/libs/core/src/esp/` and implement `IEspConnector` interface
+- EspType enum is defined in `apps/backend/libs/database/src/entities/esp-connection.entity.ts`
+- Migrations are in `apps/backend/apps/api/src/migrations/` and use TypeORM's MigrationInterface
+- PostgreSQL enums use `ALTER TYPE ... ADD VALUE IF NOT EXISTS` for adding new values (cannot remove values)
+- Backend lint command has a pre-existing ESLint config issue (glob patterns ignoring all files)
+- Existing connectors use HttpService from @nestjs/axios with firstValueFrom() from rxjs for API calls
+
 ---
 
-## Mon Jan 19 08:59:49 CET 2026 - US-001
-- Updated hero section messaging to emphasize audience safety and protection
-- Changed headline from "Your subscribers, always accessible" to "Keep your audience safe and backed up"
-- Updated subheadline to emphasize subscribers as most valuable asset, mention daily sync, backup capability, and ability to import if ESP has issues
-- Changed CTA button from "Get Started Free" to "Get Started"
-- Removed "No credit card required" text and replaced with "Credit card required to start"
-- Updated badge from "Sync subscribers in seconds" to "Protect your most valuable asset" (changed icon from Zap to Shield)
-- Files changed: `apps/frontend/src/app/page.tsx`
+## Mon Jan 19, 2026 - US-001
+- **What was implemented**: Added 14 new ESP types to the EspType enum and created database migration
+- **Files changed**:
+  - `apps/backend/libs/database/src/entities/esp-connection.entity.ts` - Added 14 new enum values
+  - `apps/backend/apps/api/src/migrations/1768745000000-AddNewEspTypes.ts` - Migration to add enum values to PostgreSQL
 - **Learnings for future iterations:**
-  - The homepage is a single file component at `apps/frontend/src/app/page.tsx` with all sections (HeroSection, PricingSection, FAQSection) defined inline
-  - HeroSection uses Shield icon from lucide-react for safety/protection messaging
-  - Prettier auto-formatting will fix line breaks in long text strings automatically when running `yarn lint --fix`
-  - The dev server runs on port 3000 and can be verified by checking the HTML output
-  - All changes must pass both TypeScript typecheck (via `turbo run build --filter=frontend`) and ESLint (via `turbo run lint --filter=frontend`)
----
-
-## Mon Jan 19 09:01:52 CET 2026 - US-002
-- Rewrote hero subheadline to emphasize audience safety and protection messaging
-- Updated subheadline to: "Your audience is your most valuable asset—keep it safe. We sync daily to maintain a secure backup of your updated list. Download anytime or import to another ESP if yours has issues. Your subscribers, always protected."
-- Emphasized audience as most valuable asset with safety messaging
-- Included backup capability and download/import functionality
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - The subheadline text should be concise and impactful while covering all key value propositions
-  - Safety/protection messaging works well with phrases like "keep it safe" and "always protected"
-  - Auto-fixed linting issues in generated files (next-env.d.ts) don't need to be tracked separately
----
-
-## Mon Jan 19 09:03:45 CET 2026 - US-003
-- Updated hero features row to emphasize daily sync frequency
-- Changed feature text from "Auto-sync daily" to "Synced every day" for clearer messaging
-- Maintained visual consistency with existing RefreshCw icon and styling
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - The hero features row is a simple array of objects with icon and text properties
-  - "Synced every day" is clearer and more impactful than "Auto-sync daily" for emphasizing frequency
-  - Browser verification can be done by checking the rendered HTML output from the dev server
----
-
-## Mon Jan 19 09:15:00 CET 2026 - US-004
-- Updated pricing section to remove all free trial messaging
-- Changed CTA button from "Start your free trial" to "Get Started" (with Link wrapper to /login)
-- Removed "14-day free trial · Cancel anytime" text and replaced with "Credit card required to start"
-- Updated pricing section header from "Simple, transparent pricing" to "Super affordable pricing to keep your audience safe"
-- Updated pricing section subheader to emphasize affordability and accessibility: "One plan. No hidden fees. We cover our costs while keeping it accessible to everyone."
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - PricingSection CTA button needs `asChild` prop when wrapping with Link component
-  - Prettier will auto-format multi-line Button props when running `yarn lint --fix`
-  - The pricing section header and subheader are in the PricingSection component, separate from the pricing card itself
-  - Browser verification via curl shows the changes are correctly rendered in the HTML output
----
-
-## Mon Jan 19 09:08:42 CET 2026 - US-005
-- Updated pricing section header copy to better emphasize affordability and accessibility
-- Changed header from "Super affordable pricing to keep your audience safe" to "Affordable pricing designed for everyone"
-- Refined subheader to: "We cover our costs while keeping it accessible. One plan, no hidden fees—protecting your audience shouldn't break the bank."
-- Enhanced messaging to emphasize accessibility and affordability while maintaining professional tone
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - Pricing section header messaging can be refined to better emphasize accessibility without losing the safety angle
-  - The phrase "designed for everyone" effectively communicates accessibility
-  - Adding "protecting your audience shouldn't break the bank" reinforces affordability in a relatable way
-  - Browser verification confirms changes render correctly in the HTML output
----
-
-## Mon Jan 19 09:11:40 CET 2026 - US-006
-- Added backup/download benefit to pricing section features list
-- Added two new feature items: "Always have a backup—download your updated list anytime" and "Import to another ESP if yours has issues"
-- Positioned as part of audience protection value proposition in the pricing section features
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - The pricing section features list is the appropriate place for detailed benefit messaging (not the hero features row)
-  - Backup/download messaging should emphasize both the "always have a backup" safety angle and the practical "import to another ESP" benefit
-  - Features are displayed as a simple array in the pricing section, making it easy to add new items
-  - Browser verification via curl confirms the new features render correctly in the HTML output
----
-
-## Mon Jan 19 09:13:41 CET 2026 - US-007
-- Updated FAQ section to remove all free trial references
-- Changed "Is there a free tier?" FAQ answer to remove 14-day free trial mention
-- Updated answer to reflect credit card required, no free trial, emphasizing affordable pricing and accessibility
-- Verified no other FAQ answers mention free trial
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - FAQ answers are stored in a simple array of objects with `question` and `answer` properties in the FAQSection component
-  - When updating FAQ content, search for all instances of the term being removed (e.g., "trial") to ensure consistency
-  - The updated answer should align with the pricing section messaging about affordability and accessibility
-  - Browser verification via curl confirms the FAQ changes render correctly in the HTML output
----
-
-## Mon Jan 19 09:15:51 CET 2026 - US-008
-- Added new FAQ question about backup/download feature to FAQSection
-- Added question: "How does the backup and download feature protect my audience?"
-- Answer explains: daily sync creates backup, can download anytime, can import to another ESP
-- Framed as safety benefit for audience protection and insurance against ESP issues
-- Positioned between "Can I export my data anytime?" and "What if my ESP changes or I want to switch?" FAQs
-- Files changed: `apps/frontend/src/app/page.tsx`
-- **Learnings for future iterations:**
-  - FAQ questions can be added to the `faqs` array in FAQSection component by inserting new objects with `question` and `answer` properties
-  - When adding FAQ about backup/download, frame it as "insurance" and "protection" to emphasize safety value proposition
-  - The answer should explain both the technical capability (daily sync, download, import) and the safety benefit (insurance against ESP issues)
-  - Browser verification via curl confirms the new FAQ question and answer render correctly in the HTML output
+  - PostgreSQL enums cannot have values removed, only added - use `ADD VALUE IF NOT EXISTS`
+  - Existing ESP types use snake_case format (e.g., 'campaign_monitor', not 'campaignMonitor')
+  - The backend lint command fails due to ESLint config issue, but build passes
 ---
