@@ -154,7 +154,7 @@
         "Integration test passes with mock Customer.io API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

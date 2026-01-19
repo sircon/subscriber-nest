@@ -13,6 +13,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Ghost uses JWT authentication: API key format "siteUrl|id:secret", create JWT with HMAC-SHA256 signing
 - SparkPost uses API key directly in Authorization header, supports US/EU regions with "eu|" prefix
 - ActiveCampaign uses "accountName|apiKey" format for compound API key; base URL is `https://{accountName}.api-us1.com/api/3`
+- Customer.io uses Bearer token auth, supports US/EU regions with "eu|" prefix; segment membership returns IDs only (need to fetch profiles separately)
 
 ---
 
@@ -119,4 +120,21 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Custom fields are in `fieldValues` array with `field` and `value` properties
   - List details include `subscriber_count` for efficient count queries
   - Default page size is 100
+---
+
+## Mon Jan 19, 2026 - US-008
+- **What was implemented**: Created Customer.io ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/customer-io.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Customer.io uses Bearer token authentication with App API key
+  - Supports US and EU regional data centers - use "eu|" prefix for EU (e.g., "eu|actual_api_key")
+  - API base URL: `https://api.customer.io/v1` (US) or `https://api-eu.customer.io/v1` (EU)
+  - Publications = segments; GET /segments endpoint returns all segments
+  - Segment membership: GET /segments/{id}/membership returns only customer IDs
+  - Must fetch individual customer profiles via GET /customers/{id}/attributes
+  - Segment details include `count` or `customer_count` for subscriber counts
+  - Customer attributes use Unix timestamps (seconds) for dates like `created_at`
+  - Status inferred from `unsubscribed`, `email_bounced`, `email_pending` boolean fields
+  - Custom fields are stored in flat structure on customer object
 ---
