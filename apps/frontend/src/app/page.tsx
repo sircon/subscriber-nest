@@ -72,21 +72,22 @@ function HeroSection() {
         <div className="max-w-3xl mx-auto text-center mb-16">
           {/* Badge */}
           <div className="animate-fade-up inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-8">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Sync subscribers in seconds</span>
+            <Shield className="w-3.5 h-3.5" />
+            <span>Protect your most valuable asset</span>
           </div>
 
           {/* Headline */}
           <h1 className="animate-fade-up delay-100 text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] mb-6">
-            Your subscribers,{' '}
-            <span className="text-gradient italic">always</span> accessible
+            Keep your audience{' '}
+            <span className="text-gradient italic">safe</span> and backed up
           </h1>
 
           {/* Subheadline */}
           <p className="animate-fade-up delay-200 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Connect your Email Service Provider, sync your subscriber list
-            automatically, and export anytime. Simple backup for your most
-            valuable asset.
+            Your subscribers are your most valuable asset. We sync daily to keep
+            your list current, create a backup of your updated list, and let you
+            download anytime. If your ESP has issues, you can always import your
+            list elsewhere.
           </p>
 
           {/* CTA */}
@@ -97,11 +98,11 @@ function HeroSection() {
               asChild
             >
               <Link href="/login">
-                Get Started Free <ArrowRight className="w-4 h-4" />
+                Get Started <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
             <span className="text-sm text-muted-foreground">
-              No credit card required
+              Credit card required to start
             </span>
           </div>
         </div>
