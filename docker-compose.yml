@@ -190,6 +190,7 @@ services:
     container_name: frontend_audience_safe
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000 # Explicitly set to 3000 to prevent Coolify's PORT=4000 from overriding
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     # Port mappings removed for Coolify - use docker-compose.override.yml for local development
     depends_on:
