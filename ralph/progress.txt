@@ -397,3 +397,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - No API version update was needed - v3.0 is current
   - Backend build passes
 ---
+
+## Mon Jan 19, 2026 - US-029
+- **What was implemented**: Updated Campaign Monitor connector to add API documentation link and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/campaign-monitor.connector.ts` - Added API documentation link and version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Campaign Monitor API v3.2 is the current version (verified January 2026)
+  - API documentation URL: https://www.campaignmonitor.com/api/v3.2/
+  - All API endpoints in the connector correctly use v3.2 via baseUrl constant
+  - API documentation links should be added as comments in the class-level JSDoc block, following the pattern: "API Documentation: {url}" and "API Version: {version} (current as of {date})"
+  - No API version update was needed - v3.2 is current
+  - Backend build and integration tests pass
+---

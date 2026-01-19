@@ -12,6 +12,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * The API provides access to clients and their subscriber lists.
  *
  * API Documentation: https://www.campaignmonitor.com/api/v3.2/
+ * API Version: v3.2 (current as of January 2026)
  */
 @Injectable()
 export class CampaignMonitorConnector implements IEspConnector {

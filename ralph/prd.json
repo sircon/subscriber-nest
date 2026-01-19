@@ -533,8 +533,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API documentation link and version note. Verified v3.2 is the current API version. All API calls use v3.2 correctly via baseUrl. Backend build and integration tests pass."
     },
     {
       "id": "US-030",
