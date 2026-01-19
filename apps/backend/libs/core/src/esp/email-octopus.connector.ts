@@ -12,6 +12,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * The API provides access to lists (publications) and their contacts (subscribers).
  *
  * API Documentation: https://emailoctopus.com/api-documentation/v2
+ * API Version: v2 (current as of January 2026)
  */
 @Injectable()
 export class EmailOctopusConnector implements IEspConnector {
