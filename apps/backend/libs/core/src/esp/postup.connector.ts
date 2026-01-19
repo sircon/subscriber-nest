@@ -14,6 +14,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * The API provides access to lists (publications) and their recipients (subscribers).
  *
  * API Documentation: https://api.postup.com/docs/
+ * API Version: Current REST API (no versioning in URL, current as of January 2026)
  */
 @Injectable()
 export class PostUpConnector implements IEspConnector {
