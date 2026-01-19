@@ -131,3 +131,16 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Code comments referencing the project name are minimal - most branding appears in user-facing text rather than code comments
   - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
 ---
+
+## 2026-01-19 - US-011
+- Updated Ralph/agent configuration files from SubscriberNest to AudienceSafe
+- ralph/prompt.md updated to reference 'AudienceSafe' instead of 'SubscriberNest' in the project description
+- All archived PRD JSON files updated: project field changed from "SubscriberNest" to "AudienceSafe" in 9 archived PRD files (2026-01-19-rebrand-to-audiencesafe, 2026-01-19-homepage-update, 2026-01-19-kit-mailchimp-oauth, 2026-01-18-kit-mailchimp-oauth, 2026-01-18-billing, 2026-01-19-dashboard, 2026-01-18-dashboard, 2026-01-18-esp-subscriber-sync, 2026-01-18-auth-onboarding-flow)
+- Archived progress.txt file updated to reference 'AudienceSafe' instead of 'SubscriberNest' in summary text
+- Files changed: `ralph/prompt.md`, `ralph/archive/2026-01-19-rebrand-to-audiencesafe/prd.json`, `ralph/archive/2026-01-19-homepage-update/prd.json`, `ralph/archive/2026-01-19-kit-mailchimp-oauth/prd.json`, `ralph/archive/2026-01-18-kit-mailchimp-oauth/prd.json`, `ralph/archive/2026-01-18-billing/prd.json`, `ralph/archive/2026-01-19-dashboard/prd.json`, `ralph/archive/2026-01-18-dashboard/prd.json`, `ralph/archive/2026-01-18-esp-subscriber-sync/prd.json`, `ralph/archive/2026-01-18-auth-onboarding-flow/prd.json`, `ralph/archive/2026-01-19-dashboard/progress.txt`
+- **Learnings for future iterations:**
+  - Ralph agent configuration files include: ralph/prompt.md (main agent instructions), ralph/prd.json (current PRD), and archived PRD files in ralph/archive/ directories
+  - Archived PRD files maintain historical project names - updating them ensures consistency across all agent configuration files
+  - The prompt.md file is the main instruction file for Ralph agents and should be updated when project branding changes
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---

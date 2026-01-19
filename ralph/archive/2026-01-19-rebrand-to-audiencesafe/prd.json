@@ -1,5 +1,5 @@
 {
-  "project": "SubscriberNest",
+  "project": "AudienceSafe",
   "branchName": "ralph/esp-connectors",
   "description": "ESP Connectors for 14 Additional Email Service Providers - Add connectors for Campaign Monitor, Email Octopus, Omeda, Ghost, SparkPost, ActiveCampaign, Customer.io, Sailthru, MailerLite, PostUp, Constant Contact, Iterable, SendGrid, and Brevo",
   "userStories": [

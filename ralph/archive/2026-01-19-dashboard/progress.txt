@@ -508,7 +508,7 @@ All 17 user stories have been successfully implemented and are passing:
 **Total Commits:** 20+ commits with detailed commit messages
 **Documentation:** Updated AGENTS.md, PRD, and progress log throughout
 
-The SubscriberNest dashboard is now fully functional with comprehensive features for managing ESP connections, viewing subscribers, syncing data, and exporting subscriber lists.
+The AudienceSafe dashboard is now fully functional with comprehensive features for managing ESP connections, viewing subscribers, syncing data, and exporting subscriber lists.
 ---
 
 ## 2026-01-19 09:30 - US-018

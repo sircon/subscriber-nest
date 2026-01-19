@@ -1,5 +1,5 @@
 {
-  "project": "SubscriberNest",
+  "project": "AudienceSafe",
   "branchName": "ralph/esp-subscriber-sync",
   "description": "ESP Subscriber Sync System - Connect to Email Service Providers (ESPs) like Beehiiv, validate API credentials, and sync subscriber data into our database using a queue-based architecture with BullMQ and Redis",
   "userStories": [
