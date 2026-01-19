@@ -530,6 +530,58 @@ export class EspConnectionService {
   }
 
   /**
+   * Updates the selected lists (publications/segments/lists depending on ESP) for an ESP connection
+   * @param id - The ID of the ESP connection
+   * @param selectedListIds - Array of list IDs to select
+   * @param userId - Optional user ID to validate ownership
+   * @returns The updated ESP connection
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided) or if any list ID is invalid
+   * @throws InternalServerErrorException if API call fails
+   */
+  async updateSelectedLists(
+    id: string,
+    selectedListIds: string[],
+    userId?: string
+  ): Promise<EspConnection> {
+    // Validate connection exists and user owns it
+    const connection = await this.findById(id, userId);
+
+    // Fetch available lists to validate the provided IDs
+    const availableLists = await this.fetchAvailableLists(id, userId);
+
+    // Validate that all provided IDs exist in available lists
+    const availableListIds = availableLists.map((list) => list.id);
+    const invalidIds = selectedListIds.filter(
+      (id) => !availableListIds.includes(id)
+    );
+
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(
+        `Invalid list IDs: ${invalidIds.join(', ')}. These lists do not exist for this ESP connection.`
+      );
+    }
+
+    // Map selected IDs to their corresponding names
+    const selectedListNames = selectedListIds
+      .map((selectedId) => {
+        const list = availableLists.find((l) => l.id === selectedId);
+        return list?.name || '';
+      })
+      .filter((name) => name !== ''); // Filter out empty names
+
+    // Update the connection with selected lists
+    connection.publicationIds = selectedListIds.length > 0 ? selectedListIds : null;
+    connection.listNames = selectedListNames.length > 0 ? selectedListNames : null;
+
+    // Also update publicationId for backward compatibility (use first selected ID)
+    connection.publicationId =
+      selectedListIds.length > 0 ? selectedListIds[0] : null;
+
+    return this.espConnectionRepository.save(connection);
+  }
+
+  /**
    * Deletes an ESP connection and all associated data (subscribers, sync history)
    * @param id - The ID of the ESP connection
    * @param userId - Optional user ID to validate ownership

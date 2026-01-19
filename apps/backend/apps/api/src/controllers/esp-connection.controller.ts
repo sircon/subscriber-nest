@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Delete,
   Body,
   Param,
@@ -37,6 +38,7 @@ import { OAuthConfigService } from '@app/core/oauth/oauth-config.service';
 import { OAuthTokenRefreshService } from '@app/core/oauth/oauth-token-refresh.service';
 import { EncryptionService } from '@app/core/encryption/encryption.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
+import { UpdateSelectedListsDto } from '../dto/update-selected-lists.dto';
 import {
   EspConnection,
   EspSyncStatus,
@@ -448,6 +450,52 @@ export class EspConnectionController {
       // Handle other errors as 500
       throw new InternalServerErrorException(
         'Failed to retrieve available lists'
+      );
+    }
+  }
+
+  @Put(':id/lists')
+  @HttpCode(HttpStatus.OK)
+  async updateSelectedLists(
+    @Param('id') id: string,
+    @Body() updateSelectedListsDto: UpdateSelectedListsDto,
+    @CurrentUser() user: User
+  ): Promise<Omit<EspConnection, 'encryptedApiKey' | 'encryptedAccessToken' | 'encryptedRefreshToken'>> {
+    try {
+      // Update selected lists (validates ownership and list IDs internally)
+      const updatedConnection = await this.espConnectionService.updateSelectedLists(
+        id,
+        updateSelectedListsDto.selectedListIds,
+        user.id
+      );
+
+      // Return connection without encrypted fields
+      const {
+        encryptedApiKey,
+        encryptedAccessToken,
+        encryptedRefreshToken,
+        ...connectionResponse
+      } = updatedConnection;
+      return connectionResponse;
+    } catch (error) {
+      // Handle NotFoundException from service (404 - connection not found)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (400 - invalid list IDs, missing API key/token, invalid auth method, or 403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        if (error.message.includes('permission') || error.message.includes('own')) {
+          throw new ForbiddenException(
+            'You do not have permission to access this ESP connection'
+          );
+        }
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to update selected lists'
       );
     }
   }
