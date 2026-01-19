@@ -10,6 +10,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Existing connectors use HttpService from @nestjs/axios with firstValueFrom() from rxjs for API calls
 - ESP auth varies: Basic Auth (Campaign Monitor), API key in query params (Email Octopus), custom headers (Omeda), Bearer token, etc.
 - Some ESPs use compound API keys (e.g., Omeda: "client:appid:inputid") - parse to extract components
+- Ghost uses JWT authentication: API key format "siteUrl|id:secret", create JWT with HMAC-SHA256 signing
 
 ---
 
@@ -67,4 +68,21 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Email status codes: A=Active, O=Opt-out, U=Unsubscribed, B=Bounced, I=Inactive
   - Supports up to 500 records per query with Pagination.Offset/Limit
   - Use CountOnly: true in query payload for efficient subscriber counts
+---
+
+## Mon Jan 19, 2026 - US-005
+- **What was implemented**: Created Ghost ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/ghost.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Ghost uses Admin API with JWT authentication (not simple API key)
+  - API key format: "siteUrl|id:secret" where id and secret are hex strings
+  - JWT is signed using HMAC-SHA256 with the secret (hex decoded to bytes)
+  - JWT header must include `kid` (key ID) and `typ: JWT`, `alg: HS256`
+  - JWT payload: `iat`, `exp` (5 min), `aud: '/admin/'`
+  - Ghost is single-site, so fetchPublications returns site info from /site/ endpoint
+  - Members endpoint: GET /ghost/api/admin/members/ with page/limit params
+  - Pagination info in response.meta.pagination (total, next, prev, page, pages)
+  - Member status values: free, paid, comped (plus subscribed boolean for email opt-in)
+  - Authorization header format: `Ghost {jwt_token}`
 ---

@@ -94,7 +94,7 @@
         "Integration test passes with mock Ghost API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
