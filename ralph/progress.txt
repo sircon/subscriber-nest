@@ -684,3 +684,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Back button allows users to go back and modify API key/publicationId if needed
   - Frontend build and TypeScript checks pass successfully
 ---
+
+## Mon Jan 19, 2026 - US-052
+- **What was implemented**: Updated new ESP connection page to include list selection after API key validation
+- **Files changed**:
+  - `apps/frontend/src/app/dashboard/esp/new/page.tsx` - Added two-step flow: API key validation → list selection → connection creation with selected lists
+- **Learnings for future iterations:**
+  - New ESP connection page now follows the same pattern as onboarding API key page for consistency
+  - Two-step form flow: first step validates API key and fetches lists, second step shows ListSelector and saves selection
+  - Publication ID is optional (changed from required) - if not provided, uses 'placeholder' and handles validation errors gracefully
+  - Default behavior: all lists are selected when lists are fetched
+  - Error handling: checks if error message mentions "publication" to provide helpful feedback when publicationId is required
+  - Back button behavior: from list selection goes back to API key form, from API key form goes back to ESP selection
+  - Temporary connection is created during validation, then updated with selected lists before redirecting to detail page
+  - If no lists are found, temporary connection is deleted and error is shown
+  - OAuth flow is unchanged (will be updated in US-056)
+  - Frontend build and TypeScript checks pass successfully
+---
