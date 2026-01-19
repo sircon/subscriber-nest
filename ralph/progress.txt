@@ -463,3 +463,17 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format: "API Version: v1 (current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-034
+- **What was implemented**: Updated ActiveCampaign connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/active-campaign.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - ActiveCampaign API v3 is the current version (verified January 2026)
+  - API documentation URL: https://developers.activecampaign.com/reference
+  - All API endpoints in the connector correctly use v3 via baseUrl (getBaseUrl() method)
+  - API documentation link was already present, only version note was added
+  - ActiveCampaign uses account-specific base URLs: `https://{accountName}.api-us1.com/api/3`
+  - API version note format: "API Version: v3 (current as of {date})"
+  - Backend build and integration tests pass
+---

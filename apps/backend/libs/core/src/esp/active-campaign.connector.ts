@@ -15,6 +15,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * Example: "mycompany|abc123xyz" results in base URL "https://mycompany.api-us1.com/api/3"
  *
  * API Documentation: https://developers.activecampaign.com/reference
+ * API Version: v3 (current as of January 2026)
  */
 @Injectable()
 export class ActiveCampaignConnector implements IEspConnector {
