@@ -206,11 +206,29 @@ export class EspConnectionService {
     const encryptedRefreshToken = this.encryptionService.encrypt(refreshToken);
 
     // Fetch all publications using the access token
-    const publications =
-      await connector.fetchPublicationsWithOAuth(accessToken);
+    // Note: fetchPublicationsWithOAuth() returns lists/segments/publications depending on ESP terminology
+    let publicationIds: string[] | null = null;
+    let listNames: string[] | null = null;
 
-    // Extract publication IDs from publications array
-    const publicationIds = publications.map((pub) => pub.id);
+    try {
+      const publications =
+        await connector.fetchPublicationsWithOAuth(accessToken);
+
+      if (publications && publications.length > 0) {
+        // Extract IDs and names from fetched publications
+        // Default to all lists selected if none specified
+        publicationIds = publications.map((pub) => pub.id);
+        listNames = publications.map((pub) => pub.name || '');
+      }
+    } catch (error: any) {
+      // Handle errors gracefully - log but don't fail connection creation
+      // Connection will be created without list names, which can be fetched later
+      console.error(
+        `Failed to fetch lists for OAuth ESP connection (${espType}):`,
+        error.message
+      );
+      // Continue with null values - user can update lists later
+    }
 
     // Calculate token expiry time
     const tokenExpiresAt = new Date();
@@ -224,7 +242,8 @@ export class EspConnectionService {
       encryptedAccessToken,
       encryptedRefreshToken,
       tokenExpiresAt,
-      publicationIds: publicationIds.length > 0 ? publicationIds : null,
+      publicationIds: publicationIds && publicationIds.length > 0 ? publicationIds : null,
+      listNames, // Array of list display names
       status: EspConnectionStatus.ACTIVE,
       lastValidatedAt: new Date(),
     });
