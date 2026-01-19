@@ -5,6 +5,11 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 
+# Explicitly set NODE_ENV=development to ensure devDependencies are installed
+# Coolify sets NODE_ENV=production at build time, which causes yarn to skip devDependencies
+# We override it here to ensure build tools are installed
+ENV NODE_ENV=development
+
 # Copy root package files
 COPY package.json yarn.lock* ./
 

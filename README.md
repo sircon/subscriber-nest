@@ -75,8 +75,8 @@ Run both apps in dev mode:
 npm run dev
 ```
 
-- **Backend:** http://localhost:4000  
-- **Frontend:** http://localhost:3000  
+- **Backend:** http://localhost:4000
+- **Frontend:** http://localhost:3000
 
 Run a single app:
 
@@ -104,6 +104,71 @@ cd apps/backend && npm run start
 ```bash
 cd apps/frontend && npm run start
 ```
+
+### 7. Docker Compose (Local Development)
+
+Run the entire stack with Docker Compose:
+
+1. **Create `.env` file in root directory:**
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit with your values
+nano .env
+```
+
+**Important:** The `.env` file must be in the **root directory** (same level as `docker-compose.yml`). Docker Compose automatically reads this file and substitutes variables in `${VAR_NAME}` format.
+
+**Required variables for Docker Compose:**
+- `STRIPE_SECRET_KEY` - Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
+- `STRIPE_METER_ID` - Stripe meter ID
+- `STRIPE_PRICE_ID` - Stripe price ID
+- `RESEND_API_KEY` - Resend API key
+- `ENCRYPTION_KEY` - 64-character hex string (generate with `openssl rand -hex 32`)
+- `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME` - Database credentials
+- `NEXT_PUBLIC_API_URL` - Frontend API URL (e.g., `http://localhost:4000`)
+
+2. **Start all services:**
+
+```bash
+docker-compose up -d --build
+```
+
+This will start:
+- PostgreSQL (port 5434)
+- Redis (port 6380)
+- API (port 4000)
+- Worker (port 4001)
+- Frontend (port 3000)
+
+3. **Check service status:**
+
+```bash
+docker-compose ps
+```
+
+4. **View logs:**
+
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f api
+docker-compose logs -f worker
+docker-compose logs -f frontend
+```
+
+5. **Stop services:**
+
+```bash
+docker-compose down
+```
+
+For more detailed deployment information, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Project structure
 

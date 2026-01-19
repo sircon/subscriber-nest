@@ -23,18 +23,22 @@ The application consists of 5 services:
 1. **Clone and configure environment:**
 
 ```bash
-# Copy the example environment file
-cp .env.production.example .env
+# Copy the example environment file to root directory
+cp .env.example .env
 
-# Edit .env with your production values
+# Edit .env with your values
 nano .env
 ```
+
+**Important:** The `.env` file must be in the **root directory** (same level as `docker-compose.yml`) for Docker Compose to automatically load it. Docker Compose reads environment variables from `.env` and substitutes them in the `${VAR_NAME}` placeholders in `docker-compose.yml`.
 
 2. **Build and start all services:**
 
 ```bash
 docker-compose up -d --build
 ```
+
+**Note for local development:** Make sure your `.env` file includes all required variables (see Environment Variables section below). The containers will fail to start if required variables like `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, or `ENCRYPTION_KEY` are missing.
 
 3. **Run database migrations:**
 
@@ -96,21 +100,46 @@ docker-compose ps
 
 ## Environment Variables
 
+### Setting Environment Variables
+
+**For Local Development (Docker Compose):**
+
+Create a `.env` file in the root directory (same level as `docker-compose.yml`). Docker Compose automatically reads this file and substitutes variables in `${VAR_NAME}` format.
+
+```bash
+# Create .env file from example
+cp .env.example .env
+
+# Edit with your values
+nano .env
+```
+
+**For Production (Coolify):**
+
+Set environment variables in Coolify's UI. They will be passed to containers at runtime.
+
 ### Required Variables
 
+- `DATABASE_USER` - PostgreSQL username (default: `postgres`)
 - `DATABASE_PASSWORD` - PostgreSQL password
-- `REDIS_PASSWORD` - Redis password (optional but recommended)
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
-- `STRIPE_METER_ID` - Stripe meter ID for usage-based billing
-- `STRIPE_PRICE_ID` - Stripe price ID for subscriptions
-- `RESEND_API_KEY` - Resend API key for sending emails
-- `NEXT_PUBLIC_API_URL` - Public URL of your API (used by frontend)
+- `DATABASE_NAME` - Database name (default: `subscriber_nest`)
+- `DATABASE_SYNCHRONIZE` - Set to `false` in production
+- `REDIS_PASSWORD` - Redis password (optional, leave empty if not using)
+- `STRIPE_SECRET_KEY` - Stripe secret key (required)
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret (required)
+- `STRIPE_METER_ID` - Stripe meter ID for usage-based billing (required)
+- `STRIPE_PRICE_ID` - Stripe price ID for subscriptions (required)
+- `RESEND_API_KEY` - Resend API key for sending emails (required)
+- `ENCRYPTION_KEY` - 64-character hex string for encryption (required, generate with `openssl rand -hex 32`)
+- `NEXT_PUBLIC_API_URL` - Public URL of your API (used by frontend, e.g., `http://localhost:4000` for local)
 
 ### Optional Variables
 
-- OAuth credentials for Kit and Mailchimp integrations
-- `RESEND_FROM_EMAIL` - Email address for sending emails (defaults to onboarding@nest.miguelncorreia.com)
+- `PORT` - API port (default: `4000`)
+- `WORKER_PORT` - Worker port (default: `4001`)
+- `NODE_ENV` - Environment (default: `production`)
+- `RESEND_FROM_EMAIL` - Email address for sending emails (defaults to `onboarding@nest.miguelncorreia.com`)
+- OAuth credentials for Kit and Mailchimp integrations (all optional)
 
 ## Deployment to Coolify
 
@@ -255,6 +284,24 @@ docker run --rm -v subscriber_nest_redis_data:/data -v $(pwd):/backup alpine tar
 2. Verify environment variables are set correctly
 3. Ensure ports are not already in use
 4. Check health of dependencies (PostgreSQL, Redis)
+
+### Environment variables not loading
+
+**Problem:** Services fail with "environment variable is required" errors.
+
+**Solution:**
+1. Ensure `.env` file exists in the **root directory** (same level as `docker-compose.yml`)
+2. Verify all required variables are set in `.env` (no empty values for required vars)
+3. Check variable names match exactly (case-sensitive)
+4. Restart containers: `docker-compose down && docker-compose up -d`
+
+**Verify variables are loaded:**
+```bash
+# Check if Docker Compose can see your variables
+docker-compose config | grep STRIPE_SECRET_KEY
+```
+
+If this shows empty or the variable name, the `.env` file isn't being read correctly.
 
 ### Database connection errors
 

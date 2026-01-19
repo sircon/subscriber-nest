@@ -5,6 +5,11 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 
+# Temporarily set NODE_ENV=development ONLY for installing dependencies
+# Coolify sets NODE_ENV=production at build time, which causes yarn to skip devDependencies
+# We override it here just to install @nestjs/cli and other build tools
+ENV NODE_ENV=development
+
 # Copy root package files
 COPY package.json yarn.lock* ./
 
@@ -17,6 +22,9 @@ RUN yarn install --frozen-lockfile
 # Build stage
 FROM base AS builder
 WORKDIR /app
+
+# Set NODE_ENV=production for build (NestJS expects this for production builds)
+ENV NODE_ENV=production
 
 # Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
