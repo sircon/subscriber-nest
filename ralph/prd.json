@@ -274,7 +274,7 @@
         "Integration test passes with mock SendGrid API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

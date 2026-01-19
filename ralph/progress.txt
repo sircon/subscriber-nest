@@ -19,6 +19,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - PostUp uses Basic Auth with compound API key format "username:password"; API URL `https://api.postup.com/api`; lists = publications, recipients = subscribers
 - Constant Contact uses Bearer token auth with OAuth access token; API URL `https://api.cc.email/v3`; cursor-based pagination; contact_lists = publications, contacts = subscribers
 - Iterable uses Api-Key header auth; API URL `https://api.iterable.com/api`; lists = publications, users = subscribers; list sizes available in /lists response
+- SendGrid uses Bearer token auth; API URL `https://api.sendgrid.com/v3`; marketing/lists = publications, contacts searched via SEGQL query; list contact_count for counts
 
 ---
 
@@ -226,4 +227,21 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - User data stored in `dataFields` object (firstName, lastName, custom fields)
   - Status inferred from: unsubscribedChannelIds (channel 0 = email), bounced, hardBounced, spamComplaint, emailVerified
   - User identifier can be email or userId
+---
+
+## Mon Jan 19, 2026 - US-014
+- **What was implemented**: Created SendGrid ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/sendgrid.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - SendGrid uses Bearer token authentication (Authorization: Bearer {api_key})
+  - API base URL is `https://api.sendgrid.com/v3`
+  - Publications = marketing lists; GET /marketing/lists returns all lists with contact_count
+  - Subscribers = contacts; searched via POST /marketing/contacts/search using SEGQL query format
+  - Query syntax for list filtering: `CONTAINS(list_ids, '{list_id}')`
+  - Individual list details available at GET /marketing/lists/{id}
+  - Uses page_token pagination via _metadata.next field in response
+  - Contact status inferred from: unsubscribed_at, email_status (bounced, invalid, spam_reported, pending)
+  - Custom fields stored in `custom_fields` object on contact
+  - Contacts include geo data: city, state_province_region, country, postal_code
 ---
