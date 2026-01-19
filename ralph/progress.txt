@@ -120,3 +120,14 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Docker Compose file can be validated using `docker compose config --quiet` command
   - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
 ---
+
+## 2026-01-19 - US-010
+- Updated code comments and API client documentation from SubscriberNest to AudienceSafe
+- API client file header comment updated from "API client for SubscriberNest backend" to "API client for AudienceSafe backend"
+- Searched all TypeScript files in apps/ directory for any other code comments referencing SubscriberNest - only one reference found and updated
+- Files changed: `apps/frontend/src/lib/api.ts`
+- **Learnings for future iterations:**
+  - API client documentation is located in the file header comment of `apps/frontend/src/lib/api.ts`
+  - Code comments referencing the project name are minimal - most branding appears in user-facing text rather than code comments
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+---
