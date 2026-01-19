@@ -11,6 +11,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - ESP auth varies: Basic Auth (Campaign Monitor), API key in query params (Email Octopus), custom headers (Omeda), Bearer token, etc.
 - Some ESPs use compound API keys (e.g., Omeda: "client:appid:inputid") - parse to extract components
 - Ghost uses JWT authentication: API key format "siteUrl|id:secret", create JWT with HMAC-SHA256 signing
+- SparkPost uses API key directly in Authorization header, supports US/EU regions with "eu|" prefix
 
 ---
 
@@ -85,4 +86,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Pagination info in response.meta.pagination (total, next, prev, page, pages)
   - Member status values: free, paid, comped (plus subscribed boolean for email opt-in)
   - Authorization header format: `Ghost {jwt_token}`
+---
+
+## Mon Jan 19, 2026 - US-006
+- **What was implemented**: Created SparkPost ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/sparkpost.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - SparkPost uses API key directly in Authorization header (no "Bearer" prefix)
+  - Supports US and EU regions - use "eu|" prefix for EU (e.g., "eu|actual_api_key")
+  - API base URL: `https://api.sparkpost.com/api/v1` (US) or `https://api.eu.sparkpost.com/api/v1` (EU)
+  - Recipient lists are the publication equivalent: GET /recipient-lists
+  - Recipients in a list: GET /recipient-lists/{id} with `show_recipients=true`
+  - Subscriber count available via `total_accepted_recipients` in list metadata
+  - No explicit status field - infer from `suppressed` or metadata fields
+  - Name stored in `address.name` as full name - need to split for firstName/lastName
+  - Custom data stored in `substitution_data` object
 ---
