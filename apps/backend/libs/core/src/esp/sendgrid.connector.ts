@@ -11,6 +11,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * SendGrid uses Bearer token authentication with API keys.
  *
  * API Documentation: https://docs.sendgrid.com/api-reference/marketing-campaigns/
+ * API Version: v3 (current as of January 2026)
  */
 @Injectable()
 export class SendGridConnector implements IEspConnector {
