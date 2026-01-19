@@ -226,11 +226,11 @@ function PricingSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">
-            Super affordable pricing to keep your audience safe
+            Affordable pricing designed for everyone
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            One plan. No hidden fees. We cover our costs while keeping it
-            accessible to everyone.
+            We cover our costs while keeping it accessible. One plan, no hidden
+            fees—protecting your audience shouldn't break the bank.
           </p>
         </div>
 
