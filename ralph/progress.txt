@@ -49,3 +49,29 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
   - Browser verification recommended: Navigate to `/onboarding/stripe` to verify the updated text displays correctly
 ---
+
+## 2026-01-19 - US-005
+- Updated backend API service response from SubscriberNest to AudienceSafe
+- app.service.ts getHello() method now returns 'AudienceSafe API' instead of 'SubscriberNest API'
+- Files changed: `apps/backend/apps/api/src/app.service.ts`
+- **Learnings for future iterations:**
+  - Backend API service is located at `apps/backend/apps/api/src/app.service.ts`
+  - The getHello() method is called by the AppController's GET endpoint at the root path
+  - Typecheck verified via `turbo run build --filter=backend` which includes TypeScript compilation
+  - Backend lint command has a pre-existing configuration issue with glob patterns, but build/typecheck passes successfully
+---
+
+## 2026-01-19 - US-006
+- Updated email templates and service from SubscriberNest to AudienceSafe
+- Email subject line updated to 'Your verification code for AudienceSafe'
+- Email preview text updated to 'Your verification code for AudienceSafe'
+- Email footer copyright updated to 'AudienceSafe'
+- Default email address updated from 'onboarding@nest.miguelncorreia.com' to 'onboarding@audiencesafe.com'
+- Files changed: `apps/backend/apps/api/src/email.service.ts`, `apps/backend/apps/api/src/emails/verification-code-email.tsx`
+- **Learnings for future iterations:**
+  - Email service is located at `apps/backend/apps/api/src/email.service.ts` and uses Resend API
+  - Email templates are React components using @react-email/components, located in `apps/backend/apps/api/src/emails/`
+  - The verification code email template (`verification-code-email.tsx`) contains Preview text (for email preview) and footer copyright
+  - Default from email address is set in email.service.ts with fallback to 'onboarding@audiencesafe.com' if RESEND_FROM_EMAIL env var is not set
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---

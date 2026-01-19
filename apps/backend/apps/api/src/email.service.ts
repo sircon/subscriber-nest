@@ -20,7 +20,7 @@ export class EmailService {
   async sendVerificationCode(email: string, code: string): Promise<void> {
     const fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') ||
-      'onboarding@nest.miguelncorreia.com';
+      'onboarding@audiencesafe.com';
 
     const emailHtml = await render(
       React.createElement(VerificationCodeEmail, { code }),
@@ -30,7 +30,7 @@ export class EmailService {
     await this.resend.emails.send({
       from: fromEmail,
       to: email,
-      subject: 'Your verification code for SubscriberNest',
+      subject: 'Your verification code for AudienceSafe',
       html: emailHtml,
     });
   }
