@@ -92,3 +92,17 @@ Started: Mon Jan 19 08:58:03 CET 2026
   - The updated answer should align with the pricing section messaging about affordability and accessibility
   - Browser verification via curl confirms the FAQ changes render correctly in the HTML output
 ---
+
+## Mon Jan 19 09:15:51 CET 2026 - US-008
+- Added new FAQ question about backup/download feature to FAQSection
+- Added question: "How does the backup and download feature protect my audience?"
+- Answer explains: daily sync creates backup, can download anytime, can import to another ESP
+- Framed as safety benefit for audience protection and insurance against ESP issues
+- Positioned between "Can I export my data anytime?" and "What if my ESP changes or I want to switch?" FAQs
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - FAQ questions can be added to the `faqs` array in FAQSection component by inserting new objects with `question` and `answer` properties
+  - When adding FAQ about backup/download, frame it as "insurance" and "protection" to emphasize safety value proposition
+  - The answer should explain both the technical capability (daily sync, download, import) and the safety benefit (insurance against ESP issues)
+  - Browser verification via curl confirms the new FAQ question and answer render correctly in the HTML output
+---
