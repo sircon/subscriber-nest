@@ -18,6 +18,9 @@ RUN yarn install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
+# Set NODE_ENV to development for build (to include devDependencies)
+ENV NODE_ENV=development
+
 # Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
