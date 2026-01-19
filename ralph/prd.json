@@ -911,7 +911,7 @@
         "UI uses 'lists' terminology throughout"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "UI uses 'lists' terminology. Backend fetchPublications() returns lists/segments/publications depending on ESP."
     },
     {

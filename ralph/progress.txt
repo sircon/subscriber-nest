@@ -668,3 +668,19 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Component is fully accessible with proper aria-labels and keyboard navigation support
   - Frontend build passes successfully, TypeScript checks pass
 ---
+
+## Mon Jan 19, 2026 - US-051
+- **What was implemented**: Updated onboarding flow to include list selection after API key validation
+- **Files changed**:
+  - `apps/frontend/src/app/onboarding/api-key/page.tsx` - Added two-step flow: API key validation → list selection → connection creation with selected lists
+  - `apps/frontend/src/components/ListSelector.tsx` - Fixed unused variable lint warning
+- **Learnings for future iterations:**
+  - Onboarding flow now creates connection first (to validate API key and fetch lists), then updates selected lists via updateSelectedLists endpoint
+  - Uses sessionStorage to temporarily store connection ID between validation and final submission
+  - Publication ID is optional for most ESPs - if not provided, uses 'placeholder' and handles validation errors gracefully
+  - Two-step form flow: first step validates API key and fetches lists, second step shows ListSelector and saves selection
+  - Default behavior: all lists are selected when lists are fetched
+  - Error handling: checks if error message mentions "publication" to provide helpful feedback when publicationId is required
+  - Back button allows users to go back and modify API key/publicationId if needed
+  - Frontend build and TypeScript checks pass successfully
+---

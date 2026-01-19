@@ -421,8 +421,9 @@ function FAQSection() {
                 <button className="w-full p-6 flex items-center justify-between text-left">
                   <span className="font-medium pr-4">{faq.question}</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''
-                      }`}
+                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
+                      openIndex === index ? 'rotate-180' : ''
+                    }`}
                   />
                 </button>
                 <div

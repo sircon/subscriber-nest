@@ -15,7 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { espConfigs, type EspType, supportsOAuth, getEspConfig } from '@/lib/esp-config';
+import {
+  espConfigs,
+  type EspType,
+  supportsOAuth,
+  getEspConfig,
+} from '@/lib/esp-config';
 
 export default function NewEspConnectionPage() {
   const router = useRouter();
@@ -219,8 +224,8 @@ export default function NewEspConnectionPage() {
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
                   Connect your{' '}
-                  {getEspConfig(selectedEspType)?.name || selectedEspType} account
-                  securely using OAuth. No API keys needed!
+                  {getEspConfig(selectedEspType)?.name || selectedEspType}{' '}
+                  account securely using OAuth. No API keys needed!
                 </p>
                 {error && (
                   <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 mb-4">

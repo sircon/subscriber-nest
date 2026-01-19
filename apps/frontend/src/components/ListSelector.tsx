@@ -19,7 +19,7 @@ export interface ListSelectorProps {
   /**
    * Callback when selection changes
    */
-  onSelectionChange: (selectedIds: string[]) => void;
+  onSelectionChange: (_selectedIds: string[]) => void;
   /**
    * Whether the component is in a loading state
    */
