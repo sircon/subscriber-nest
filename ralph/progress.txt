@@ -79,3 +79,16 @@ Started: Mon Jan 19 08:58:03 CET 2026
   - Features are displayed as a simple array in the pricing section, making it easy to add new items
   - Browser verification via curl confirms the new features render correctly in the HTML output
 ---
+
+## Mon Jan 19 09:13:41 CET 2026 - US-007
+- Updated FAQ section to remove all free trial references
+- Changed "Is there a free tier?" FAQ answer to remove 14-day free trial mention
+- Updated answer to reflect credit card required, no free trial, emphasizing affordable pricing and accessibility
+- Verified no other FAQ answers mention free trial
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - FAQ answers are stored in a simple array of objects with `question` and `answer` properties in the FAQSection component
+  - When updating FAQ content, search for all instances of the term being removed (e.g., "trial") to ensure consistency
+  - The updated answer should align with the pricing section messaging about affordability and accessibility
+  - Browser verification via curl confirms the FAQ changes render correctly in the HTML output
+---
