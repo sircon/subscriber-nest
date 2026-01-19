@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Update the SubscriberNest homepage to accurately reflect the pricing model (credit card required, no free trial), emphasize the audience safety value proposition, and highlight the backup/download feature as a key benefit. The messaging should position the service as an affordable, accessible solution that protects users' most valuable asset—their subscriber audience.
+Update the AudienceSafe homepage to accurately reflect the pricing model (credit card required, no free trial), emphasize the audience safety value proposition, and highlight the backup/download feature as a key benefit. The messaging should position the service as an affordable, accessible solution that protects users' most valuable asset—their subscriber audience.
 
 ## Goals
 

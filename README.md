@@ -1,6 +1,6 @@
-# SubscriberNest
+# AudienceSafe
 
-SubscriberNest lets you connect to your Email Service Provider (ESP), keep your subscriber list synced, and export it whenever you need.
+AudienceSafe lets you connect to your Email Service Provider (ESP), keep your subscriber list synced, and export it whenever you need.
 
 ## Tech Stack
 
@@ -44,7 +44,7 @@ DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
-DATABASE_NAME=subscriber_nest
+DATABASE_NAME=audience_safe
 
 NODE_ENV=development
 ```
@@ -62,7 +62,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 Ensure PostgreSQL is running and the database exists:
 
 ```bash
-createdb subscriber_nest
+createdb audience_safe
 ```
 
 Or create it via your PostgreSQL client.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Implement a comprehensive billing system for SubscriberNest that integrates with Stripe to manage subscriptions based on subscriber count. The billing is usage-based, calculated monthly from the maximum number of subscribers (sum across all publications) during each billing period. Users must have an active Stripe subscription to sync subscribers or export data. The system includes a settings page for viewing usage, managing subscriptions, and account deletion with a 30-day grace period for data export.
+Implement a comprehensive billing system for AudienceSafe that integrates with Stripe to manage subscriptions based on subscriber count. The billing is usage-based, calculated monthly from the maximum number of subscribers (sum across all publications) during each billing period. Users must have an active Stripe subscription to sync subscribers or export data. The system includes a settings page for viewing usage, managing subscriptions, and account deletion with a 30-day grace period for data export.
 
 ## Goals
 

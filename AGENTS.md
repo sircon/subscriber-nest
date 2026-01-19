@@ -1,6 +1,6 @@
-# SubscriberNest – Agents
+# AudienceSafe – Agents
 
-This file describes the main components and responsibilities in the SubscriberNest monorepo for agents and tooling.
+This file describes the main components and responsibilities in the AudienceSafe monorepo for agents and tooling.
 
 ## Overview
 
