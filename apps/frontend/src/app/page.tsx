@@ -84,10 +84,10 @@ function HeroSection() {
 
           {/* Subheadline */}
           <p className="animate-fade-up delay-200 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Your subscribers are your most valuable asset. We sync daily to keep
-            your list current, create a backup of your updated list, and let you
-            download anytime. If your ESP has issues, you can always import your
-            list elsewhere.
+            Your audience is your most valuable asset—keep it safe. We sync
+            daily to maintain a secure backup of your updated list. Download
+            anytime or import to another ESP if yours has issues. Your
+            subscribers, always protected.
           </p>
 
           {/* CTA */}
