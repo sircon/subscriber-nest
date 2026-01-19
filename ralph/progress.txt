@@ -570,3 +570,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format: "API Version: v3 (current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-042
+- **What was implemented**: Updated Brevo connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/brevo.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Brevo API v3 is the current API version (verified January 2026)
+  - API documentation URL: https://developers.brevo.com/reference/getting-started-1
+  - All API endpoints in the connector correctly use v3 via baseUrl constant
+  - API documentation link was already present, only version note was added
+  - API version note format: "API Version: v3 (current as of {date})"
+  - Backend build and integration tests pass
+---

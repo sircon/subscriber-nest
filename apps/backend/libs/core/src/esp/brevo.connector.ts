@@ -11,6 +11,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * Brevo uses api-key header for authentication.
  *
  * API Documentation: https://developers.brevo.com/reference/getting-started-1
+ * API Version: v3 (current as of January 2026)
  */
 @Injectable()
 export class BrevoConnector implements IEspConnector {
