@@ -550,8 +550,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API documentation link and version note. Verified v2 is the current API version. All API calls use v2 correctly via Bearer token authentication. Backend build and integration tests pass."
     },
     {
       "id": "US-031",
@@ -567,8 +567,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API version note. Verified Omeda uses current REST API without versioning in URL. All API calls use the current API correctly. Backend build and integration tests pass."
     },
     {
       "id": "US-032",

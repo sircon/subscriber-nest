@@ -13,6 +13,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * API keys are formatted as "client:appid:inputid" where client is the brand identifier.
  *
  * API Documentation: https://developer.omeda.com/
+ * API Version: Current REST API (no versioning in URL, current as of January 2026)
  */
 @Injectable()
 export class OmedaConnector implements IEspConnector {

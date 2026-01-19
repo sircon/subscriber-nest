@@ -410,3 +410,29 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - No API version update was needed - v3.2 is current
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-030
+- **What was implemented**: Updated Email Octopus connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/email-octopus.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Email Octopus API v2 is the current version (verified January 2026)
+  - API documentation URL: https://emailoctopus.com/api-documentation/v2
+  - All API endpoints in the connector correctly use v2 via Bearer token authentication
+  - The connector was already using v2 API correctly (Bearer token auth, not query param auth from v1.6)
+  - Base URL doesn't include version in path (`https://api.emailoctopus.com`) - common for APIs that route by version in headers or use single current version endpoint
+  - API documentation link was already present, only version note was added
+  - Backend build and integration tests pass
+---
+
+## Mon Jan 19, 2026 - US-031
+- **What was implemented**: Updated Omeda connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/omeda.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Omeda API uses current REST API without versioning in URL (no version number in base URL)
+  - API documentation URL: https://developer.omeda.com/
+  - All API endpoints in the connector correctly use the current REST API
+  - API version note format for APIs without versioning: "Current REST API (no versioning in URL, current as of {date})"
+  - Backend build and integration tests pass
+---
