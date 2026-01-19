@@ -204,7 +204,7 @@ function HeroSection() {
         {/* Features row */}
         <div className="animate-fade-up delay-700 flex flex-wrap justify-center gap-8 mt-16 text-sm text-muted-foreground">
           {[
-            { icon: RefreshCw, text: 'Auto-sync daily' },
+            { icon: RefreshCw, text: 'Synced every day' },
             { icon: Download, text: 'Export anytime' },
             { icon: Shield, text: 'Secure & encrypted' },
           ].map(({ icon: Icon, text }) => (
