@@ -320,3 +320,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Error handling covers: 401 Unauthorized, 403 Forbidden, 429 Rate Limit, 500 Server Error
   - NestJS build outputs .js, .d.ts, and .js.map files in src directories - add to .gitignore
 ---
+
+## Mon Jan 19, 2026 - US-043
+- **What was implemented**: Updated database schema to store list names alongside publication IDs
+- **Files changed**:
+  - `apps/backend/libs/database/src/entities/esp-connection.entity.ts` - Added listNames field as jsonb array (string[] | null)
+  - `apps/backend/apps/api/src/migrations/1768746000000-AddListNamesToEspConnection.ts` - Migration to add listNames column to esp_connections table
+- **Learnings for future iterations:**
+  - PostgreSQL jsonb columns can store arrays directly - use `jsonb` type for string[] arrays
+  - Migration uses `ADD COLUMN IF NOT EXISTS` pattern for safe migration execution
+  - The listNames field is nullable to maintain backward compatibility with existing connections
+  - Different ESPs use different terminology (lists, segments, publications), but we store display names in listNames for UI consistency
+  - The publicationIds field name is kept for backward compatibility, but listNames stores the human-readable names
+---

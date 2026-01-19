@@ -771,7 +771,7 @@
         "Note: Keep publicationIds field name for backward compatibility, but listNames stores the display names"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "ESP terminology varies: beehiiv uses 'publications', email octopus uses 'lists', mailchimp uses 'segments', etc. We use 'lists' as our unified UI term."
     },
     {
