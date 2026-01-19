@@ -639,3 +639,32 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - The DTO uses class-validator decorators (@IsNotEmpty, @IsArray, @IsString) for request validation
   - Backend build and TypeScript checks pass successfully
 ---
+
+## Mon Jan 19, 2026 - US-049
+- **What was implemented**: Updated frontend API client to support list endpoints (getLists and updateSelectedLists)
+- **Files changed**:
+  - `apps/frontend/src/lib/api.ts` - Added List interface, UpdateSelectedListsRequest interface, listNames field to EspConnection interface, getLists() method, and updateSelectedLists() method
+- **Learnings for future iterations:**
+  - Frontend uses 'lists' terminology for clarity, even though backend may call them publications/segments depending on ESP
+  - The List interface matches the backend Publication interface structure (id, name, subscriberCount, description, createdAt, plus index signature for ESP-specific fields)
+  - Added listNames field to EspConnection interface to match backend schema
+  - getLists() method fetches available lists from GET /esp-connections/:id/lists endpoint
+  - updateSelectedLists() method updates selected lists via PUT /esp-connections/:id/lists endpoint with UpdateSelectedListsRequest body
+  - Both methods follow the same pattern as other espConnectionApi methods (token, onUnauthorized callback, error handling)
+  - Frontend build passes successfully, TypeScript checks pass
+---
+
+## Mon Jan 19, 2026 - US-050
+- **What was implemented**: Created ListSelector component for selecting which lists to sync from an ESP connection
+- **Files changed**:
+  - `apps/frontend/src/components/ListSelector.tsx` - New component with checkbox functionality, Select All/Deselect All, loading states, error handling, and subscriber count display
+- **Learnings for future iterations:**
+  - Component uses 'lists' terminology in UI for consistency, even though backend may call them publications/segments depending on ESP
+  - Uses native HTML checkbox with sr-only class for accessibility, with custom styled visual checkbox using Check icon from lucide-react
+  - Component follows design system patterns: uses Card, CardHeader, CardTitle, CardContent from UI components, Button component, and cn() utility for className merging
+  - Format subscriber counts with K/M suffixes for readability (e.g., "1.5K subscribers", "2.3M subscribers")
+  - Component handles loading, error, and empty states gracefully
+  - Default state is all lists selected (handled by parent component passing all list IDs)
+  - Component is fully accessible with proper aria-labels and keyboard navigation support
+  - Frontend build passes successfully, TypeScript checks pass
+---

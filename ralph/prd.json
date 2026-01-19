@@ -873,8 +873,8 @@
         "Note: May reuse Publication interface from backend, but expose as 'List' in frontend for clarity"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Frontend uses 'lists' terminology. May reuse backend Publication interface but expose with clearer naming."
+      "passes": true,
+      "notes": "Frontend uses 'lists' terminology. Created List interface and UpdateSelectedListsRequest interface. Added getLists() and updateSelectedLists() methods to espConnectionApi."
     },
     {
       "id": "US-050",
@@ -892,7 +892,7 @@
         "Component uses 'lists' terminology in UI labels and text"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Component named ListSelector and uses 'lists' terminology in UI, even though backend may call them publications/segments depending on ESP."
     },
     {
