@@ -609,3 +609,18 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Both Kit and Mailchimp connectors support fetchPublicationsWithOAuth() method
   - Backend build passes with the changes
 ---
+
+## Mon Jan 19, 2026 - US-047
+- **What was implemented**: Created GET /esp-connections/:id/lists endpoint to fetch available lists from ESP connections
+- **Files changed**:
+  - `apps/backend/apps/api/src/services/esp-connection.service.ts` - Added fetchAvailableLists() method that handles both API key and OAuth authentication methods
+  - `apps/backend/apps/api/src/controllers/esp-connection.controller.ts` - Added GET /esp-connections/:id/lists endpoint
+- **Learnings for future iterations:**
+  - The fetchAvailableLists() service method follows the same pattern as getSubscriberCount() - it handles both API_KEY and OAUTH auth methods
+  - For OAuth connections, the method uses callOAuthConnectorMethodWithRetry() to automatically refresh tokens on 401 errors
+  - The endpoint returns Publication[] which represents lists/segments/publications depending on ESP terminology
+  - Error handling follows the same pattern as other endpoints: NotFoundException (404), BadRequestException (400), ForbiddenException (403), InternalServerErrorException (500)
+  - The endpoint validates ownership via findById() which throws BadRequestException if user doesn't own the connection
+  - All 17 ESP connectors support fetchPublications() or fetchPublicationsWithOAuth() methods, so the endpoint works for all ESP types
+  - Backend build passes successfully
+---

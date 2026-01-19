@@ -838,7 +838,7 @@
         "Endpoint works for all 17 ESP types"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Endpoint path uses '/lists' for user-facing clarity. The fetchPublications() method returns lists/segments/publications depending on ESP terminology."
     },
     {
