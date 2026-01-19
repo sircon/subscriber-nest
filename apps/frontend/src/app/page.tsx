@@ -84,10 +84,8 @@ function HeroSection() {
 
           {/* Subheadline */}
           <p className="animate-fade-up delay-200 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Your audience is your most valuable asset—keep it safe. We sync
-            daily to maintain a secure backup of your updated list. Download
-            anytime or import to another ESP if yours has issues. Your
-            subscribers, always protected.
+            Your subscribers are priceless. We sync daily to keep them backed
+            up. Download or switch ESPs anytime, worry-free.
           </p>
 
           {/* CTA */}
@@ -101,9 +99,6 @@ function HeroSection() {
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
-            <span className="text-sm text-muted-foreground">
-              Credit card required to start
-            </span>
           </div>
         </div>
 
@@ -125,7 +120,7 @@ function HeroSection() {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 bg-secondary/50 rounded-md text-xs text-muted-foreground">
-                      app.subscribernest.com
+                      subscribernest.com
                     </div>
                   </div>
                   <div className="w-[52px]" />
@@ -230,7 +225,7 @@ function PricingSection() {
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             We cover our costs while keeping it accessible. One plan, no hidden
-            fees—protecting your audience shouldn't break the bank.
+            fees. Protecting your audience shouldn't break the bank.
           </p>
         </div>
 
@@ -269,7 +264,7 @@ function PricingSection() {
                     'Unlimited ESP connections',
                     'Daily automatic sync',
                     'Export to CSV, JSON, or Excel',
-                    'Always have a backup—download your updated list anytime',
+                    'Always have a backup. Download your updated list anytime',
                     'Import to another ESP if yours has issues',
                     'Encrypted subscriber data',
                     'Email support',
@@ -306,10 +301,6 @@ function PricingSection() {
                     Get Started <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
-
-                <p className="text-center text-sm text-muted-foreground mt-4">
-                  Credit card required to start
-                </p>
               </div>
             </div>
           </div>
@@ -361,7 +352,7 @@ function FAQSection() {
     {
       question: 'What Email Service Providers do you support?',
       answer:
-        "We support all major ESPs including Mailchimp, ConvertKit, Beehiiv, Substack, Buttondown, AWeber, and many more. If your ESP has an API, we can connect to it. Don't see yours? Contact us and we'll add support.",
+        "We support all major ESPs including Mailchimp, Kit, beehiiv, Substack, Buttondown, AWeber, and many more. If your ESP has an API, we can connect to it. Don't see yours? Contact us and we'll add support.",
     },
     {
       question: 'Is my subscriber data secure?',
@@ -371,7 +362,7 @@ function FAQSection() {
     {
       question: 'How often does the sync happen?',
       answer:
-        'By default, we sync your subscriber list once every 24 hours. You can also trigger a manual sync anytime from your dashboard. Pro tip: set up webhooks with your ESP for real-time sync if they support it.',
+        'By default, we sync your subscriber list once every 24 hours. You can also trigger a manual sync anytime from your dashboard.',
     },
     {
       question: 'What happens if I go over my subscriber limit?',
@@ -381,12 +372,12 @@ function FAQSection() {
     {
       question: 'Can I export my data anytime?',
       answer:
-        'Yes! Export your complete subscriber list anytime in CSV, JSON, or Excel format. There are no limits on exports. This is your data — we make it easy to use however you need.',
+        'Yes! Export your complete subscriber list anytime in CSV, JSON, or Excel format. There are no limits on exports. This is your data, and we make it easy to use however you need.',
     },
     {
       question: 'How does the backup and download feature protect my audience?',
       answer:
-        'Every day, we automatically sync and create a secure backup of your updated subscriber list. You can download this backup anytime—think of it as insurance for your most valuable asset. If your ESP has technical issues, goes down, or you need to switch providers, you always have a current copy ready to import. Your audience is protected, no matter what happens with your ESP.',
+        'Every day, we automatically sync and create a secure backup of your updated subscriber list. You can download this backup anytime. Think of it as insurance for your most valuable asset. If your ESP has technical issues, goes down, or you need to switch providers, you always have a current copy ready to import. Your audience is protected, no matter what happens with your ESP.',
     },
     {
       question: 'What if my ESP changes or I want to switch?',
@@ -396,12 +387,12 @@ function FAQSection() {
     {
       question: 'Do you offer refunds?',
       answer:
-        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment — no questions asked. We're confident you'll love SubscriberNest, but we want you to feel safe trying it out.",
+        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment, no questions asked. We're confident you'll love SubscriberNest, but we want you to feel safe trying it out.",
     },
     {
       question: 'Is there a free tier?',
       answer:
-        "We keep it simple with one affordable plan: $5/month for up to 10,000 subscribers. All features are included. A credit card is required to start, but our pricing is designed to be accessible to everyone. We cover our costs while keeping it affordable—protecting your audience shouldn't break the bank.",
+        "We keep it simple with one affordable plan: $5/month for up to 10,000 subscribers. All features are included. A credit card is required to start, but our pricing is designed to be accessible to everyone. We cover our costs while keeping it affordable. Protecting your audience shouldn't break the bank.",
     },
   ];
 
@@ -430,9 +421,8 @@ function FAQSection() {
                 <button className="w-full p-6 flex items-center justify-between text-left">
                   <span className="font-medium pr-4">{faq.question}</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
-                      openIndex === index ? 'rotate-180' : ''
-                    }`}
+                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
                 <div
