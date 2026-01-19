@@ -125,7 +125,7 @@ function StripeOnboardingForm() {
               Connect your payment method
             </CardTitle>
             <CardDescription>
-              SubscriberNest uses a usage-based billing model. You'll be charged
+              AudienceSafe uses a usage-based billing model. You'll be charged
               $5 for the first 10,000 subscribers, then $1 per each additional
               10,000 subscribers per month. Your subscription will be billed
               monthly based on your maximum subscriber count during each billing
