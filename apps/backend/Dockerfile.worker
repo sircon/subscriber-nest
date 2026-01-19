@@ -45,7 +45,7 @@ ENV NODE_ENV=production
 
 # Copy built application and dependencies
 COPY --from=builder /app/apps/backend/dist/worker ./dist
-COPY --from=builder /app/apps/backend/node_modules ./node_modules
+# In yarn workspaces, all node_modules are hoisted to root, so only copy root node_modules
 COPY --from=builder /app/node_modules ./node_modules
 
 # Expose Worker port (for health checks)
