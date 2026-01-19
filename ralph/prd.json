@@ -703,8 +703,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API version note. Verified Constant Contact v3 is the current API version (verified January 2026). All API calls use v3 correctly via baseUrl. API documentation links were already present. Backend build and integration tests pass."
     },
     {
       "id": "US-040",

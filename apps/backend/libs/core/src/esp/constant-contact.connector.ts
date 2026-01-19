@@ -13,6 +13,7 @@ import { Publication, SubscriberData } from './esp.interface';
  *
  * API Documentation: https://developer.constantcontact.com/api_guide/index.html
  * API Reference: https://developer.constantcontact.com/api_reference/index.html
+ * API Version: v3 (current as of January 2026)
  */
 @Injectable()
 export class ConstantContactConnector implements IEspConnector {

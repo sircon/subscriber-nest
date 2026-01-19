@@ -531,3 +531,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format for APIs without versioning: "API Version: Current REST API (no versioning in URL, current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-039
+- **What was implemented**: Updated Constant Contact connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/constant-contact.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Constant Contact API v3 is the current API version (verified January 2026)
+  - API documentation URLs: https://developer.constantcontact.com/api_guide/index.html and https://developer.constantcontact.com/api_reference/index.html
+  - All API endpoints in the connector correctly use v3 via baseUrl (`https://api.cc.email/v3`)
+  - API documentation links were already present, only version note was added
+  - API version note format: "API Version: v3 (current as of {date})"
+  - Backend build and integration tests pass
+---
