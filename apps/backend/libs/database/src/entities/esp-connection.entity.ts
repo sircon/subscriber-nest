@@ -93,6 +93,9 @@ export class EspConnection {
   @Column({ type: 'jsonb', nullable: true })
   publicationIds: string[] | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  listNames: string[] | null;
+
   @Column({
     type: 'enum',
     enum: EspConnectionStatus,
