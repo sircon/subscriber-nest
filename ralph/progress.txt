@@ -262,3 +262,14 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Account validation via GET /account endpoint
   - Max 50 lists per request, 500 contacts per request
 ---
+
+## Mon Jan 19, 2026 - US-016
+- **What was implemented**: Registered all 14 new ESP connectors in the ESP module
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/esp.module.ts` - Added imports and registrations for all new connectors
+- **Learnings for future iterations:**
+  - NestJS modules require connectors to be added to both `providers` and `exports` arrays for proper dependency injection
+  - Organizing imports and provider arrays with comments (// Existing connectors, // New connectors) improves readability
+  - All connectors in esp/ directory follow the naming pattern: `{provider-name}.connector.ts` with class `{ProviderName}Connector`
+  - After adding providers to the module, services can inject them via constructor injection
+---
