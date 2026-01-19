@@ -8,6 +8,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - PostgreSQL enums use `ALTER TYPE ... ADD VALUE IF NOT EXISTS` for adding new values (cannot remove values)
 - Backend lint command has a pre-existing ESLint config issue (glob patterns ignoring all files)
 - Existing connectors use HttpService from @nestjs/axios with firstValueFrom() from rxjs for API calls
+- ESP auth varies: Basic Auth (Campaign Monitor), API key in query params (Email Octopus), Bearer token, etc.
 
 ---
 
@@ -35,4 +36,18 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Active subscribers at /lists/{listId}/active.json, unsubscribed at /lists/{listId}/unsubscribed.json
   - List stats (including subscriber count) available at /lists/{listId}/stats.json
   - Campaign Monitor supports up to 1000 records per page
+---
+
+## Mon Jan 19, 2026 - US-003
+- **What was implemented**: Created Email Octopus ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/email-octopus.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Email Octopus uses API key authentication via query parameter (`api_key`)
+  - API base URL is `https://emailoctopus.com/api/1.6`
+  - Lists endpoint: GET /lists, List details: GET /lists/{listId}, Contacts: GET /lists/{listId}/contacts
+  - Pagination uses `paging.next` to check for more pages, default limit is 100
+  - Subscriber counts available in list details via `counts.subscribed`
+  - Status values: SUBSCRIBED, UNSUBSCRIBED, PENDING, BOUNCED
+  - Custom fields stored in `fields` object (FirstName, LastName, etc.)
 ---

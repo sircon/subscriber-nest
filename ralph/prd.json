@@ -54,7 +54,7 @@
         "Integration test passes with mock Email Octopus API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
