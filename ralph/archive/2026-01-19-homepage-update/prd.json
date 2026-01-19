@@ -14,7 +14,7 @@
         "All enum values use kebab-case format matching existing pattern"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -34,7 +34,7 @@
         "Integration test passes with mock Campaign Monitor API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -54,7 +54,7 @@
         "Integration test passes with mock Email Octopus API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -74,7 +74,7 @@
         "Integration test passes with mock Omeda API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -94,7 +94,7 @@
         "Integration test passes with mock Ghost API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -114,7 +114,7 @@
         "Integration test passes with mock SparkPost API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -134,7 +134,7 @@
         "Integration test passes with mock ActiveCampaign API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -154,7 +154,7 @@
         "Integration test passes with mock Customer.io API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -174,7 +174,7 @@
         "Integration test passes with mock Sailthru API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -194,7 +194,7 @@
         "Integration test passes with mock MailerLite API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -214,7 +214,7 @@
         "Integration test passes with mock PostUp API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -234,7 +234,7 @@
         "Integration test passes with mock Constant Contact API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -254,7 +254,7 @@
         "Integration test passes with mock Iterable API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -274,7 +274,7 @@
         "Integration test passes with mock SendGrid API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -294,7 +294,7 @@
         "Integration test passes with mock Brevo API"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -310,7 +310,7 @@
         "Module compiles without errors"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -326,7 +326,7 @@
         "All connectors are accessible through the service"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -342,7 +342,7 @@
         "All connectors work with sync functionality"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -361,7 +361,7 @@
         "Tests use mock HTTP responses (not real API calls)"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

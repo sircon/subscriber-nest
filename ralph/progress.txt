@@ -21,6 +21,10 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Iterable uses Api-Key header auth; API URL `https://api.iterable.com/api`; lists = publications, users = subscribers; list sizes available in /lists response
 - SendGrid uses Bearer token auth; API URL `https://api.sendgrid.com/v3`; marketing/lists = publications, contacts searched via SEGQL query; list contact_count for counts
 - Brevo uses `api-key` header auth; API URL `https://api.brevo.com/v3`; contacts/lists = publications, contacts via list contacts endpoint; uniqueSubscribers for counts
+- When adding new ESP connectors, update BOTH `EspConnectionService` and `SubscriberSyncService` getConnector() methods (both services have their own connector injection and switch statements)
+- Tests use Jest with ts-jest; run `yarn test` in apps/backend; test files use `.spec.ts` extension
+- Mock HttpService with jest.fn() and return `of(createMockResponse(data))` from rxjs for mocking API responses
+- Use `throwError(() => createMockError(status))` from rxjs to test error handling (401, 403, 429, 500)
 
 ---
 
@@ -284,4 +288,35 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - NestJS dependency injection works well with multiple connectors - just add them to the constructor
   - The switch statement pattern with explicit cases for each ESP type ensures type safety and clear mapping
   - Error message in default case automatically covers unsupported ESP types without needing manual updates
+---
+
+## Mon Jan 19, 2026 - US-018
+- **What was implemented**: Updated SubscriberSyncService to support all 14 new ESP connectors
+- **Files changed**:
+  - `apps/backend/libs/core/src/sync/subscriber-sync.service.ts` - Added imports, constructor injection, and switch cases for all new connectors
+- **Learnings for future iterations:**
+  - SubscriberSyncService follows the same pattern as EspConnectionService for connector mapping
+  - Both services need to be updated in tandem when adding new ESP connectors
+  - Import path for connectors in libs/core/src/sync uses relative paths (e.g., `../esp/active-campaign.connector`)
+  - Import path in apps/api/src/services uses path alias (e.g., `@app/core/esp/active-campaign.connector`)
+  - When adding new ESPs, update both EspConnectionService AND SubscriberSyncService getConnector() methods
+---
+
+## Mon Jan 19, 2026 - US-019
+- **What was implemented**: Created comprehensive integration tests for all 14 ESP connectors
+- **Files changed**:
+  - `apps/backend/package.json` - Added Jest dependencies (jest, ts-jest, @types/jest) and test scripts
+  - `apps/backend/jest.config.js` - New Jest configuration with TypeScript support and path mappings
+  - `apps/backend/libs/core/src/esp/esp-connectors.integration.spec.ts` - 109 integration tests for all connectors
+  - `.gitignore` - Added patterns to exclude build artifacts from src directories
+- **Learnings for future iterations:**
+  - Jest configuration for NestJS requires ts-jest transform and module path mappings matching tsconfig.json
+  - Test files should use `.spec.ts` extension for Jest discovery
+  - Mock HttpService using jest.fn() and return of(createMockResponse(data)) for testing connectors
+  - NestJS Test.createTestingModule() allows injecting mock services into connectors
+  - Error handling tests use throwError(() => createMockError(statusCode)) from rxjs
+  - When connectors spread original data at end of object literals (`...contact`), raw values can override mapped values
+  - Integration tests cover: validateApiKey, fetchPublications, fetchSubscribers, getSubscriberCount
+  - Error handling covers: 401 Unauthorized, 403 Forbidden, 429 Rate Limit, 500 Server Error
+  - NestJS build outputs .js, .d.ts, and .js.map files in src directories - add to .gitignore
 ---

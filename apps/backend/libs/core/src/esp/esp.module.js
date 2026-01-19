@@ -10,14 +10,16 @@ exports.EspModule = void 0;
 const common_1 = require("@nestjs/common");
 const axios_1 = require("@nestjs/axios");
 const beehiiv_connector_1 = require("./beehiiv.connector");
+const mailchimp_connector_1 = require("./mailchimp.connector");
+const kit_connector_1 = require("./kit.connector");
 let EspModule = class EspModule {
 };
 exports.EspModule = EspModule;
 exports.EspModule = EspModule = __decorate([
     (0, common_1.Module)({
         imports: [axios_1.HttpModule],
-        providers: [beehiiv_connector_1.BeehiivConnector],
-        exports: [beehiiv_connector_1.BeehiivConnector],
+        providers: [beehiiv_connector_1.BeehiivConnector, kit_connector_1.KitConnector, mailchimp_connector_1.MailchimpConnector],
+        exports: [beehiiv_connector_1.BeehiivConnector, kit_connector_1.KitConnector, mailchimp_connector_1.MailchimpConnector],
     })
 ], EspModule);
 //# sourceMappingURL=esp.module.js.map

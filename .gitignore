@@ -6,6 +6,12 @@ dist
 .next
 .turbo
 
+# Build artifacts in src directories (NestJS monorepo)
+apps/backend/**/*.js
+apps/backend/**/*.d.ts
+apps/backend/**/*.js.map
+!apps/backend/jest.config.js
+
 # Env
 .env
 .env.local
