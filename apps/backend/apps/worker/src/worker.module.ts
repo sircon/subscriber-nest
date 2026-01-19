@@ -28,7 +28,7 @@ import { OAuthTokenRefreshSchedulerService } from './schedulers/oauth-token-refr
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'subscriber_nest',
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production',
+      synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
     }),
     DatabaseModule,
     EncryptionModule,
@@ -92,4 +92,4 @@ import { OAuthTokenRefreshSchedulerService } from './schedulers/oauth-token-refr
     OAuthTokenRefreshSchedulerService,
   ],
 })
-export class WorkerModule {}
+export class WorkerModule { }
