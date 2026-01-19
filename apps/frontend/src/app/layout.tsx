@@ -3,7 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'SubscriberNest',
+  title: 'AudienceSafe',
   description: 'Sync and export your subscriber list from your ESP',
 };
 

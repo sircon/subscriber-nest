@@ -15,3 +15,14 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - Build and typecheck pass successfully; pre-existing lint errors in other files don't block commits
   - Frontend dev server runs on port 3000 (can be started with `turbo run dev --filter=frontend`)
 ---
+
+## 2026-01-19 - US-002
+- Updated frontend metadata and layout from SubscriberNest to AudienceSafe
+- Page title in layout.tsx updated to "AudienceSafe"
+- Meta description checked and confirmed it doesn't reference SubscriberNest (no changes needed)
+- Files changed: `apps/frontend/src/app/layout.tsx`
+- **Learnings for future iterations:**
+  - Next.js metadata is defined in `apps/frontend/src/app/layout.tsx` using the `Metadata` type from 'next'
+  - The metadata object contains `title` and `description` fields that control browser tab title and meta description
+  - Typecheck is verified via `turbo run build --filter=frontend` which includes TypeScript compilation
+---
