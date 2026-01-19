@@ -15,6 +15,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * API Key format: "apiKey|apiSecret" (compound format - API key and secret separated by pipe)
  *
  * API Documentation: https://getstarted.sailthru.com/developers/api-basics/
+ * API Version: Current REST API (no versioning in URL, current as of January 2026)
  * - Base URL: https://api.sailthru.com
  * - Authentication: Signature-based using API secret
  * - Lists: Subscriber lists (equivalent to publications)
