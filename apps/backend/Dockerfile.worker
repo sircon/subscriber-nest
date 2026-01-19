@@ -27,7 +27,7 @@ COPY package.json ./
 
 # Build Worker only
 WORKDIR /app/apps/backend
-RUN npx nest build worker
+RUN yarn nest build worker
 
 # Production stage
 FROM base AS runner

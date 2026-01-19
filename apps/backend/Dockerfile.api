@@ -27,7 +27,7 @@ COPY package.json ./
 
 # Build API only
 WORKDIR /app/apps/backend
-RUN npx nest build api
+RUN yarn nest build api
 
 # Production stage
 FROM base AS runner
