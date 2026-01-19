@@ -1,3 +1,19 @@
 # Ralph Progress Log
 Started: Mon Jan 19 08:58:03 CET 2026
 ---
+
+## Mon Jan 19 08:59:49 CET 2026 - US-001
+- Updated hero section messaging to emphasize audience safety and protection
+- Changed headline from "Your subscribers, always accessible" to "Keep your audience safe and backed up"
+- Updated subheadline to emphasize subscribers as most valuable asset, mention daily sync, backup capability, and ability to import if ESP has issues
+- Changed CTA button from "Get Started Free" to "Get Started"
+- Removed "No credit card required" text and replaced with "Credit card required to start"
+- Updated badge from "Sync subscribers in seconds" to "Protect your most valuable asset" (changed icon from Zap to Shield)
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - The homepage is a single file component at `apps/frontend/src/app/page.tsx` with all sections (HeroSection, PricingSection, FAQSection) defined inline
+  - HeroSection uses Shield icon from lucide-react for safety/protection messaging
+  - Prettier auto-formatting will fix line breaks in long text strings automatically when running `yarn lint --fix`
+  - The dev server runs on port 3000 and can be verified by checking the HTML output
+  - All changes must pass both TypeScript typecheck (via `turbo run build --filter=frontend`) and ESLint (via `turbo run lint --filter=frontend`)
+---
