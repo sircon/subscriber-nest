@@ -37,3 +37,15 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - The overlay auto-dismisses after 2 seconds
   - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
 ---
+
+## 2026-01-19 - US-004
+- Updated onboarding flow branding from SubscriberNest to AudienceSafe
+- Stripe onboarding page description updated to reference "AudienceSafe" instead of "SubscriberNest"
+- Files changed: `apps/frontend/src/app/onboarding/stripe/page.tsx`
+- **Learnings for future iterations:**
+  - The onboarding flow consists of multiple pages: `/onboarding` (provider selection), `/onboarding/api-key` (API key entry), `/onboarding/oauth-lists` (OAuth list selection), `/onboarding/stripe` (payment setup), and `/onboarding/success` (completion)
+  - The Stripe onboarding page (`apps/frontend/src/app/onboarding/stripe/page.tsx`) contains the billing description that references the brand name
+  - Only one reference to "SubscriberNest" was found in the onboarding flow files
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+  - Browser verification recommended: Navigate to `/onboarding/stripe` to verify the updated text displays correctly
+---
