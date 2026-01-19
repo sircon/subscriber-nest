@@ -38,7 +38,7 @@ import { SyncHistoryService } from './services/sync-history.service';
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'subscriber_nest',
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production',
+      synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
     }),
     HttpModule,
     DatabaseModule,
@@ -100,4 +100,4 @@ import { SyncHistoryService } from './services/sync-history.service';
   ],
   exports: [EmailService],
 })
-export class AppModule {}
+export class AppModule { }
