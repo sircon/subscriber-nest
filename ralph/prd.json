@@ -214,7 +214,7 @@
         "Integration test passes with mock PostUp API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

@@ -16,6 +16,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Customer.io uses Bearer token auth, supports US/EU regions with "eu|" prefix; segment membership returns IDs only (need to fetch profiles separately)
 - Sailthru uses signature-based auth (MD5 hash of secret + sorted values); API key format "apiKey|apiSecret"; subscriber export uses job-based approach
 - MailerLite uses Bearer token auth; API URL `https://connect.mailerlite.com/api`; cursor-based pagination via links.next or meta.next_cursor
+- PostUp uses Basic Auth with compound API key format "username:password"; API URL `https://api.postup.com/api`; lists = publications, recipients = subscribers
 
 ---
 
@@ -174,4 +175,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Status values: active, unsubscribed, bounced, junk, unconfirmed
   - First name may be in fields.name or fields.first_name
   - Tags returned as array of objects with name property
+---
+
+## Mon Jan 19, 2026 - US-011
+- **What was implemented**: Created PostUp ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/postup.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - PostUp uses Basic Auth with compound API key format: "username:password" (colon-separated)
+  - API base URL is `https://api.postup.com/api`
+  - Publications = lists (mailing lists); GET /list endpoint returns all lists
+  - Subscribers = recipients; GET /recipient with listId param to filter by list
+  - Uses limit/offset pagination (limit up to 500 per request)
+  - List details include `recipientCount` for subscriber counts
+  - Status values: A=Active, U=Unsubscribed, H=Hard Bounce, S=Soft Bounce, C=Complaint, P=Pending
+  - Demographics (custom fields) stored in `demographics` object
+  - List IDs referenced by `listId`, recipient IDs by `recipientId`
 ---
