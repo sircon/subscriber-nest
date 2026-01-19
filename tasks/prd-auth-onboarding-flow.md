@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Implement a complete email-based authentication system with onboarding flow for SubscriberNest. Users will authenticate via email verification codes, and new users will be guided through an onboarding process to connect their Email Service Provider (ESP) before accessing the main dashboard. This ensures all users have their ESP configured before using the application.
+Implement a complete email-based authentication system with onboarding flow for AudienceSafe. Users will authenticate via email verification codes, and new users will be guided through an onboarding process to connect their Email Service Provider (ESP) before accessing the main dashboard. This ensures all users have their ESP configured before using the application.
 
 ## Goals
 
@@ -288,7 +288,7 @@ Implement a complete email-based authentication system with onboarding flow for 
 - **Error Handling:** Show clear, user-friendly error messages for invalid codes, rate limits, etc.
 - **Loading States:** Show loading indicators during API calls
 - **Responsive Design:** Ensure all pages work on mobile and desktop
-- **Branding:** Maintain SubscriberNest branding in emails and UI
+- **Branding:** Maintain AudienceSafe branding in emails and UI
 
 ## Technical Considerations
 
@@ -309,7 +309,7 @@ Implement a complete email-based authentication system with onboarding flow for 
 - **Email:**
   - Build templates with react-email
   - Render templates to HTML in backend before sending via Resend
-  - Include SubscriberNest branding in email templates
+  - Include AudienceSafe branding in email templates
 
 - **Security:**
   - Rate limit email code requests to prevent abuse

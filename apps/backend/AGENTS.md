@@ -123,7 +123,8 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - AES-256-GCM provides authenticated encryption (encryption + integrity verification)
 - Encryption format: `iv:authTag:encryptedData` (colon-separated hex strings)
 - EncryptionService uses ConfigService to read ENCRYPTION_KEY from environment and throws error if missing (fail-fast)
-- Convert encryption key to 32-byte buffer using SHA-256 hash for AES-256 key requirement
+- Encryption key is derived using `crypto.pbkdf2Sync()` with salt 'audience-safe-salt' (100000 iterations, SHA-256)
+- **Important**: Changing the salt will change the derived encryption key, meaning data encrypted with the old salt cannot be decrypted with the new salt
 - Always encrypt sensitive data (like API keys) before storing in database
 
 ## Scripts

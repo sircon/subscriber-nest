@@ -1,5 +1,5 @@
 {
-  "project": "SubscriberNest",
+  "project": "AudienceSafe",
   "branchName": "ralph/billing",
   "description": "Billing Module with Stripe Integration - Implement comprehensive billing system with Stripe for usage-based subscriptions, monthly billing calculation, subscription management, and account deletion with 30-day grace period",
   "userStories": [

@@ -1,5 +1,5 @@
 {
-  "project": "SubscriberNest",
+  "project": "AudienceSafe",
   "branchName": "ralph/dashboard",
   "description": "User Dashboard - Build a comprehensive dashboard interface with sidebar navigation, overview cards, sync history table, ESP detail views with subscriber tables, email unmasking, and export functionality",
   "userStories": [

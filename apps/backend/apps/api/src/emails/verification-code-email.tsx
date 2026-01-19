@@ -20,7 +20,7 @@ export const VerificationCodeEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>Your verification code for SubscriberNest</Preview>
+      <Preview>Your verification code for AudienceSafe</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>Your Verification Code</Heading>
@@ -37,7 +37,7 @@ export const VerificationCodeEmail = ({
             If you didn't request this code, you can safely ignore this email.
           </Text>
           <Text style={footer}>
-            © {new Date().getFullYear()} SubscriberNest. All rights reserved.
+            © {new Date().getFullYear()} AudienceSafe. All rights reserved.
           </Text>
         </Container>
       </Body>

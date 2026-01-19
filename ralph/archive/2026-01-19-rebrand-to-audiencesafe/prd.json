@@ -1,0 +1,1010 @@
+{
+  "project": "AudienceSafe",
+  "branchName": "ralph/esp-connectors",
+  "description": "ESP Connectors for 14 Additional Email Service Providers - Add connectors for Campaign Monitor, Email Octopus, Omeda, Ghost, SparkPost, ActiveCampaign, Customer.io, Sailthru, MailerLite, PostUp, Constant Contact, Iterable, SendGrid, and Brevo",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add ESP types to database enum",
+      "description": "As a developer, I need to add all 14 new ESP types to the EspType enum so they can be stored in the database and referenced throughout the system.",
+      "acceptanceCriteria": [
+        "Add all 14 ESP types to EspType enum in esp-connection.entity.ts: CAMPAIGN_MONITOR = 'campaign_monitor', EMAIL_OCTOPUS = 'email_octopus', OMEDA = 'omeda', GHOST = 'ghost', SPARKPOST = 'sparkpost', ACTIVE_CAMPAIGN = 'active_campaign', CUSTOMER_IO = 'customer_io', SAILTHRU = 'sailthru', MAILERLITE = 'mailerlite', POSTUP = 'postup', CONSTANT_CONTACT = 'constant_contact', ITERABLE = 'iterable', SENDGRID = 'sendgrid', BREVO = 'brevo'",
+        "Generate and run database migration to update enum type",
+        "Typecheck passes",
+        "All enum values use kebab-case format matching existing pattern"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Campaign Monitor connector",
+      "description": "As a developer, I need a Campaign Monitor connector that implements IEspConnector to enable subscriber synchronization from Campaign Monitor.",
+      "acceptanceCriteria": [
+        "Create campaign-monitor.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Campaign Monitor API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Email Octopus connector",
+      "description": "As a developer, I need an Email Octopus connector that implements IEspConnector to enable subscriber synchronization from Email Octopus.",
+      "acceptanceCriteria": [
+        "Create email-octopus.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Email Octopus API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Omeda connector",
+      "description": "As a developer, I need an Omeda connector that implements IEspConnector to enable subscriber synchronization from Omeda.",
+      "acceptanceCriteria": [
+        "Create omeda.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Omeda API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Ghost connector",
+      "description": "As a developer, I need a Ghost connector that implements IEspConnector to enable subscriber synchronization from Ghost.",
+      "acceptanceCriteria": [
+        "Create ghost.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Ghost API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create SparkPost connector",
+      "description": "As a developer, I need a SparkPost connector that implements IEspConnector to enable subscriber synchronization from SparkPost.",
+      "acceptanceCriteria": [
+        "Create sparkpost.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock SparkPost API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create ActiveCampaign connector",
+      "description": "As a developer, I need an ActiveCampaign connector that implements IEspConnector to enable subscriber synchronization from ActiveCampaign.",
+      "acceptanceCriteria": [
+        "Create active-campaign.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock ActiveCampaign API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create Customer.io connector",
+      "description": "As a developer, I need a Customer.io connector that implements IEspConnector to enable subscriber synchronization from Customer.io.",
+      "acceptanceCriteria": [
+        "Create customer-io.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Customer.io API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Sailthru connector",
+      "description": "As a developer, I need a Sailthru connector that implements IEspConnector to enable subscriber synchronization from Sailthru.",
+      "acceptanceCriteria": [
+        "Create sailthru.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Sailthru API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create MailerLite connector",
+      "description": "As a developer, I need a MailerLite connector that implements IEspConnector to enable subscriber synchronization from MailerLite.",
+      "acceptanceCriteria": [
+        "Create mailerlite.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock MailerLite API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create PostUp connector",
+      "description": "As a developer, I need a PostUp connector that implements IEspConnector to enable subscriber synchronization from PostUp.",
+      "acceptanceCriteria": [
+        "Create postup.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock PostUp API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Constant Contact connector",
+      "description": "As a developer, I need a Constant Contact connector that implements IEspConnector to enable subscriber synchronization from Constant Contact.",
+      "acceptanceCriteria": [
+        "Create constant-contact.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Constant Contact API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create Iterable connector",
+      "description": "As a developer, I need an Iterable connector that implements IEspConnector to enable subscriber synchronization from Iterable.",
+      "acceptanceCriteria": [
+        "Create iterable.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Iterable API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Create SendGrid connector",
+      "description": "As a developer, I need a SendGrid connector that implements IEspConnector to enable subscriber synchronization from SendGrid.",
+      "acceptanceCriteria": [
+        "Create sendgrid.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock SendGrid API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Create Brevo connector",
+      "description": "As a developer, I need a Brevo connector that implements IEspConnector to enable subscriber synchronization from Brevo.",
+      "acceptanceCriteria": [
+        "Create brevo.connector.ts in apps/backend/libs/core/src/esp/",
+        "Implement all required methods from IEspConnector interface",
+        "Support API key authentication (preferred) or OAuth if required",
+        "Implement validateApiKey() method",
+        "Implement fetchPublications() method",
+        "Implement fetchSubscribers() method",
+        "Implement getSubscriberCount() method",
+        "Handle errors consistently with existing connectors",
+        "Typecheck passes",
+        "Integration test passes with mock Brevo API"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Register all connectors in ESP module",
+      "description": "As a developer, I need all 14 new connectors registered in the ESP module so they can be injected and used by services.",
+      "acceptanceCriteria": [
+        "Import all 14 connector classes in esp.module.ts",
+        "Add all 14 connectors to providers array",
+        "Add all 14 connectors to exports array",
+        "Ensure proper dependency injection setup",
+        "Typecheck passes",
+        "Module compiles without errors"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Update EspConnectionService to support new connectors",
+      "description": "As a developer, I need the EspConnectionService to recognize and use all 14 new connectors when creating connections and syncing subscribers.",
+      "acceptanceCriteria": [
+        "Inject all 14 new connectors in EspConnectionService constructor",
+        "Add all 14 ESP types to getConnector() switch statement",
+        "Ensure each case returns the correct connector instance",
+        "Update error message to reflect all supported ESP types",
+        "Typecheck passes",
+        "All connectors are accessible through the service"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Update SubscriberSyncService to support new connectors",
+      "description": "As a developer, I need the SubscriberSyncService to recognize and use all 14 new connectors when syncing subscribers.",
+      "acceptanceCriteria": [
+        "Inject all 14 new connectors in SubscriberSyncService constructor",
+        "Add all 14 ESP types to getConnector() switch statement",
+        "Ensure each case returns the correct connector instance",
+        "Update error message to reflect all supported ESP types",
+        "Typecheck passes",
+        "All connectors work with sync functionality"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Create integration tests for all connectors",
+      "description": "As a developer, I need integration tests with mock ESP APIs to verify each connector works correctly with the expected API responses.",
+      "acceptanceCriteria": [
+        "Create test file esp-connectors.integration.spec.ts in appropriate test directory",
+        "Create mock API responses for each of the 14 ESPs",
+        "Test validateApiKey() for each connector with valid and invalid keys",
+        "Test fetchPublications() for each connector",
+        "Test fetchSubscribers() for each connector",
+        "Test getSubscriberCount() for each connector",
+        "Test error handling for each connector (401, 403, 429, 500 errors)",
+        "All integration tests pass",
+        "Tests use mock HTTP responses (not real API calls)"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Create centralized ESP configuration for frontend",
+      "description": "As a developer, I need a centralized ESP configuration file that defines all supported ESPs, their display names, descriptions, and OAuth support status to avoid duplication across frontend pages.",
+      "acceptanceCriteria": [
+        "Create esp-config.ts in apps/frontend/src/lib/",
+        "Define EspType type union with all 17 ESP types (3 existing + 14 new)",
+        "Create EspConfig interface with id, name, description, and supportsOAuth fields",
+        "Create espConfigs array with all 17 ESP configurations",
+        "Create helper functions: getEspConfig(), getEspName(), supportsOAuth(), getAllEspNames(), getFormattedEspList()",
+        "Typecheck passes",
+        "All ESPs have proper display names and descriptions"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Update onboarding page to show all ESPs",
+      "description": "As a user, I need to see all 17 supported ESPs on the onboarding page so I can select my email service provider during initial setup.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/onboarding/page.tsx to use esp-config.ts",
+        "Replace hardcoded provider list with espConfigs array",
+        "Update Provider type to use EspType from esp-config",
+        "Update grid layout to accommodate 17 ESPs (use lg:grid-cols-3)",
+        "OAuth buttons show for Kit and Mailchimp only",
+        "All other ESPs show 'Select' button that navigates to API key form",
+        "Typecheck passes",
+        "All 17 ESPs are visible and selectable"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Update new ESP connection page to show all ESPs",
+      "description": "As a user, I need to see all 17 supported ESPs on the new ESP connection page so I can add additional ESP connections from the dashboard.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/dashboard/esp/new/page.tsx to use esp-config.ts",
+        "Replace hardcoded espTypes array with espConfigs from esp-config",
+        "Update EspType type to use EspType from esp-config",
+        "Update grid layout to accommodate 17 ESPs (use lg:grid-cols-3)",
+        "OAuth flow works for Kit and Mailchimp",
+        "API key form works for all other ESPs",
+        "Typecheck passes",
+        "All 17 ESPs are visible and can be connected"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Update API key form page to support all ESPs",
+      "description": "As a user, I need the API key form page to accept all 17 ESP types so I can complete the onboarding or connection flow for any supported ESP.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/onboarding/api-key/page.tsx to use esp-config.ts",
+        "Replace Provider type with EspType from esp-config",
+        "Update provider validation to accept all 17 ESP types",
+        "Use getEspConfig() to get ESP display name and configuration",
+        "OAuth flow works for Kit and Mailchimp",
+        "API key form works for all other ESPs",
+        "Typecheck passes",
+        "All 17 ESPs can complete the API key form flow"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Update homepage FAQ to list all supported ESPs",
+      "description": "As a potential user, I need to see all supported ESPs listed in the homepage FAQ so I know if my email service provider is supported.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/page.tsx to import getFormattedEspList from esp-config",
+        "Update FAQ answer for 'What Email Service Providers do you support?' to use getFormattedEspList()",
+        "FAQ answer dynamically lists all 17 ESPs in a readable format",
+        "Format: 'We support ESP1, ESP2, ESP3, ..., and ESP17'",
+        "Typecheck passes",
+        "FAQ displays all supported ESPs correctly"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Audit and update API versions for all ESP connectors",
+      "description": "As a developer, I need to verify that all 17 ESP connectors are using the latest API versions and update any that are using outdated or legacy APIs.",
+      "acceptanceCriteria": [
+        "Review API documentation for all 17 ESPs to identify current API versions",
+        "Check each connector file for API version references (URLs, headers, version parameters)",
+        "Document current API version used by each connector",
+        "Identify connectors using outdated/legacy API versions",
+        "Create list of connectors that need API version updates",
+        "Typecheck passes",
+        "All connectors documented with their API versions"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Audit complete. Created esp-api-version-audit.md documenting all 17 connectors. Identified connectors needing verification: Email Octopus (potential v1.6 vs v2 mismatch), Kit (v1), Customer.io (v1), SparkPost (v1), Beehiiv (v2). Connectors without version in URL need verification: Email Octopus, Omeda, Ghost, Sailthru, MailerLite, PostUp, Iterable."
+    },
+    {
+      "id": "US-026",
+      "title": "Update beehiiv connector to latest API version",
+      "description": "As a developer, I need to update the beehiiv connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check beehiiv API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in beehiiv.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API documentation link (https://developers.beehiiv.com/docs). Verified v2 is the current API version. All API calls use v2 correctly."
+    },
+    {
+      "id": "US-027",
+      "title": "Update Kit connector to latest API version",
+      "description": "As a developer, I need to update the Kit connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Kit API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in kit.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Updated Kit connector from v1 to v4 API. Added API documentation link (https://developers.kit.com/v4). Verified v4 is the current API version. All API calls use v4 correctly. Backend build passes."
+    },
+    {
+      "id": "US-028",
+      "title": "Update Mailchimp connector to latest API version",
+      "description": "As a developer, I need to update the Mailchimp connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Mailchimp API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in mailchimp.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API documentation link (https://mailchimp.com/developer/marketing/api/). Verified v3.0 is the current API version. All API calls use v3.0 correctly via baseUrl. Backend build passes."
+    },
+    {
+      "id": "US-029",
+      "title": "Update Campaign Monitor connector to latest API version",
+      "description": "As a developer, I need to update the Campaign Monitor connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Campaign Monitor API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in campaign-monitor.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API documentation link and version note. Verified v3.2 is the current API version. All API calls use v3.2 correctly via baseUrl. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-030",
+      "title": "Update Email Octopus connector to latest API version",
+      "description": "As a developer, I need to update the Email Octopus connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Email Octopus API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in email-octopus.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API documentation link and version note. Verified v2 is the current API version. All API calls use v2 correctly via Bearer token authentication. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-031",
+      "title": "Update Omeda connector to latest API version",
+      "description": "As a developer, I need to update the Omeda connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Omeda API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in omeda.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Omeda uses current REST API without versioning in URL. All API calls use the current API correctly. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-032",
+      "title": "Update Ghost connector to latest API version",
+      "description": "As a developer, I need to update the Ghost connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Ghost API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in ghost.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Ghost uses current Admin API without versioning in URL. All API calls use /ghost/api/admin/ correctly. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-033",
+      "title": "Update SparkPost connector to latest API version",
+      "description": "As a developer, I need to update the SparkPost connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check SparkPost API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in sparkpost.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified SparkPost v1 is the current API version (verified January 2026). All API calls use v1 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-034",
+      "title": "Update ActiveCampaign connector to latest API version",
+      "description": "As a developer, I need to update the ActiveCampaign connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check ActiveCampaign API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in active-campaign.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified ActiveCampaign v3 is the current API version (verified January 2026). All API calls use v3 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-035",
+      "title": "Update Customer.io connector to latest API version",
+      "description": "As a developer, I need to update the Customer.io connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Customer.io API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in customer-io.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Customer.io v1 is the current API version (verified January 2026). All API calls use v1 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-036",
+      "title": "Update Sailthru connector to latest API version",
+      "description": "As a developer, I need to update the Sailthru connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Sailthru API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in sailthru.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Sailthru uses current REST API without versioning in URL (no version number in base URL). All API calls use the current API correctly. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-037",
+      "title": "Update MailerLite connector to latest API version",
+      "description": "As a developer, I need to update the MailerLite connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check MailerLite API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in mailerlite.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified MailerLite uses current Connect API without versioning in URL. All API calls use the current API correctly. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-038",
+      "title": "Update PostUp connector to latest API version",
+      "description": "As a developer, I need to update the PostUp connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check PostUp API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in postup.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified PostUp uses current REST API without versioning in URL (no version number in base URL). All API calls use the current API correctly. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-039",
+      "title": "Update Constant Contact connector to latest API version",
+      "description": "As a developer, I need to update the Constant Contact connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Constant Contact API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in constant-contact.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Constant Contact v3 is the current API version (verified January 2026). All API calls use v3 correctly via baseUrl. API documentation links were already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-040",
+      "title": "Update Iterable connector to latest API version",
+      "description": "As a developer, I need to update the Iterable connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Iterable API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in iterable.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Iterable uses current REST API without versioning in URL (no version number in base URL). All API calls use the current API correctly. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-041",
+      "title": "Update SendGrid connector to latest API version",
+      "description": "As a developer, I need to update the SendGrid connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check SendGrid API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in sendgrid.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified SendGrid v3 is the current API version (verified January 2026). All API calls use v3 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-042",
+      "title": "Update Brevo connector to latest API version",
+      "description": "As a developer, I need to update the Brevo connector to use the latest API version and add documentation link.",
+      "acceptanceCriteria": [
+        "Check Brevo API documentation for latest version",
+        "Update API endpoints and version headers if needed",
+        "Add API documentation link as class-level comment in brevo.connector.ts",
+        "Verify all API calls use latest version",
+        "Test connector with updated API version",
+        "Typecheck passes",
+        "Integration tests pass with latest API version"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added API version note. Verified Brevo v3 is the current API version (verified January 2026). All API calls use v3 correctly via baseUrl. API documentation link was already present. Backend build and integration tests pass."
+    },
+    {
+      "id": "US-043",
+      "title": "Update database schema to store list names",
+      "description": "As a developer, I need to update the EspConnection entity to store list names alongside IDs so we can display names in the UI instead of IDs. Note: Different ESPs use different terminology (beehiiv = publications, email octopus = lists, mailchimp = segments, etc.), but we'll use 'lists' as our unified term.",
+      "acceptanceCriteria": [
+        "Add listNames field to esp-connection.entity.ts as jsonb array (string[])",
+        "Create database migration to add listNames column",
+        "Update entity to include listNames: string[] | null",
+        "Migration runs successfully without data loss",
+        "Typecheck passes",
+        "Existing connections continue to work (listNames can be null)",
+        "Note: Keep publicationIds field name for backward compatibility, but listNames stores the display names"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "ESP terminology varies: beehiiv uses 'publications', email octopus uses 'lists', mailchimp uses 'segments', etc. We use 'lists' as our unified UI term."
+    },
+    {
+      "id": "US-044",
+      "title": "Update Publication interface to include metadata",
+      "description": "As a developer, I need to ensure the Publication interface supports all fields needed for displaying list information in the UI. Note: The interface is named 'Publication' for code consistency, but it represents lists/segments/publications depending on the ESP.",
+      "acceptanceCriteria": [
+        "Review Publication interface in esp.interface.ts",
+        "Ensure interface includes id, name, and any other relevant fields",
+        "Verify interface allows additional ESP-specific fields via index signature",
+        "Typecheck passes",
+        "Interface is compatible with all 17 ESP connectors",
+        "Document that this interface represents lists/segments/publications depending on ESP terminology"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "The Publication interface is a code-level abstraction that represents lists (email octopus), segments (mailchimp), publications (beehiiv), etc. We keep the interface name for code consistency."
+    },
+    {
+      "id": "US-045",
+      "title": "Update EspConnectionService to fetch and store list names",
+      "description": "As a developer, I need to update EspConnectionService to fetch lists from ESPs (using fetchPublications() method which returns lists/segments/publications depending on ESP) and store both IDs and names when creating connections.",
+      "acceptanceCriteria": [
+        "Update createConnection() to fetch lists using connector.fetchPublications()",
+        "Extract list IDs and names from fetched publications (note: fetchPublications() returns lists/segments/publications depending on ESP)",
+        "Store publicationIds and listNames in database",
+        "Default to all lists selected if none specified",
+        "Handle errors when fetching lists gracefully",
+        "Typecheck passes",
+        "All 17 ESP connectors work with list fetching (via fetchPublications() method)"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "The fetchPublications() method name is kept for code consistency, but it returns lists/segments/publications depending on ESP. We store the display names in listNames field."
+    },
+    {
+      "id": "US-046",
+      "title": "Update OAuth connection flow to store list names",
+      "description": "As a developer, I need to update the OAuth connection flow to fetch and store list names alongside IDs.",
+      "acceptanceCriteria": [
+        "Update createOAuthConnection() in EspConnectionService to fetch lists using fetchPublicationsWithOAuth()",
+        "Extract list IDs and names from OAuth fetchPublicationsWithOAuth() response (returns lists/segments/publications depending on ESP)",
+        "Store publicationIds and listNames in database",
+        "Default to all lists selected",
+        "Handle errors gracefully",
+        "Typecheck passes",
+        "OAuth flow works for Kit and Mailchimp"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "fetchPublicationsWithOAuth() returns lists/segments/publications depending on ESP terminology, but we store display names in listNames."
+    },
+    {
+      "id": "US-047",
+      "title": "Create API endpoint to fetch available lists for ESP connection",
+      "description": "As a user, I need an API endpoint to fetch available lists from an ESP connection so I can see what's available to sync. Note: Different ESPs call these 'lists', 'segments', 'publications', etc., but the endpoint returns them as 'lists'.",
+      "acceptanceCriteria": [
+        "Create GET /esp-connections/:id/lists endpoint in esp-connection.controller.ts",
+        "Endpoint fetches lists using connector.fetchPublications() or fetchPublicationsWithOAuth() (method names kept for code consistency)",
+        "Returns list of items with id, name, and other metadata (these are lists/segments/publications depending on ESP)",
+        "Handles both API key and OAuth authentication methods",
+        "Returns appropriate error messages for invalid connections or API errors",
+        "Typecheck passes",
+        "Endpoint works for all 17 ESP types"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Endpoint path uses '/lists' for user-facing clarity. The fetchPublications() method returns lists/segments/publications depending on ESP terminology."
+    },
+    {
+      "id": "US-048",
+      "title": "Create API endpoint to update selected lists for ESP connection",
+      "description": "As a user, I need an API endpoint to update which lists are selected for syncing.",
+      "acceptanceCriteria": [
+        "Create PUT /esp-connections/:id/lists endpoint in esp-connection.controller.ts",
+        "Accept request body with selectedListIds: string[]",
+        "Validate that all provided IDs exist in available lists",
+        "Update publicationIds and listNames in database (publicationIds kept for backward compatibility)",
+        "Return updated connection object",
+        "Handle errors appropriately (invalid IDs, connection not found, etc.)",
+        "Typecheck passes",
+        "Endpoint works for all 17 ESP types"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Endpoint uses '/lists' for clarity. Request body uses selectedListIds. Database still uses publicationIds field name for backward compatibility."
+    },
+    {
+      "id": "US-049",
+      "title": "Update frontend API client to support list endpoints",
+      "description": "As a developer, I need to add API client methods for fetching and updating lists.",
+      "acceptanceCriteria": [
+        "Add getLists() method to espConnectionApi in apps/frontend/src/lib/api.ts",
+        "Add updateSelectedLists() method to espConnectionApi",
+        "Add TypeScript interfaces for List (or reuse Publication interface) and UpdateListsRequest",
+        "Handle errors appropriately",
+        "Typecheck passes",
+        "API client methods work correctly",
+        "Note: May reuse Publication interface from backend, but expose as 'List' in frontend for clarity"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Frontend uses 'lists' terminology. Created List interface and UpdateSelectedListsRequest interface. Added getLists() and updateSelectedLists() methods to espConnectionApi."
+    },
+    {
+      "id": "US-050",
+      "title": "Create list selection component for frontend",
+      "description": "As a user, I need a UI component to select which lists to sync from an ESP connection. Note: Different ESPs call these 'lists', 'segments', 'publications', etc., but the UI will display them as 'lists'.",
+      "acceptanceCriteria": [
+        "Create ListSelector component in apps/frontend/src/components/",
+        "Component displays list of available lists with checkboxes",
+        "Shows list name and subscriber count if available",
+        "Supports selecting/deselecting individual lists",
+        "Includes 'Select All' / 'Deselect All' functionality",
+        "Default state: all lists selected",
+        "Component is accessible and follows design system",
+        "Typecheck passes",
+        "Component uses 'lists' terminology in UI labels and text"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Component named ListSelector and uses 'lists' terminology in UI, even though backend may call them publications/segments depending on ESP."
+    },
+    {
+      "id": "US-051",
+      "title": "Update onboarding flow to include list selection",
+      "description": "As a user, I need to select which lists to sync during the onboarding flow.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/onboarding/api-key/page.tsx to fetch lists after API key validation",
+        "Add ListSelector component after successful API key validation",
+        "Show loading state while fetching lists",
+        "Default to all lists selected",
+        "Save selected lists when creating connection",
+        "Handle errors gracefully (no lists found, API errors, etc.)",
+        "Typecheck passes",
+        "Onboarding flow works for all 17 ESP types",
+        "UI uses 'lists' terminology throughout"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Backend fetchPublications() returns lists/segments/publications depending on ESP."
+    },
+    {
+      "id": "US-052",
+      "title": "Update new ESP connection page to include list selection",
+      "description": "As a user, I need to select which lists to sync when adding a new ESP connection from the dashboard.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/dashboard/esp/new/page.tsx to fetch lists after API key validation",
+        "Add ListSelector component after successful API key validation",
+        "Show loading state while fetching lists",
+        "Default to all lists selected",
+        "Save selected lists when creating connection",
+        "Handle errors gracefully",
+        "Typecheck passes",
+        "New connection flow works for all 17 ESP types",
+        "UI uses 'lists' terminology throughout"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Backend fetchPublications() returns lists/segments/publications depending on ESP."
+    },
+    {
+      "id": "US-053",
+      "title": "Update ESP detail page to show list names and allow selection",
+      "description": "As a user, I need to see which lists are being synced and be able to change the selection on the ESP detail page.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/dashboard/esp/[id]/page.tsx to display list names instead of IDs",
+        "Add section showing currently selected lists with their names",
+        "Add 'Manage Lists' button/section to update selection",
+        "Use ListSelector component for updating selection",
+        "Fetch available lists when user wants to update",
+        "Save updated selection via API",
+        "Show success/error messages",
+        "Typecheck passes",
+        "UI displays list names correctly",
+        "UI uses 'lists' terminology throughout"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Displays names from listNames field, falls back to IDs if names not available."
+    },
+    {
+      "id": "US-054",
+      "title": "Update SubscriberSyncService to sync multiple selected lists",
+      "description": "As a developer, I need to update SubscriberSyncService to sync subscribers from all selected lists, not just a single publicationId. Note: publicationIds array contains list IDs (which may be called lists, segments, publications depending on ESP).",
+      "acceptanceCriteria": [
+        "Update sync logic to iterate over publicationIds array instead of single publicationId",
+        "Sync subscribers from each selected list",
+        "Handle errors per list (continue syncing other lists if one fails)",
+        "Update sync history to track which lists were synced",
+        "Aggregate subscriber counts across all lists",
+        "Typecheck passes",
+        "Sync works correctly for connections with multiple selected lists",
+        "Code comments clarify that publicationIds contains list IDs (terminology varies by ESP)"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "publicationIds field name is kept for backward compatibility, but it contains list IDs. Different ESPs call them lists/segments/publications."
+    },
+    {
+      "id": "US-055",
+      "title": "Update dashboard to display list names",
+      "description": "As a user, I need to see list names instead of IDs throughout the dashboard.",
+      "acceptanceCriteria": [
+        "Update apps/frontend/src/app/dashboard/page.tsx to show list names",
+        "Update any other dashboard components that display list information",
+        "Handle cases where listNames might be null (fallback to IDs)",
+        "Display names in a user-friendly format",
+        "Typecheck passes",
+        "Dashboard correctly displays list names",
+        "UI uses 'lists' terminology throughout"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Displays names from listNames field, falls back to IDs if names not available."
+    },
+    {
+      "id": "US-056",
+      "title": "Update OAuth flow to include list selection",
+      "description": "As a user, I need to select which lists to sync after completing OAuth authentication. Note: Mailchimp calls these 'segments', but we display them as 'lists' in the UI.",
+      "acceptanceCriteria": [
+        "Update OAuth callback flow to fetch lists after token exchange (using fetchPublicationsWithOAuth())",
+        "Show ListSelector component after OAuth success",
+        "Default to all lists selected",
+        "Save selected lists when creating OAuth connection",
+        "Handle errors gracefully",
+        "Typecheck passes",
+        "OAuth flow works for Kit and Mailchimp with list selection",
+        "UI uses 'lists' terminology throughout"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "UI uses 'lists' terminology. Mailchimp returns segments via fetchPublicationsWithOAuth(), but we display them as lists. OAuth callback now redirects to list selection page where users can choose which lists to sync before completing the connection."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Build a comprehensive dashboard interface for SubscriberNest that provides users with a centralized view of their ESP connections, subscriber data, and sync history. The dashboard will feature a sidebar navigation with ESP list management, a main content area with overview cards and sync history, and detailed ESP views with subscriber tables. The design will be inspired by shadcn's dashboard-01 block pattern, providing a modern and intuitive user experience.
+Build a comprehensive dashboard interface for AudienceSafe that provides users with a centralized view of their ESP connections, subscriber data, and sync history. The dashboard will feature a sidebar navigation with ESP list management, a main content area with overview cards and sync history, and detailed ESP views with subscriber tables. The design will be inspired by shadcn's dashboard-01 block pattern, providing a modern and intuitive user experience.
 
 ## Goals
 

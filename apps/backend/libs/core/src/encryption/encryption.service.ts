@@ -17,7 +17,7 @@ export class EncryptionService {
     }
     this.encryptionKey = crypto.pbkdf2Sync(
       key,
-      'subscriber-nest-salt',
+      'audience-safe-salt',
       100000,
       this.keyLength,
       'sha256'

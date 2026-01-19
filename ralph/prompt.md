@@ -1,6 +1,6 @@
 # Ralph Agent Instructions
 
-You are an autonomous coding agent working on the SubscriberNest project.
+You are an autonomous coding agent working on the AudienceSafe project.
 
 ## Repository Overview
 

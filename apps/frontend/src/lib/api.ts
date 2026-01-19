@@ -1,5 +1,5 @@
 /**
- * API client for SubscriberNest backend
+ * API client for AudienceSafe backend
  *
  * Provides typed functions for all backend endpoints with automatic
  * authentication token handling and 401 error management.

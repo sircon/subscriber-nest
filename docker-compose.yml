@@ -2,11 +2,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16.6
-    container_name: postgres_subscriber_nest
+    container_name: postgres_audience_safe
     environment:
       POSTGRES_USER: ${DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      POSTGRES_DB: ${DATABASE_NAME:-subscriber_nest}
+      POSTGRES_DB: ${DATABASE_NAME:-audience_safe}
     ports:
       - "${DATABASE_PORT:-5434}:5432"
     volumes:
@@ -19,12 +19,12 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - subscriber_nest_network
+      - audience_safe_network
 
   # Redis for BullMQ queues
   redis:
     image: redis:7-alpine
-    container_name: redis_subscriber_nest
+    container_name: redis_audience_safe
     ports:
       - "${REDIS_PORT:-6380}:6379"
     volumes:
@@ -37,14 +37,14 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - subscriber_nest_network
+      - audience_safe_network
 
   # Backend API Service
   api:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile.api
-    container_name: api_subscriber_nest
+    container_name: api_audience_safe
     environment:
       # Server
       NODE_ENV: ${NODE_ENV:-production}
@@ -55,7 +55,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: ${DATABASE_USER:-postgres}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      DATABASE_NAME: ${DATABASE_NAME:-subscriber_nest}
+      DATABASE_NAME: ${DATABASE_NAME:-audience_safe}
       DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
 
       # Redis
@@ -71,7 +71,7 @@ services:
 
       # Resend Email
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@nest.miguelncorreia.com}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@audiencesafe.com}
 
       # OAuth (optional)
       KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
@@ -95,7 +95,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - subscriber_nest_network
+      - audience_safe_network
     healthcheck:
       test:
         [
@@ -114,7 +114,7 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile.worker
-    container_name: worker_subscriber_nest
+    container_name: worker_audience_safe
     environment:
       # Server
       NODE_ENV: ${NODE_ENV:-production}
@@ -125,7 +125,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: ${DATABASE_USER:-postgres}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      DATABASE_NAME: ${DATABASE_NAME:-subscriber_nest}
+      DATABASE_NAME: ${DATABASE_NAME:-audience_safe}
       DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
 
       # Redis
@@ -141,7 +141,7 @@ services:
 
       # Resend Email
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@nest.miguelncorreia.com}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@audiencesafe.com}
 
       # OAuth (optional)
       KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
@@ -166,7 +166,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - subscriber_nest_network
+      - audience_safe_network
     healthcheck:
       test:
         [
@@ -187,7 +187,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
-    container_name: frontend_subscriber_nest
+    container_name: frontend_audience_safe
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
@@ -197,7 +197,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - subscriber_nest_network
+      - audience_safe_network
     healthcheck:
       test:
         [
@@ -218,5 +218,5 @@ volumes:
     driver: local
 
 networks:
-  subscriber_nest_network:
+  audience_safe_network:
     driver: bridge

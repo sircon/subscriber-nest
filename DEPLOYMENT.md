@@ -1,6 +1,6 @@
-# Deployment Guide for SubscriberNest
+# Deployment Guide for AudienceSafe
 
-This guide covers deploying SubscriberNest to production using Docker Compose, specifically for Coolify.
+This guide covers deploying AudienceSafe to production using Docker Compose, specifically for Coolify.
 
 ## Architecture Overview
 
@@ -62,21 +62,21 @@ docker-compose ps
 
 ### PostgreSQL
 
-- **Container:** `postgres_subscriber_nest`
+- **Container:** `postgres_audience_safe`
 - **Port:** 5432 (internal), configurable via `DATABASE_PORT` (default: 5434)
 - **Data:** Persisted in `postgres_data` volume
 - **Health Check:** Checks if PostgreSQL is ready to accept connections
 
 ### Redis
 
-- **Container:** `redis_subscriber_nest`
+- **Container:** `redis_audience_safe`
 - **Port:** 6379 (internal), configurable via `REDIS_PORT` (default: 6380)
 - **Data:** Persisted in `redis_data` volume with AOF enabled
 - **Health Check:** Pings Redis server
 
 ### API Service
 
-- **Container:** `api_subscriber_nest`
+- **Container:** `api_audience_safe`
 - **Port:** 4000 (configurable via `PORT`)
 - **Dockerfile:** `apps/backend/Dockerfile.api`
 - **Health Check:** HTTP GET to `/health` endpoint
@@ -84,7 +84,7 @@ docker-compose ps
 
 ### Worker Service
 
-- **Container:** `worker_subscriber_nest`
+- **Container:** `worker_audience_safe`
 - **Port:** 4001 (configurable via `WORKER_PORT`)
 - **Dockerfile:** `apps/backend/Dockerfile.worker`
 - **Health Check:** HTTP GET to `/health` endpoint
@@ -92,7 +92,7 @@ docker-compose ps
 
 ### Frontend Service
 
-- **Container:** `frontend_subscriber_nest`
+- **Container:** `frontend_audience_safe`
 - **Port:** 3000 (configurable via `FRONTEND_PORT`)
 - **Dockerfile:** `apps/frontend/Dockerfile`
 - **Health Check:** HTTP GET to `/api/health` endpoint
@@ -122,7 +122,7 @@ Set environment variables in Coolify's UI. They will be passed to containers at 
 
 - `DATABASE_USER` - PostgreSQL username (default: `postgres`)
 - `DATABASE_PASSWORD` - PostgreSQL password
-- `DATABASE_NAME` - Database name (default: `subscriber_nest`)
+- `DATABASE_NAME` - Database name (default: `audience_safe`)
 - `DATABASE_SYNCHRONIZE` - Set to `false` in production
 - `REDIS_PASSWORD` - Redis password (optional, leave empty if not using)
 - `STRIPE_SECRET_KEY` - Stripe secret key (required)
@@ -262,10 +262,10 @@ api:
 
 ```bash
 # Create backup
-docker-compose exec postgres pg_dump -U postgres subscriber_nest > backup.sql
+docker-compose exec postgres pg_dump -U postgres audience_safe > backup.sql
 
 # Restore backup
-docker-compose exec -T postgres psql -U postgres subscriber_nest < backup.sql
+docker-compose exec -T postgres psql -U postgres audience_safe < backup.sql
 ```
 
 ### Redis Backup
@@ -273,7 +273,7 @@ docker-compose exec -T postgres psql -U postgres subscriber_nest < backup.sql
 Redis data is persisted in the `redis_data` volume. Backup the volume:
 
 ```bash
-docker run --rm -v subscriber_nest_redis_data:/data -v $(pwd):/backup alpine tar czf /backup/redis-backup.tar.gz /data
+docker run --rm -v audience_safe_redis_data:/data -v $(pwd):/backup alpine tar czf /backup/redis-backup.tar.gz /data
 ```
 
 ## Troubleshooting

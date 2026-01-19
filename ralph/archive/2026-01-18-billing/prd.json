@@ -1,5 +1,5 @@
 {
-  "project": "SubscriberNest",
+  "project": "AudienceSafe",
   "branchName": "ralph/kit-mailchimp-oauth",
   "description": "Kit and Mailchimp OAuth Integration - Integrate Kit and Mailchimp ESPs using OAuth 2.0 authorization code flow, allowing users to connect their accounts without manually entering API keys. The system will support both OAuth-based connections (Kit, Mailchimp) and API key-based connections (Beehiiv) simultaneously.",
   "userStories": [

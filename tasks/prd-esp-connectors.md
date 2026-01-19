@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Add connectors for 14 additional Email Service Providers (ESPs) to expand SubscriberNest's integration capabilities. Each connector will implement the `IEspConnector` interface to enable subscriber synchronization, publication fetching, and API key/OAuth validation. Connectors will prefer API key authentication when supported by the ESP, with OAuth as a fallback option.
+Add connectors for 14 additional Email Service Providers (ESPs) to expand AudienceSafe's integration capabilities. Each connector will implement the `IEspConnector` interface to enable subscriber synchronization, publication fetching, and API key/OAuth validation. Connectors will prefer API key authentication when supported by the ESP, with OAuth as a fallback option.
 
 ## Goals
 

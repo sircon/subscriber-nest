@@ -1,0 +1,2 @@
+# Ralph Progress Log
+Started: [Date will be set when ralph.sh runs]

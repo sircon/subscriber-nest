@@ -36,7 +36,7 @@ function Navigation() {
             <Database className="w-4 h-4 text-primary" />
           </div>
           <span className="font-semibold text-lg tracking-tight">
-            SubscriberNest
+            AudienceSafe
           </span>
         </a>
         <div className="hidden md:flex items-center gap-8">
@@ -121,7 +121,7 @@ function HeroSection() {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 bg-secondary/50 rounded-md text-xs text-muted-foreground">
-                      subscribernest.com
+                      audiencesafe.com
                     </div>
                   </div>
                   <div className="w-[52px]" />
@@ -387,7 +387,7 @@ function FAQSection() {
     {
       question: 'Do you offer refunds?',
       answer:
-        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment, no questions asked. We're confident you'll love SubscriberNest, but we want you to feel safe trying it out.",
+        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment, no questions asked. We're confident you'll love AudienceSafe, but we want you to feel safe trying it out.",
     },
     {
       question: 'Is there a free tier?',
@@ -460,7 +460,7 @@ function Footer() {
           <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
             <Database className="w-3 h-3 text-primary" />
           </div>
-          <span className="font-medium">SubscriberNest</span>
+          <span className="font-medium">AudienceSafe</span>
         </div>
 
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -476,7 +476,7 @@ function Footer() {
         </div>
 
         <div className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} SubscriberNest. All rights reserved.
+          © {new Date().getFullYear()} AudienceSafe. All rights reserved.
         </div>
       </div>
     </footer>
