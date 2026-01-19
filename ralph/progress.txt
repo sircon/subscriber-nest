@@ -144,3 +144,16 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - The prompt.md file is the main instruction file for Ralph agents and should be updated when project branding changes
   - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
 ---
+
+## 2026-01-19 - US-012
+- Updated encryption service salt from SubscriberNest to AudienceSafe
+- Encryption service salt updated from 'subscriber-nest-salt' to 'audience-safe-salt' in pbkdf2Sync function
+- Verified encryption/decryption works correctly with new salt using test script
+- Files changed: `apps/backend/libs/core/src/encryption/encryption.service.ts`
+- **Learnings for future iterations:**
+  - Encryption service is located at `apps/backend/libs/core/src/encryption/encryption.service.ts`
+  - The salt is used in `crypto.pbkdf2Sync()` to derive the encryption key from the ENCRYPTION_KEY environment variable
+  - Changing the salt will change the derived encryption key, meaning data encrypted with the old salt cannot be decrypted with the new salt (this is expected during rebranding)
+  - Encryption/decryption functionality can be verified by creating a simple test script that encrypts and decrypts sample data
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---
