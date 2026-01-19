@@ -17,3 +17,15 @@ Started: Mon Jan 19 08:58:03 CET 2026
   - The dev server runs on port 3000 and can be verified by checking the HTML output
   - All changes must pass both TypeScript typecheck (via `turbo run build --filter=frontend`) and ESLint (via `turbo run lint --filter=frontend`)
 ---
+
+## Mon Jan 19 09:01:52 CET 2026 - US-002
+- Rewrote hero subheadline to emphasize audience safety and protection messaging
+- Updated subheadline to: "Your audience is your most valuable asset—keep it safe. We sync daily to maintain a secure backup of your updated list. Download anytime or import to another ESP if yours has issues. Your subscribers, always protected."
+- Emphasized audience as most valuable asset with safety messaging
+- Included backup capability and download/import functionality
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - The subheadline text should be concise and impactful while covering all key value propositions
+  - Safety/protection messaging works well with phrases like "keep it safe" and "always protected"
+  - Auto-fixed linting issues in generated files (next-env.d.ts) don't need to be tracked separately
+---
