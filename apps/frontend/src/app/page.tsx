@@ -384,6 +384,11 @@ function FAQSection() {
         'Yes! Export your complete subscriber list anytime in CSV, JSON, or Excel format. There are no limits on exports. This is your data — we make it easy to use however you need.',
     },
     {
+      question: 'How does the backup and download feature protect my audience?',
+      answer:
+        'Every day, we automatically sync and create a secure backup of your updated subscriber list. You can download this backup anytime—think of it as insurance for your most valuable asset. If your ESP has technical issues, goes down, or you need to switch providers, you always have a current copy ready to import. Your audience is protected, no matter what happens with your ESP.',
+    },
+    {
       question: 'What if my ESP changes or I want to switch?',
       answer:
         "No problem. You can connect multiple ESPs and switch between them anytime. We keep historical data so you don't lose anything when transitioning between providers.",
