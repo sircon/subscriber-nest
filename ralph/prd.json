@@ -804,7 +804,7 @@
         "All 17 ESP connectors work with list fetching (via fetchPublications() method)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "The fetchPublications() method name is kept for code consistency, but it returns lists/segments/publications depending on ESP. We store the display names in listNames field."
     },
     {

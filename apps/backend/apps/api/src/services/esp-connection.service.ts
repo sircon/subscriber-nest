@@ -126,12 +126,38 @@ export class EspConnectionService {
 
     const encryptedApiKey = this.encryptionService.encrypt(apiKey);
 
+    // Fetch all available lists (publications/segments/lists depending on ESP)
+    // Note: fetchPublications() returns lists/segments/publications depending on ESP terminology
+    let publicationIds: string[] | null = null;
+    let listNames: string[] | null = null;
+
+    try {
+      const publications = await connector.fetchPublications(apiKey);
+      
+      if (publications && publications.length > 0) {
+        // Extract IDs and names from fetched publications
+        // Default to all lists selected if none specified
+        publicationIds = publications.map((pub) => pub.id);
+        listNames = publications.map((pub) => pub.name || '');
+      }
+    } catch (error: any) {
+      // Handle errors gracefully - log but don't fail connection creation
+      // Connection will be created without list names, which can be fetched later
+      console.error(
+        `Failed to fetch lists for ESP connection (${espTypeEnum}):`,
+        error.message
+      );
+      // Continue with null values - user can update lists later
+    }
+
     const espConnection = this.espConnectionRepository.create({
       userId,
       espType: espTypeEnum,
       authMethod: AuthMethod.API_KEY,
       encryptedApiKey,
-      publicationId,
+      publicationId, // Keep for backward compatibility
+      publicationIds, // Array of all list IDs (default: all selected)
+      listNames, // Array of list display names
       status: EspConnectionStatus.ACTIVE,
       lastValidatedAt: new Date(),
     });

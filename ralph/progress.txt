@@ -583,3 +583,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format: "API Version: v3 (current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-045
+- **What was implemented**: Updated EspConnectionService.createConnection() to fetch and store list names alongside publication IDs
+- **Files changed**:
+  - `apps/backend/apps/api/src/services/esp-connection.service.ts` - Updated createConnection() method to fetch lists using connector.fetchPublications(), extract IDs and names, and store both publicationIds and listNames in database
+- **Learnings for future iterations:**
+  - fetchPublications() method returns lists/segments/publications depending on ESP terminology, but all conform to the Publication interface with id and name fields
+  - Error handling is graceful - if fetchPublications() fails, connection creation continues with null listNames (user can update lists later)
+  - Default behavior: all lists are selected (publicationIds contains all IDs from fetchPublications())
+  - The publicationId parameter is kept for backward compatibility, but publicationIds (array) and listNames (array) are the new fields used for multiple list support
+  - All 17 ESP connectors implement fetchPublications() method, so this works for all ESP types
+  - Backend build passes with the changes
+---
