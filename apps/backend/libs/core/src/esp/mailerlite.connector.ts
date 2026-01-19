@@ -12,6 +12,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * The API provides access to groups (publications) and their subscribers.
  *
  * API Documentation: https://developers.mailerlite.com/docs
+ * API Version: Current Connect API (no versioning in URL, current as of January 2026)
  */
 @Injectable()
 export class MailerLiteConnector implements IEspConnector {

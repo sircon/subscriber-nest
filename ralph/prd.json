@@ -669,8 +669,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API version note. Verified MailerLite uses current Connect API without versioning in URL. All API calls use the current API correctly. Backend build and integration tests pass."
     },
     {
       "id": "US-038",
