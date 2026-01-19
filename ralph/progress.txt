@@ -8,7 +8,8 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - PostgreSQL enums use `ALTER TYPE ... ADD VALUE IF NOT EXISTS` for adding new values (cannot remove values)
 - Backend lint command has a pre-existing ESLint config issue (glob patterns ignoring all files)
 - Existing connectors use HttpService from @nestjs/axios with firstValueFrom() from rxjs for API calls
-- ESP auth varies: Basic Auth (Campaign Monitor), API key in query params (Email Octopus), Bearer token, etc.
+- ESP auth varies: Basic Auth (Campaign Monitor), API key in query params (Email Octopus), custom headers (Omeda), Bearer token, etc.
+- Some ESPs use compound API keys (e.g., Omeda: "client:appid:inputid") - parse to extract components
 
 ---
 
@@ -50,4 +51,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Subscriber counts available in list details via `counts.subscribed`
   - Status values: SUBSCRIBED, UNSUBSCRIBED, PENDING, BOUNCED
   - Custom fields stored in `fields` object (FirstName, LastName, etc.)
+---
+
+## Mon Jan 19, 2026 - US-004
+- **What was implemented**: Created Omeda ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/omeda.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Omeda is an audience development platform for media companies
+  - API key format: "client:appid:inputid" - must be parsed to extract components
+  - Base URL includes client identifier: `https://ows.omeda.com/webservices/rest/{client}`
+  - Auth headers: `x-omeda-appid` for app ID, optional `x-omeda-inputid` for input ID
+  - Products endpoint: GET /products/* (asterisk is required in URLs)
+  - Audience query: POST /audience/query/* with ProductIds filter
+  - Email status codes: A=Active, O=Opt-out, U=Unsubscribed, B=Bounced, I=Inactive
+  - Supports up to 500 records per query with Pagination.Offset/Limit
+  - Use CountOnly: true in query payload for efficient subscriber counts
 ---
