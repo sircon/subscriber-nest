@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
   getHello(): string {
-    return 'SubscriberNest API';
+    return 'AudienceSafe API';
   }
 
   health(): { status: string } {
