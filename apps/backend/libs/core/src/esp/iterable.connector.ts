@@ -11,6 +11,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * Iterable uses API key authentication via the `Api-Key` header.
  *
  * API Documentation: https://api.iterable.com/api/docs
+ * API Version: Current REST API (no versioning in URL, current as of January 2026)
  */
 @Injectable()
 export class IterableConnector implements IEspConnector {
