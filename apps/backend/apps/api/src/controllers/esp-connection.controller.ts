@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Delete,
   Body,
   Param,
@@ -37,6 +38,7 @@ import { OAuthConfigService } from '@app/core/oauth/oauth-config.service';
 import { OAuthTokenRefreshService } from '@app/core/oauth/oauth-token-refresh.service';
 import { EncryptionService } from '@app/core/encryption/encryption.service';
 import { CreateEspConnectionDto } from '../dto/create-esp-connection.dto';
+import { UpdateSelectedListsDto } from '../dto/update-selected-lists.dto';
 import {
   EspConnection,
   EspSyncStatus,
@@ -336,16 +338,10 @@ export class EspConnectionController {
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
 
-      // Redirect based on whether this is an onboarding flow
-      let successUrl: string;
-      if (isOnboarding) {
-        // Redirect to Stripe onboarding step
-        successUrl = `${frontendUrl}/onboarding/stripe`;
-      } else {
-        // Redirect to ESP detail page
-        successUrl = `${frontendUrl}/dashboard/esp/${savedConnection.id}?oauth=success`;
-      }
-      res.redirect(successUrl);
+      // Redirect to list selection page for OAuth connections
+      // User will select lists, then be redirected to appropriate next page
+      const listSelectionUrl = `${frontendUrl}/onboarding/oauth-lists?connectionId=${savedConnection.id}&isOnboarding=${isOnboarding ? 'true' : 'false'}`;
+      res.redirect(listSelectionUrl);
     } catch (error) {
       // Handle BadRequestException (400 - invalid provider, missing params, invalid state)
       if (error instanceof BadRequestException) {
@@ -412,6 +408,88 @@ export class EspConnectionController {
       // Handle other errors as 500
       throw new InternalServerErrorException(
         'Failed to retrieve subscriber count'
+      );
+    }
+  }
+
+  @Get(':id/lists')
+  async getLists(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<Array<{ id: string; name: string; [key: string]: any }>> {
+    try {
+      // Fetch available lists from ESP API (validates ownership internally)
+      // Note: fetchAvailableLists() returns lists/segments/publications depending on ESP terminology
+      const lists = await this.espConnectionService.fetchAvailableLists(
+        id,
+        user.id
+      );
+      return lists;
+    } catch (error) {
+      // Handle NotFoundException from service (404 - connection not found)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (400 - missing API key/token, invalid auth method, or 403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        if (error.message.includes('permission') || error.message.includes('own')) {
+          throw new ForbiddenException(
+            'You do not have permission to access this ESP connection'
+          );
+        }
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve available lists'
+      );
+    }
+  }
+
+  @Put(':id/lists')
+  @HttpCode(HttpStatus.OK)
+  async updateSelectedLists(
+    @Param('id') id: string,
+    @Body() updateSelectedListsDto: UpdateSelectedListsDto,
+    @CurrentUser() user: User
+  ): Promise<Omit<EspConnection, 'encryptedApiKey' | 'encryptedAccessToken' | 'encryptedRefreshToken'>> {
+    try {
+      // Update selected lists (validates ownership and list IDs internally)
+      const updatedConnection = await this.espConnectionService.updateSelectedLists(
+        id,
+        updateSelectedListsDto.selectedListIds,
+        user.id
+      );
+
+      // Return connection without encrypted fields
+      const {
+        encryptedApiKey,
+        encryptedAccessToken,
+        encryptedRefreshToken,
+        ...connectionResponse
+      } = updatedConnection;
+      return connectionResponse;
+    } catch (error) {
+      // Handle NotFoundException from service (404 - connection not found)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (400 - invalid list IDs, missing API key/token, invalid auth method, or 403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        if (error.message.includes('permission') || error.message.includes('own')) {
+          throw new ForbiddenException(
+            'You do not have permission to access this ESP connection'
+          );
+        }
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to update selected lists'
       );
     }
   }

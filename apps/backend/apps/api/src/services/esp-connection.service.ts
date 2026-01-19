@@ -3,6 +3,22 @@ import { BeehiivConnector } from '@app/core/esp/beehiiv.connector';
 import { KitConnector } from '@app/core/esp/kit.connector';
 import { MailchimpConnector } from '@app/core/esp/mailchimp.connector';
 import { IEspConnector } from '@app/core/esp/esp-connector.interface';
+import { Publication } from '@app/core/esp/esp.interface';
+// New connectors
+import { ActiveCampaignConnector } from '@app/core/esp/active-campaign.connector';
+import { BrevoConnector } from '@app/core/esp/brevo.connector';
+import { CampaignMonitorConnector } from '@app/core/esp/campaign-monitor.connector';
+import { ConstantContactConnector } from '@app/core/esp/constant-contact.connector';
+import { CustomerIoConnector } from '@app/core/esp/customer-io.connector';
+import { EmailOctopusConnector } from '@app/core/esp/email-octopus.connector';
+import { GhostConnector } from '@app/core/esp/ghost.connector';
+import { IterableConnector } from '@app/core/esp/iterable.connector';
+import { MailerLiteConnector } from '@app/core/esp/mailerlite.connector';
+import { OmedaConnector } from '@app/core/esp/omeda.connector';
+import { PostUpConnector } from '@app/core/esp/postup.connector';
+import { SailthruConnector } from '@app/core/esp/sailthru.connector';
+import { SendGridConnector } from '@app/core/esp/sendgrid.connector';
+import { SparkPostConnector } from '@app/core/esp/sparkpost.connector';
 import {
   EspConnection,
   EspConnectionStatus,
@@ -26,20 +42,66 @@ export class EspConnectionService {
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
     private encryptionService: EncryptionService,
+    // Existing connectors
     private beehiivConnector: BeehiivConnector,
     private kitConnector: KitConnector,
     private mailchimpConnector: MailchimpConnector,
+    // New connectors
+    private activeCampaignConnector: ActiveCampaignConnector,
+    private brevoConnector: BrevoConnector,
+    private campaignMonitorConnector: CampaignMonitorConnector,
+    private constantContactConnector: ConstantContactConnector,
+    private customerIoConnector: CustomerIoConnector,
+    private emailOctopusConnector: EmailOctopusConnector,
+    private ghostConnector: GhostConnector,
+    private iterableConnector: IterableConnector,
+    private mailerLiteConnector: MailerLiteConnector,
+    private omedaConnector: OmedaConnector,
+    private postUpConnector: PostUpConnector,
+    private sailthruConnector: SailthruConnector,
+    private sendGridConnector: SendGridConnector,
+    private sparkPostConnector: SparkPostConnector,
     private oauthTokenRefreshService: OAuthTokenRefreshService
   ) { }
 
   private getConnector(espType: EspType): IEspConnector {
     switch (espType) {
+      // Existing connectors
       case EspType.BEEHIIV:
         return this.beehiivConnector;
       case EspType.KIT:
         return this.kitConnector;
       case EspType.MAILCHIMP:
         return this.mailchimpConnector;
+      // New connectors
+      case EspType.ACTIVE_CAMPAIGN:
+        return this.activeCampaignConnector;
+      case EspType.BREVO:
+        return this.brevoConnector;
+      case EspType.CAMPAIGN_MONITOR:
+        return this.campaignMonitorConnector;
+      case EspType.CONSTANT_CONTACT:
+        return this.constantContactConnector;
+      case EspType.CUSTOMER_IO:
+        return this.customerIoConnector;
+      case EspType.EMAIL_OCTOPUS:
+        return this.emailOctopusConnector;
+      case EspType.GHOST:
+        return this.ghostConnector;
+      case EspType.ITERABLE:
+        return this.iterableConnector;
+      case EspType.MAILERLITE:
+        return this.mailerLiteConnector;
+      case EspType.OMEDA:
+        return this.omedaConnector;
+      case EspType.POSTUP:
+        return this.postUpConnector;
+      case EspType.SAILTHRU:
+        return this.sailthruConnector;
+      case EspType.SENDGRID:
+        return this.sendGridConnector;
+      case EspType.SPARKPOST:
+        return this.sparkPostConnector;
       default:
         throw new BadRequestException(`Unsupported ESP type: ${espType}`);
     }
@@ -65,12 +127,38 @@ export class EspConnectionService {
 
     const encryptedApiKey = this.encryptionService.encrypt(apiKey);
 
+    // Fetch all available lists (publications/segments/lists depending on ESP)
+    // Note: fetchPublications() returns lists/segments/publications depending on ESP terminology
+    let publicationIds: string[] | null = null;
+    let listNames: string[] | null = null;
+
+    try {
+      const publications = await connector.fetchPublications(apiKey);
+      
+      if (publications && publications.length > 0) {
+        // Extract IDs and names from fetched publications
+        // Default to all lists selected if none specified
+        publicationIds = publications.map((pub) => pub.id);
+        listNames = publications.map((pub) => pub.name || '');
+      }
+    } catch (error: any) {
+      // Handle errors gracefully - log but don't fail connection creation
+      // Connection will be created without list names, which can be fetched later
+      console.error(
+        `Failed to fetch lists for ESP connection (${espTypeEnum}):`,
+        error.message
+      );
+      // Continue with null values - user can update lists later
+    }
+
     const espConnection = this.espConnectionRepository.create({
       userId,
       espType: espTypeEnum,
       authMethod: AuthMethod.API_KEY,
       encryptedApiKey,
-      publicationId,
+      publicationId, // Keep for backward compatibility
+      publicationIds, // Array of all list IDs (default: all selected)
+      listNames, // Array of list display names
       status: EspConnectionStatus.ACTIVE,
       lastValidatedAt: new Date(),
     });
@@ -119,11 +207,29 @@ export class EspConnectionService {
     const encryptedRefreshToken = this.encryptionService.encrypt(refreshToken);
 
     // Fetch all publications using the access token
-    const publications =
-      await connector.fetchPublicationsWithOAuth(accessToken);
+    // Note: fetchPublicationsWithOAuth() returns lists/segments/publications depending on ESP terminology
+    let publicationIds: string[] | null = null;
+    let listNames: string[] | null = null;
 
-    // Extract publication IDs from publications array
-    const publicationIds = publications.map((pub) => pub.id);
+    try {
+      const publications =
+        await connector.fetchPublicationsWithOAuth(accessToken);
+
+      if (publications && publications.length > 0) {
+        // Extract IDs and names from fetched publications
+        // Default to all lists selected if none specified
+        publicationIds = publications.map((pub) => pub.id);
+        listNames = publications.map((pub) => pub.name || '');
+      }
+    } catch (error: any) {
+      // Handle errors gracefully - log but don't fail connection creation
+      // Connection will be created without list names, which can be fetched later
+      console.error(
+        `Failed to fetch lists for OAuth ESP connection (${espType}):`,
+        error.message
+      );
+      // Continue with null values - user can update lists later
+    }
 
     // Calculate token expiry time
     const tokenExpiresAt = new Date();
@@ -137,7 +243,8 @@ export class EspConnectionService {
       encryptedAccessToken,
       encryptedRefreshToken,
       tokenExpiresAt,
-      publicationIds: publicationIds.length > 0 ? publicationIds : null,
+      publicationIds: publicationIds && publicationIds.length > 0 ? publicationIds : null,
+      listNames, // Array of list display names
       status: EspConnectionStatus.ACTIVE,
       lastValidatedAt: new Date(),
     });
@@ -361,6 +468,117 @@ export class EspConnectionService {
       // If we've already retried or it's not a 401 error, throw the original error
       throw error;
     }
+  }
+
+  /**
+   * Fetches available lists (publications/segments/lists depending on ESP) for an ESP connection
+   * @param id - The ID of the ESP connection
+   * @param userId - Optional user ID to validate ownership
+   * @returns Array of publications (lists/segments/publications depending on ESP terminology)
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided) or if auth method is invalid
+   * @throws InternalServerErrorException if API call fails
+   */
+  async fetchAvailableLists(id: string, userId?: string): Promise<Publication[]> {
+    const connection = await this.findById(id, userId);
+
+    const connector = this.getConnector(connection.espType);
+
+    if (connection.authMethod === AuthMethod.API_KEY) {
+      if (!connection.encryptedApiKey) {
+        throw new BadRequestException(
+          'API key is missing for this connection'
+        );
+      }
+
+      // Decrypt the API key
+      const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);
+
+      // Fetch publications using API key
+      return connector.fetchPublications(apiKey);
+    } else if (connection.authMethod === AuthMethod.OAUTH) {
+      if (!connection.encryptedAccessToken) {
+        throw new BadRequestException(
+          'Access token is missing for this OAuth connection'
+        );
+      }
+
+      if (!connector.fetchPublicationsWithOAuth) {
+        throw new BadRequestException(
+          `OAuth is not supported for ESP type: ${connection.espType}`
+        );
+      }
+
+      // Decrypt access token
+      let accessToken = this.encryptionService.decrypt(
+        connection.encryptedAccessToken
+      );
+
+      // Fetch publications using OAuth with automatic retry on 401
+      return this.callOAuthConnectorMethodWithRetry(
+        connection,
+        async (token: string) => {
+          return connector.fetchPublicationsWithOAuth!(token);
+        },
+        accessToken
+      );
+    } else {
+      throw new BadRequestException(
+        `Unsupported auth method: ${connection.authMethod}`
+      );
+    }
+  }
+
+  /**
+   * Updates the selected lists (publications/segments/lists depending on ESP) for an ESP connection
+   * @param id - The ID of the ESP connection
+   * @param selectedListIds - Array of list IDs to select
+   * @param userId - Optional user ID to validate ownership
+   * @returns The updated ESP connection
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided) or if any list ID is invalid
+   * @throws InternalServerErrorException if API call fails
+   */
+  async updateSelectedLists(
+    id: string,
+    selectedListIds: string[],
+    userId?: string
+  ): Promise<EspConnection> {
+    // Validate connection exists and user owns it
+    const connection = await this.findById(id, userId);
+
+    // Fetch available lists to validate the provided IDs
+    const availableLists = await this.fetchAvailableLists(id, userId);
+
+    // Validate that all provided IDs exist in available lists
+    const availableListIds = availableLists.map((list) => list.id);
+    const invalidIds = selectedListIds.filter(
+      (id) => !availableListIds.includes(id)
+    );
+
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(
+        `Invalid list IDs: ${invalidIds.join(', ')}. These lists do not exist for this ESP connection.`
+      );
+    }
+
+    // Map selected IDs to their corresponding names
+    const selectedListNames = selectedListIds
+      .map((selectedId) => {
+        const list = availableLists.find((l) => l.id === selectedId);
+        return list?.name || '';
+      })
+      .filter((name) => name !== ''); // Filter out empty names
+
+    // Update the connection with selected lists
+    connection.publicationIds = selectedListIds.length > 0 ? selectedListIds : null;
+    connection.listNames = selectedListNames.length > 0 ? selectedListNames : null;
+
+    // Also update publicationId for backward compatibility (use first selected ID)
+    connection.publicationId =
+      selectedListIds.length > 0 ? selectedListIds[0] : null;
+
+    return this.espConnectionRepository.save(connection);
   }
 
   /**

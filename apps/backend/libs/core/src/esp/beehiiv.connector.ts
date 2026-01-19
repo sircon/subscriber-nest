@@ -7,6 +7,12 @@ import { Publication, SubscriberData } from './esp.interface';
 /**
  * Beehiiv ESP Connector
  * Implements the IEspConnector interface for Beehiiv API integration
+ *
+ * Beehiiv uses Bearer token authentication with API key in Authorization header.
+ * The API provides access to publications and their subscriptions.
+ *
+ * API Documentation: https://developers.beehiiv.com/docs
+ * API Version: v2 (current as of January 2026)
  */
 @Injectable()
 export class BeehiivConnector implements IEspConnector {

@@ -11,12 +11,7 @@ import { espConnectionApi, EspConnection } from '@/lib/api';
 import { Menu, Plus, Settings, Database, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SubscriptionWarningBanner } from '@/components/subscription-warning-banner';
-
-const providerNames: Record<string, string> = {
-  kit: 'Kit',
-  beehiiv: 'beehiiv',
-  mailchimp: 'Mailchimp',
-};
+import { getEspName, EspType } from '@/lib/esp-config';
 
 export default function DashboardLayout({
   children,
@@ -104,6 +99,34 @@ export default function DashboardLayout({
             ) : (
               connections.map((connection) => {
                 const isActive = pathname === `/dashboard/esp/${connection.id}`;
+                
+                // Helper function to get list names for display (with fallback to IDs)
+                const getListNames = (): string[] => {
+                  if (connection.listNames && connection.listNames.length > 0) {
+                    return connection.listNames;
+                  }
+                  // Fallback to IDs if names not available
+                  if (connection.publicationIds && connection.publicationIds.length > 0) {
+                    return connection.publicationIds;
+                  }
+                  if (connection.publicationId) {
+                    return [connection.publicationId];
+                  }
+                  return [];
+                };
+
+                // Helper function to format list names for display
+                const formatListNames = (listNames: string[]): string => {
+                  if (listNames.length === 0) return 'No lists';
+                  if (listNames.length === 1) return listNames[0];
+                  if (listNames.length <= 2) return listNames.join(', ');
+                  return `${listNames.length} lists`;
+                };
+
+                const listNames = getListNames();
+                const listDisplay = formatListNames(listNames);
+                const espDisplayName = getEspName(connection.espType as EspType);
+
                 return (
                   <Link
                     key={connection.id}
@@ -121,8 +144,7 @@ export default function DashboardLayout({
                       <Database className="h-4 w-4" />
                       <div className="flex-1 truncate">
                         <div className="text-sm truncate">
-                          {providerNames[connection.espType] ||
-                            connection.espType}
+                          {espDisplayName}
                         </div>
                         <div
                           className={cn(
@@ -132,7 +154,7 @@ export default function DashboardLayout({
                               : 'text-muted-foreground'
                           )}
                         >
-                          {connection.publicationId}
+                          {listDisplay}
                         </div>
                       </div>
                     </div>

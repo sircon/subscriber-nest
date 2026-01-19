@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getFormattedEspList } from '@/lib/esp-config';
 
 export default function Home() {
   return (
@@ -351,8 +352,7 @@ function FAQSection() {
   const faqs = [
     {
       question: 'What Email Service Providers do you support?',
-      answer:
-        "We support all major ESPs including Mailchimp, Kit, beehiiv, Substack, Buttondown, AWeber, and many more. If your ESP has an API, we can connect to it. Don't see yours? Contact us and we'll add support.",
+      answer: `We support ${getFormattedEspList()}. If your ESP has an API, we can connect to it. Don't see yours? Contact us and we'll add support.`,
     },
     {
       question: 'Is my subscriber data secure?',
@@ -421,8 +421,9 @@ function FAQSection() {
                 <button className="w-full p-6 flex items-center justify-between text-left">
                   <span className="font-medium pr-4">{faq.question}</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''
-                      }`}
+                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
+                      openIndex === index ? 'rotate-180' : ''
+                    }`}
                   />
                 </button>
                 <div

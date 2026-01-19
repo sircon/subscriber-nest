@@ -25,15 +25,11 @@ import {
   DashboardStats,
   SyncHistory,
 } from '@/lib/api';
-
-const providerNames: Record<string, string> = {
-  kit: 'Kit',
-  beehiiv: 'beehiiv',
-  mailchimp: 'Mailchimp',
-};
+import { getEspName, EspType } from '@/lib/esp-config';
 
 interface SyncHistoryWithEsp extends SyncHistory {
   espName: string;
+  listNames: string[];
 }
 
 function WelcomeOverlay({ onComplete }: { onComplete: () => void }) {
@@ -101,16 +97,45 @@ function DashboardContent() {
 
         // Fetch sync history for all connections
         if (connections.length > 0) {
+          // Helper function to get list names for display (with fallback to IDs)
+          const getListNames = (conn: typeof connections[0]): string[] => {
+            if (conn.listNames && conn.listNames.length > 0) {
+              return conn.listNames;
+            }
+            // Fallback to IDs if names not available
+            if (conn.publicationIds && conn.publicationIds.length > 0) {
+              return conn.publicationIds;
+            }
+            if (conn.publicationId) {
+              return [conn.publicationId];
+            }
+            return [];
+          };
+
+          // Helper function to format list names for display
+          const formatListNames = (listNames: string[]): string => {
+            if (listNames.length === 0) return '';
+            if (listNames.length === 1) return listNames[0];
+            if (listNames.length <= 3) return listNames.join(', ');
+            return `${listNames.length} lists`;
+          };
+
           const syncHistoryPromises = connections.map(
             (conn) =>
               espConnectionApi
                 .getSyncHistory(conn.id, token, () => router.push('/login'), 50)
-                .then((history) =>
-                  history.map((h) => ({
+                .then((history) => {
+                  const listNames = getListNames(conn);
+                  const listDisplay = formatListNames(listNames);
+                  const espDisplayName = getEspName(conn.espType as EspType);
+                  return history.map((h) => ({
                     ...h,
-                    espName: `${providerNames[conn.espType] || conn.espType} (${conn.publicationId})`,
-                  }))
-                )
+                    espName: listDisplay
+                      ? `${espDisplayName} (${listDisplay})`
+                      : espDisplayName,
+                    listNames,
+                  }));
+                })
                 .catch(() => []) // Silently handle errors for individual connections
           );
 

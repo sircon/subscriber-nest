@@ -12,26 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi } from '@/lib/api';
-
-type Provider = 'kit' | 'beehiiv' | 'mailchimp';
-
-const providers: { id: Provider; name: string; description: string }[] = [
-  {
-    id: 'kit',
-    name: 'Kit',
-    description: 'Connect your Kit account to sync subscribers',
-  },
-  {
-    id: 'beehiiv',
-    name: 'beehiiv',
-    description: 'Connect your beehiiv account to sync subscribers',
-  },
-  {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    description: 'Connect your Mailchimp account to sync subscribers',
-  },
-];
+import { espConfigs, type EspType } from '@/lib/esp-config';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -70,30 +51,8 @@ export default function OnboardingPage() {
     checkExistingConnections();
   }, [token, router]);
 
-  const handleProviderSelect = (provider: Provider) => {
+  const handleProviderSelect = (provider: EspType) => {
     router.push(`/onboarding/api-key?provider=${provider}`);
-  };
-
-  const handleOAuthConnect = async (provider: 'kit' | 'mailchimp') => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      await espConnectionApi.initiateOAuth(
-        provider,
-        token,
-        () => {
-          router.push('/login');
-        },
-        true // Pass onboarding=true for onboarding flow
-      );
-      // initiateOAuth will redirect the browser, so we don't need to do anything else
-    } catch (err) {
-      console.error('Failed to initiate OAuth:', err);
-      // Error handling is done in the API client
-    }
   };
 
   // Show loading state while checking for existing connections
@@ -141,46 +100,29 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {providers.map((provider) => {
-            const supportsOAuth =
-              provider.id === 'kit' || provider.id === 'mailchimp';
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {espConfigs.map((provider) => {
             return (
               <Card
                 key={provider.id}
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() =>
-                  !supportsOAuth && handleProviderSelect(provider.id)
-                }
+                className="cursor-pointer hover:border-primary transition-colors group"
+                onClick={() => handleProviderSelect(provider.id)}
               >
                 <CardHeader>
                   <CardTitle className="text-xl">{provider.name}</CardTitle>
                   <CardDescription>{provider.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {supportsOAuth ? (
-                    <Button
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOAuthConnect(provider.id as 'kit' | 'mailchimp');
-                      }}
-                    >
-                      Connect with OAuth
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProviderSelect(provider.id);
-                      }}
-                    >
-                      Select {provider.name}
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProviderSelect(provider.id);
+                    }}
+                  >
+                    Select {provider.name}
+                  </Button>
                 </CardContent>
               </Card>
             );

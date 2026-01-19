@@ -71,6 +71,7 @@ export interface EspConnection {
   authMethod: 'api_key' | 'oauth';
   publicationId: string | null;
   publicationIds: string[] | null;
+  listNames: string[] | null;
   status: string;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
   tokenExpiresAt: string | null;
@@ -78,6 +79,24 @@ export interface EspConnection {
   lastSyncedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * List interface for ESP connections
+ * Note: Different ESPs use different terminology (lists, segments, publications),
+ * but we expose them as 'lists' in the frontend for clarity.
+ */
+export interface List {
+  id: string;
+  name: string;
+  subscriberCount?: number;
+  description?: string;
+  createdAt?: string | Date;
+  [key: string]: any; // Allow additional ESP-specific fields
+}
+
+export interface UpdateSelectedListsRequest {
+  selectedListIds: string[];
 }
 
 export interface DashboardStats {
@@ -534,6 +553,47 @@ export const espConnectionApi = {
       `/esp-connections/${connectionId}`,
       {
         method: 'DELETE',
+      },
+      token,
+      onUnauthorized
+    );
+  },
+
+  /**
+   * Get available lists for ESP connection
+   * Note: Different ESPs use different terminology (lists, segments, publications),
+   * but the endpoint returns them as 'lists' for UI consistency.
+   */
+  getLists: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<List[]> => {
+    return apiRequest<List[]>(
+      `/esp-connections/${connectionId}/lists`,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized
+    );
+  },
+
+  /**
+   * Update selected lists for ESP connection
+   * Updates which lists are selected for syncing.
+   */
+  updateSelectedLists: async (
+    connectionId: string,
+    data: UpdateSelectedListsRequest,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<EspConnection> => {
+    return apiRequest<EspConnection>(
+      `/esp-connections/${connectionId}/lists`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
       },
       token,
       onUnauthorized
