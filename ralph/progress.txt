@@ -54,3 +54,28 @@ Started: Mon Jan 19 08:58:03 CET 2026
   - The pricing section header and subheader are in the PricingSection component, separate from the pricing card itself
   - Browser verification via curl shows the changes are correctly rendered in the HTML output
 ---
+
+## Mon Jan 19 09:08:42 CET 2026 - US-005
+- Updated pricing section header copy to better emphasize affordability and accessibility
+- Changed header from "Super affordable pricing to keep your audience safe" to "Affordable pricing designed for everyone"
+- Refined subheader to: "We cover our costs while keeping it accessible. One plan, no hidden fees—protecting your audience shouldn't break the bank."
+- Enhanced messaging to emphasize accessibility and affordability while maintaining professional tone
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - Pricing section header messaging can be refined to better emphasize accessibility without losing the safety angle
+  - The phrase "designed for everyone" effectively communicates accessibility
+  - Adding "protecting your audience shouldn't break the bank" reinforces affordability in a relatable way
+  - Browser verification confirms changes render correctly in the HTML output
+---
+
+## Mon Jan 19 09:11:40 CET 2026 - US-006
+- Added backup/download benefit to pricing section features list
+- Added two new feature items: "Always have a backup—download your updated list anytime" and "Import to another ESP if yours has issues"
+- Positioned as part of audience protection value proposition in the pricing section features
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - The pricing section features list is the appropriate place for detailed benefit messaging (not the hero features row)
+  - Backup/download messaging should emphasize both the "always have a backup" safety angle and the practical "import to another ESP" benefit
+  - Features are displayed as a simple array in the pricing section, making it easy to add new items
+  - Browser verification via curl confirms the new features render correctly in the HTML output
+---

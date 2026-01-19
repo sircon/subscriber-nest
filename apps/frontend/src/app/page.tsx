@@ -269,6 +269,8 @@ function PricingSection() {
                     'Unlimited ESP connections',
                     'Daily automatic sync',
                     'Export to CSV, JSON, or Excel',
+                    'Always have a backup—download your updated list anytime',
+                    'Import to another ESP if yours has issues',
                     'Encrypted subscriber data',
                     'Email support',
                   ].map((feature) => (
