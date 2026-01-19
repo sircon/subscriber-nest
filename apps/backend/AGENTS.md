@@ -70,6 +70,35 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - API keys are encrypted before storing in database using EncryptionService
 - API keys are never returned in API responses (only id, provider, createdAt, isActive)
 
+## OAuth Integration
+
+- `src/services/oauth-state.service.ts` – OAuthStateService for managing OAuth state tokens (CSRF protection)
+- `src/services/oauth-config.service.ts` – OAuthConfigService for reading OAuth configuration from environment variables
+- `src/services/oauth-token-refresh.service.ts` – OAuthTokenRefreshService for refreshing expired OAuth access tokens using refresh tokens
+- `src/entities/oauth-state.entity.ts` – OAuthState entity for storing OAuth state parameters
+- OAuth initiate endpoints (`GET /esp-connections/oauth/initiate/:provider`) require authentication via `@UseGuards(AuthGuard)`
+- OAuth callback endpoints (`GET /esp-connections/oauth/callback/:provider`) should NOT require authentication (called by external OAuth providers)
+- Use `@Query()` decorator to get query parameters (`code`, `state`) from OAuth callback URLs
+- OAuth state tokens expire after 10 minutes and should be deleted after successful use to prevent replay attacks
+- Token exchange uses HttpService from `@nestjs/axios` with `firstValueFrom()` from rxjs to convert Observable to Promise
+- Token exchange requests use `application/x-www-form-urlencoded` content type with URLSearchParams
+- OAuth token responses may not always include `refresh_token` or `expires_in` - handle with defaults (e.g., 3600 seconds for expires_in)
+- Calculate token expiry by adding `expires_in` seconds to current time: `new Date(Date.now() + expiresIn * 1000)`
+- Always encrypt OAuth tokens (access_token, refresh_token) using EncryptionService before storing in database
+- Redirect to frontend with connection ID and success parameter: `{FRONTEND_URL}/esp-connections/{connectionId}?oauth=success`
+- Token refresh uses `grant_type=refresh_token` with refresh_token, client_id, and client_secret in the request body
+- Token refresh may return a new refresh_token - if provided, update it; otherwise keep the existing refresh token
+- Handle token refresh errors: 400 (invalid refresh token), 401 (expired/revoked refresh token) - throw BadRequestException with user-friendly messages
+- After successful token refresh, update `encryptedAccessToken`, `encryptedRefreshToken` (if new one provided), `tokenExpiresAt`, and `lastValidatedAt` in the database
+- `src/services/oauth-token-refresh-scheduler.service.ts` – OAuthTokenRefreshSchedulerService schedules proactive token refresh jobs (runs every 5 minutes)
+- `src/processors/oauth-token-refresh.processor.ts` – OAuthTokenRefreshProcessor finds OAuth connections with tokens expiring within 10 minutes and refreshes them
+- Scheduled token refresh jobs use BullMQ queue (`oauth-token-refresh`) and run every 5 minutes to proactively refresh tokens before expiry
+- Processor handles errors gracefully - logs failures but continues processing other connections to prevent one failure from blocking all refreshes
+- **Automatic token refresh on 401 errors**: When calling OAuth connector methods (e.g., `getSubscriberCountWithOAuth`, `fetchSubscribersWithOAuth`), use `callOAuthConnectorMethodWithRetry()` wrapper method in `EspConnectionService` to automatically handle 401 errors by refreshing tokens and retrying the call once
+- The wrapper method catches 401 errors (detected by error message containing "401" or "Invalid access token"), refreshes the token using `OAuthTokenRefreshService`, reloads the connection from database, and retries the original call with the new token
+- Retry is limited to once per request to prevent infinite loops - use `retried` flag to track retry attempts
+- After token refresh, always reload the connection from database to get the updated encrypted token before decrypting and using it
+
 ## Subscribers
 
 - `src/subscriber.controller.ts` – SubscriberController with subscriber-specific endpoints (e.g., unmask email)

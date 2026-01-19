@@ -32,11 +32,40 @@ function ApiKeyForm() {
   const [error, setError] = useState<string | null>(null);
   const provider = (searchParams.get('provider') || '') as Provider;
 
+  // Check if provider supports OAuth
+  const supportsOAuth = provider === 'kit' || provider === 'mailchimp';
+
   useEffect(() => {
     if (!provider || !['kit', 'beehiiv', 'mailchimp'].includes(provider)) {
       router.push('/onboarding');
     }
   }, [provider, router]);
+
+  const handleOAuthConnect = async () => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      await espConnectionApi.initiateOAuth(
+        provider as 'kit' | 'mailchimp',
+        token,
+        () => {
+          router.push('/login');
+        },
+        true // Pass onboarding=true for onboarding flow
+      );
+      // initiateOAuth will redirect the browser, so we don't need to do anything else
+    } catch (err) {
+      console.error('Failed to initiate OAuth:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to initiate OAuth connection'
+      );
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,58 +127,84 @@ function ApiKeyForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="apiKey"
-                  className="block text-sm font-medium mb-2"
-                >
-                  API Key
-                </label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  placeholder="Enter your API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  required
-                  disabled={loading}
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="publicationId"
-                  className="block text-sm font-medium mb-2"
-                >
-                  Publication ID
-                </label>
-                <Input
-                  id="publicationId"
-                  type="text"
-                  placeholder="Enter your publication ID"
-                  value={publicationId}
-                  onChange={(e) => setPublicationId(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  {error}
+            {supportsOAuth ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-md bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-primary font-medium mb-2">
+                    Connect with OAuth
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Connect your {providerNames[provider]} account securely
+                    using OAuth. No API keys needed!
+                  </p>
+                  <Button
+                    onClick={handleOAuthConnect}
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? 'Connecting...' : 'Connect with OAuth'}
+                  </Button>
                 </div>
-              )}
+                {error && (
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="apiKey"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    API Key
+                  </label>
+                  <Input
+                    id="apiKey"
+                    type="password"
+                    placeholder="Enter your API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    required
+                    disabled={loading}
+                    autoFocus
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || !apiKey.trim() || !publicationId.trim()}
-              >
-                {loading ? 'Syncing...' : 'Sync subscribers to vault'}
-              </Button>
-            </form>
+                <div>
+                  <label
+                    htmlFor="publicationId"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Publication ID
+                  </label>
+                  <Input
+                    id="publicationId"
+                    type="text"
+                    placeholder="Enter your publication ID"
+                    value={publicationId}
+                    onChange={(e) => setPublicationId(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || !apiKey.trim() || !publicationId.trim()}
+                >
+                  {loading ? 'Syncing...' : 'Sync subscribers to vault'}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

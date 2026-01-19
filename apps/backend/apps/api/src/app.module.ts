@@ -1,11 +1,13 @@
 import { BillingModule } from '@app/core/billing/billing.module';
 import { EncryptionModule } from '@app/core/encryption/encryption.module';
 import { EspModule } from '@app/core/esp/esp.module';
+import { OAuthModule } from '@app/core/oauth/oauth.module';
 import { DatabaseModule } from '@app/database/database.module';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthController } from './auth.controller';
@@ -19,6 +21,7 @@ import { EmailService } from './email.service';
 import { AuthGuard } from './guards/auth.guard';
 import { SubscriptionGuard } from './guards/subscription.guard';
 import { EspConnectionService } from './services/esp-connection.service';
+import { OAuthStateService } from './services/oauth-state.service';
 import { SubscriberExportService } from './services/subscriber-export.service';
 import { SubscriberService } from './services/subscriber.service';
 import { SyncHistoryService } from './services/sync-history.service';
@@ -37,9 +40,11 @@ import { SyncHistoryService } from './services/sync-history.service';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    HttpModule,
     DatabaseModule,
     EncryptionModule,
     EspModule,
+    OAuthModule,
     BillingModule,
     BullModule.forRoot({
       connection: {
@@ -86,6 +91,7 @@ import { SyncHistoryService } from './services/sync-history.service';
     SubscriberService,
     SubscriberExportService,
     EspConnectionService,
+    OAuthStateService,
     EmailService,
     AuthService,
     AuthGuard,

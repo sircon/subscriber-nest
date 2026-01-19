@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BillingSubscription } from './entities/billing-subscription.entity';
 import { BillingUsage } from './entities/billing-usage.entity';
 import { EspConnection } from './entities/esp-connection.entity';
+import { OAuthState } from './entities/oauth-state.entity';
 import { Session } from './entities/session.entity';
 import { Subscriber } from './entities/subscriber.entity';
 import { SyncHistory } from './entities/sync-history.entity';
@@ -13,6 +14,7 @@ const entities = [
   BillingSubscription,
   BillingUsage,
   EspConnection,
+  OAuthState,
   Session,
   Subscriber,
   SyncHistory,

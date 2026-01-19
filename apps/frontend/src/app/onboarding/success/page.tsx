@@ -50,9 +50,12 @@ function OnboardingSuccessContent() {
       setStatus('syncing');
       setProgress('Starting initial sync...');
 
-      const connections = await espConnectionApi.getUserConnections(token, () => {
-        router.push('/login');
-      });
+      const connections = await espConnectionApi.getUserConnections(
+        token,
+        () => {
+          router.push('/login');
+        }
+      );
 
       // Trigger sync for each connection (don't wait for completion, just queue them)
       const syncPromises = connections.map((conn) =>
@@ -60,7 +63,10 @@ function OnboardingSuccessContent() {
           .triggerSync(conn.id, token, () => {})
           .catch((err) => {
             // Log sync errors but don't fail the whole process
-            console.error(`Failed to trigger sync for connection ${conn.id}:`, err);
+            console.error(
+              `Failed to trigger sync for connection ${conn.id}:`,
+              err
+            );
           })
       );
 

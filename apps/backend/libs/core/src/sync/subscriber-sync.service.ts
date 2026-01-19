@@ -1,5 +1,13 @@
-import { EspConnection, EspType } from '@app/database/entities/esp-connection.entity';
+import {
+  EspConnection,
+  EspType,
+  AuthMethod,
+} from '@app/database/entities/esp-connection.entity';
 import { Subscriber } from '@app/database/entities/subscriber.entity';
+import {
+  SyncHistory,
+  SyncHistoryStatus,
+} from '@app/database/entities/sync-history.entity';
 import {
   Injectable,
   InternalServerErrorException,
@@ -13,9 +21,12 @@ import { BillingUsageService } from '../billing/billing-usage.service';
 import { StripeService } from '../billing/stripe.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { BeehiivConnector } from '../esp/beehiiv.connector';
+import { KitConnector } from '../esp/kit.connector';
+import { MailchimpConnector } from '../esp/mailchimp.connector';
 import { IEspConnector } from '../esp/esp-connector.interface';
 import { CreateSubscriberDto } from './create-subscriber.dto';
 import { SubscriberMapperService } from './subscriber-mapper.service';
+import { OAuthTokenRefreshService } from '../oauth/oauth-token-refresh.service';
 
 /**
  * Service for syncing subscribers from ESPs to our database
@@ -29,8 +40,13 @@ export class SubscriberSyncService {
     private espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(Subscriber)
     private subscriberRepository: Repository<Subscriber>,
+    @InjectRepository(SyncHistory)
+    private syncHistoryRepository: Repository<SyncHistory>,
     private encryptionService: EncryptionService,
     private beehiivConnector: BeehiivConnector,
+    private kitConnector: KitConnector,
+    private mailchimpConnector: MailchimpConnector,
+    private oauthTokenRefreshService: OAuthTokenRefreshService,
     private subscriberMapperService: SubscriberMapperService,
     private billingUsageService: BillingUsageService,
     private billingSubscriptionService: BillingSubscriptionService,
@@ -47,10 +63,87 @@ export class SubscriberSyncService {
     switch (espType) {
       case EspType.BEEHIIV:
         return this.beehiivConnector;
+      case EspType.KIT:
+        return this.kitConnector;
+      case EspType.MAILCHIMP:
+        return this.mailchimpConnector;
       default:
         throw new InternalServerErrorException(
           `Unsupported ESP type: ${espType}`
         );
+    }
+  }
+
+  /**
+   * Calls an OAuth connector method with automatic token refresh on 401 errors
+   * This method handles:
+   * - Catching 401 errors from connector methods
+   * - Refreshing the OAuth token
+   * - Retrying the original call once with the new token
+   * - Limiting retry to once per request to prevent infinite loops
+   *
+   * @param connection - The ESP connection (must be OAuth-based)
+   * @param method - The connector method to call (receives access token as parameter)
+   * @param accessToken - The current access token
+   * @param retried - Internal flag to track if we've already retried (prevents infinite loops)
+   * @returns The result of the connector method
+   * @throws InternalServerErrorException if method fails after token refresh
+   */
+  private async callOAuthConnectorMethodWithRetry<T>(
+    connection: EspConnection,
+    method: (accessToken: string) => Promise<T>,
+    accessToken: string,
+    retried: boolean = false
+  ): Promise<T> {
+    try {
+      // Call the connector method
+      return await method(accessToken);
+    } catch (error: any) {
+      // Check if this is a 401 error (invalid/expired token)
+      const is401Error =
+        error.message?.includes('401') ||
+        error.message?.includes('Invalid access token') ||
+        error.response?.status === 401;
+
+      if (is401Error && !retried) {
+        // Token is expired or invalid, try to refresh it
+        try {
+          // Refresh the token (this updates the connection in the database)
+          await this.oauthTokenRefreshService.refreshToken(connection);
+
+          // Reload connection to get updated token
+          const updatedConnection = await this.espConnectionRepository.findOne({
+            where: { id: connection.id },
+          });
+
+          if (!updatedConnection || !updatedConnection.encryptedAccessToken) {
+            throw new InternalServerErrorException(
+              'Failed to refresh token: connection not found or token missing'
+            );
+          }
+
+          // Decrypt the new access token
+          const newAccessToken = this.encryptionService.decrypt(
+            updatedConnection.encryptedAccessToken
+          );
+
+          // Retry the original call with the new token (only once)
+          return this.callOAuthConnectorMethodWithRetry(
+            updatedConnection,
+            method,
+            newAccessToken,
+            true // Mark as retried to prevent infinite loops
+          );
+        } catch (refreshError: any) {
+          // Token refresh failed, throw error
+          throw new InternalServerErrorException(
+            `Token refresh failed: ${refreshError.message}. Please reconnect your account.`
+          );
+        }
+      }
+
+      // If we've already retried or it's not a 401 error, throw the original error
+      throw error;
     }
   }
 
@@ -100,36 +193,208 @@ export class SubscriberSyncService {
     }
 
     try {
-      // Decrypt the API key
-      const apiKey = this.encryptionService.decrypt(
-        espConnection.encryptedApiKey
-      );
-
       // Get the appropriate ESP connector
       const connector = this.getConnector(espConnection.espType);
 
-      // Fetch subscribers from ESP
-      const subscribers = await connector.fetchSubscribers(
-        apiKey,
-        espConnection.publicationId
-      );
-
-      // Process each subscriber: map and upsert
-      for (const subscriberData of subscribers) {
-        try {
-          const createSubscriberDto =
-            this.subscriberMapperService.mapToCreateSubscriberDto(
-              subscriberData,
-              espConnectionId
-            );
-
-          await this.upsertSubscriber(createSubscriberDto);
-        } catch (error: any) {
-          console.error(
-            `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}:`,
-            error.message
+      // Handle API key connections
+      if (espConnection.authMethod === AuthMethod.API_KEY) {
+        if (!espConnection.encryptedApiKey || !espConnection.publicationId) {
+          throw new InternalServerErrorException(
+            'API key or publication ID is missing for this connection'
           );
         }
+
+        // Decrypt the API key
+        const apiKey = this.encryptionService.decrypt(
+          espConnection.encryptedApiKey
+        );
+
+        // Fetch subscribers from ESP
+        const subscribers = await connector.fetchSubscribers(
+          apiKey,
+          espConnection.publicationId
+        );
+
+        // Process each subscriber: map and upsert
+        for (const subscriberData of subscribers) {
+          try {
+            // Map ESP subscriber data to our database schema (no publicationId for API key connections)
+            const createSubscriberDto =
+              this.subscriberMapperService.mapToCreateSubscriberDto(
+                subscriberData,
+                espConnectionId,
+                null
+              );
+
+            // Upsert subscriber (create if not exists, update if exists)
+            await this.upsertSubscriber(createSubscriberDto);
+          } catch (error: any) {
+            // Log error for individual subscriber but continue processing others
+            this.logger.error(
+              `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}:`,
+              error.message
+            );
+            // Continue processing other subscribers even if one fails
+          }
+        }
+      }
+      // Handle OAuth connections
+      else if (espConnection.authMethod === AuthMethod.OAUTH) {
+        if (!espConnection.encryptedAccessToken) {
+          throw new InternalServerErrorException(
+            'Access token is missing for this OAuth connection'
+          );
+        }
+
+        // Check if connector supports OAuth
+        if (!connector.fetchSubscribersWithOAuth) {
+          throw new InternalServerErrorException(
+            `OAuth is not supported for ESP type: ${espConnection.espType}`
+          );
+        }
+
+        // Decrypt access token
+        let accessToken = this.encryptionService.decrypt(
+          espConnection.encryptedAccessToken
+        );
+
+        // Get publication IDs to sync
+        // OAuth connections use publicationIds array, but fallback to single publicationId for backward compatibility
+        const publicationIds =
+          espConnection.publicationIds ||
+          (espConnection.publicationId ? [espConnection.publicationId] : []);
+
+        if (publicationIds.length === 0) {
+          throw new InternalServerErrorException(
+            'No publication IDs available for this OAuth connection'
+          );
+        }
+
+        // Track sync results for each publication
+        const publicationSyncResults: Array<{
+          publicationId: string;
+          success: boolean;
+          subscriberCount: number;
+          error?: string;
+        }> = [];
+
+        // Sync each publication
+        for (const publicationId of publicationIds) {
+          // Create sync history record for this publication
+          const syncHistory = this.syncHistoryRepository.create({
+            espConnectionId,
+            publicationId,
+            status: SyncHistoryStatus.SUCCESS,
+            startedAt: new Date(),
+            completedAt: null,
+            errorMessage: null,
+          });
+          await this.syncHistoryRepository.save(syncHistory);
+
+          try {
+            // Fetch subscribers from ESP using OAuth token with automatic retry on 401
+            const subscribers = await this.callOAuthConnectorMethodWithRetry(
+              espConnection,
+              async (token: string) => {
+                return connector.fetchSubscribersWithOAuth!(
+                  token,
+                  publicationId
+                );
+              },
+              accessToken
+            );
+
+            // Reload connection in case token was refreshed
+            const updatedConnection =
+              await this.espConnectionRepository.findOne({
+                where: { id: espConnectionId },
+              });
+            if (updatedConnection?.encryptedAccessToken) {
+              accessToken = this.encryptionService.decrypt(
+                updatedConnection.encryptedAccessToken
+              );
+              // Update espConnection reference for next iteration
+              Object.assign(espConnection, updatedConnection);
+            }
+
+            let subscriberCount = 0;
+
+            // Process each subscriber: map and upsert
+            for (const subscriberData of subscribers) {
+              try {
+                // Map ESP subscriber data to our database schema (include publicationId in metadata)
+                const createSubscriberDto =
+                  this.subscriberMapperService.mapToCreateSubscriberDto(
+                    subscriberData,
+                    espConnectionId,
+                    publicationId
+                  );
+
+                // Upsert subscriber (create if not exists, update if exists)
+                await this.upsertSubscriber(createSubscriberDto);
+                subscriberCount++;
+              } catch (error: any) {
+                // Log error for individual subscriber but continue processing others
+                this.logger.error(
+                  `Failed to process subscriber ${subscriberData.id} for connection ${espConnectionId}, publication ${publicationId}:`,
+                  error.message
+                );
+                // Continue processing other subscribers even if one fails
+              }
+            }
+
+            // Update sync history with success
+            await this.syncHistoryRepository.update(
+              { id: syncHistory.id },
+              {
+                completedAt: new Date(),
+                subscriberCount,
+              }
+            );
+
+            publicationSyncResults.push({
+              publicationId,
+              success: true,
+              subscriberCount,
+            });
+          } catch (error: any) {
+            // Log error for publication but continue syncing other publications
+            this.logger.error(
+              `Failed to sync publication ${publicationId} for connection ${espConnectionId}:`,
+              error.message
+            );
+
+            // Update sync history with failure
+            await this.syncHistoryRepository.update(
+              { id: syncHistory.id },
+              {
+                status: SyncHistoryStatus.FAILED,
+                completedAt: new Date(),
+                errorMessage: error.message,
+              }
+            );
+
+            publicationSyncResults.push({
+              publicationId,
+              success: false,
+              subscriberCount: 0,
+              error: error.message,
+            });
+            // Continue syncing other publications even if one fails
+          }
+        }
+
+        // Check if all publications failed
+        const allFailed = publicationSyncResults.every((r) => !r.success);
+        if (allFailed && publicationSyncResults.length > 0) {
+          throw new InternalServerErrorException(
+            `All publications failed to sync for connection ${espConnectionId}`
+          );
+        }
+      } else {
+        throw new InternalServerErrorException(
+          `Unsupported auth method: ${espConnection.authMethod}`
+        );
       }
 
       // After successful sync, update billing usage for the user

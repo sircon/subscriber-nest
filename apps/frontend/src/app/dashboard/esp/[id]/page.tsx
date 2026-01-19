@@ -23,13 +23,29 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, EyeOff, Loader2, Download, RefreshCw } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Download,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import {
   Tooltip,
@@ -74,6 +90,14 @@ export default function EspDetailPage() {
     boolean | null
   >(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+
+  // OAuth success message state
+  const [showOAuthSuccess, setShowOAuthSuccess] = useState(false);
+
+  // Disconnect dialog state
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -142,6 +166,24 @@ export default function EspDetailPage() {
 
     checkSubscription();
   }, [token]);
+
+  // Check for OAuth success query parameter
+  useEffect(() => {
+    const oauthSuccess = searchParams.get('oauth');
+    if (oauthSuccess === 'success') {
+      setShowOAuthSuccess(true);
+      // Remove the query parameter from URL after showing the message
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('oauth');
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+      // Hide the message after 5 seconds
+      const timer = setTimeout(() => {
+        setShowOAuthSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -313,6 +355,28 @@ export default function EspDetailPage() {
     }
   };
 
+  const handleDisconnect = async () => {
+    if (!token || !id) return;
+
+    setIsDisconnecting(true);
+    setDisconnectError(null);
+
+    try {
+      await espConnectionApi.deleteConnection(id as string, token);
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Error disconnecting ESP:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to disconnect ESP connection';
+      setDisconnectError(errorMessage);
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -360,11 +424,42 @@ export default function EspDetailPage() {
 
   return (
     <div className="p-8">
+      {/* OAuth Success Message */}
+      {showOAuthSuccess && (
+        <Alert className="mb-6 border-green-500 bg-green-50">
+          <AlertTitle className="text-green-800">
+            Connection Successful!
+          </AlertTitle>
+          <AlertDescription className="text-green-700">
+            Your OAuth connection has been established successfully. Your
+            subscribers are being synced.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{connection.espType}</h1>
-          <p className="text-gray-600">{connection.publicationId}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {connection.publicationId && (
+              <p className="text-gray-600">{connection.publicationId}</p>
+            )}
+            {connection.publicationIds &&
+              connection.publicationIds.length > 0 && (
+                <p className="text-gray-600">
+                  {connection.publicationIds.length} publication
+                  {connection.publicationIds.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            <Badge
+              variant={
+                connection.authMethod === 'oauth' ? 'default' : 'secondary'
+              }
+            >
+              {connection.authMethod === 'oauth' ? 'OAuth' : 'API Key'}
+            </Badge>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex gap-2">
@@ -549,6 +644,124 @@ export default function EspDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* OAuth Connection Details Card */}
+      {connection.authMethod === 'oauth' && (
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>OAuth Connection Details</CardTitle>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDisconnectDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Token Expiry */}
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Token Expires At
+                </p>
+                <p className="text-base">
+                  {connection.tokenExpiresAt
+                    ? formatDate(connection.tokenExpiresAt)
+                    : 'Not available'}
+                </p>
+              </div>
+
+              {/* Last Refresh */}
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Last Refreshed
+                </p>
+                <p className="text-base">
+                  {connection.lastValidatedAt
+                    ? formatDate(connection.lastValidatedAt)
+                    : 'Never'}
+                </p>
+              </div>
+
+              {/* Connected Publications */}
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-gray-600 mb-2">
+                  Connected Publications
+                </p>
+                {connection.publicationIds &&
+                connection.publicationIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {connection.publicationIds.map((pubId, index) => (
+                      <Badge key={index} variant="outline">
+                        {pubId}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : connection.publicationId ? (
+                  <Badge variant="outline">{connection.publicationId}</Badge>
+                ) : (
+                  <p className="text-sm text-gray-500">No publications</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Disconnect Confirmation Dialog */}
+      <Dialog
+        open={showDisconnectDialog}
+        onOpenChange={setShowDisconnectDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Disconnect ESP Connection</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to disconnect this ESP connection? This
+              action will permanently delete the connection and all associated
+              subscribers and sync history. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {disconnectError && (
+            <Alert variant="destructive">
+              <AlertDescription>{disconnectError}</AlertDescription>
+            </Alert>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisconnectDialog(false);
+                setDisconnectError(null);
+              }}
+              disabled={isDisconnecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnect}
+              disabled={isDisconnecting}
+            >
+              {isDisconnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Disconnecting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Disconnect
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Subscribers Table */}
       <Card>

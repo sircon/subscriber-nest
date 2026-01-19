@@ -25,6 +25,9 @@ export class SyncHistory {
   @JoinColumn({ name: 'espConnectionId' })
   espConnection: EspConnection;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  publicationId: string | null;
+
   @Column({
     type: 'enum',
     enum: SyncHistoryStatus,
