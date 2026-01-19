@@ -18,22 +18,27 @@ RUN yarn install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-# Set NODE_ENV to development for build (to include devDependencies)
-ENV NODE_ENV=development
+# Don't set NODE_ENV here - let Next.js handle it
+# Yarn will install all dependencies (including devDependencies) by default
 
 # Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
 COPY apps/frontend ./apps/frontend
-COPY package.json ./
+COPY package.json yarn.lock* ./
 
 # Set build-time environment variables
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build Next.js app
+# Disable Turbopack to avoid monorepo resolution issues
 WORKDIR /app/apps/frontend
+ENV NEXT_PRIVATE_SKIP_TURBO=1
+# Set NODE_ENV=production for Next.js build (it expects this)
+# devDependencies are already installed from the deps stage
+ENV NODE_ENV=production
 RUN yarn build
 
 # Production stage
@@ -50,7 +55,8 @@ RUN adduser --system --uid 1001 nextjs
 # Copy built application (standalone mode)
 COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/public ./apps/frontend/public
+# Create public directory (Next.js public folder is optional, create empty if it doesn't exist)
+RUN mkdir -p ./apps/frontend/public
 
 USER nextjs
 

@@ -36,7 +36,6 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     networks:
       - subscriber_nest_network
 
@@ -86,6 +85,8 @@ services:
       MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
       MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
       MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
+
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
     ports:
       - "${PORT:-4000}:4000"
     depends_on:
@@ -155,6 +156,8 @@ services:
       MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
       MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
       MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
+
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
     ports:
       - "${WORKER_PORT:-4001}:4001"
     depends_on:
@@ -190,7 +193,7 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3099}:3000"
     depends_on:
       api:
         condition: service_healthy
