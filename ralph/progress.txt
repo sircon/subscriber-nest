@@ -18,6 +18,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - MailerLite uses Bearer token auth; API URL `https://connect.mailerlite.com/api`; cursor-based pagination via links.next or meta.next_cursor
 - PostUp uses Basic Auth with compound API key format "username:password"; API URL `https://api.postup.com/api`; lists = publications, recipients = subscribers
 - Constant Contact uses Bearer token auth with OAuth access token; API URL `https://api.cc.email/v3`; cursor-based pagination; contact_lists = publications, contacts = subscribers
+- Iterable uses Api-Key header auth; API URL `https://api.iterable.com/api`; lists = publications, users = subscribers; list sizes available in /lists response
 
 ---
 
@@ -209,4 +210,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Contact status based on `permission_to_send`: implicit, explicit, pending_confirmation, unsubscribed, temp_hold, not_set
   - Custom fields stored in `custom_fields` array with `custom_field_id` and `value`
   - Max 50 records for lists, 500 for contacts per API request
+---
+
+## Mon Jan 19, 2026 - US-013
+- **What was implemented**: Created Iterable ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/iterable.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Iterable is a growth marketing platform supporting email, SMS, and push
+  - Uses `Api-Key` header for authentication (not Authorization header)
+  - API base URL is `https://api.iterable.com/api`
+  - Publications = lists; GET /lists endpoint returns all lists with sizes
+  - Subscribers fetched via GET /lists/getUsers (returns emails/IDs), then individual user profiles via GET /users/{email}
+  - List `size` field contains subscriber count
+  - User data stored in `dataFields` object (firstName, lastName, custom fields)
+  - Status inferred from: unsubscribedChannelIds (channel 0 = email), bounced, hardBounced, spamComplaint, emailVerified
+  - User identifier can be email or userId
 ---

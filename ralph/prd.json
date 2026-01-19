@@ -254,7 +254,7 @@
         "Integration test passes with mock Iterable API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
