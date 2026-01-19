@@ -465,8 +465,8 @@
         "All connectors documented with their API versions"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Audit complete. Created esp-api-version-audit.md documenting all 17 connectors. Identified connectors needing verification: Email Octopus (potential v1.6 vs v2 mismatch), Kit (v1), Customer.io (v1), SparkPost (v1), Beehiiv (v2). Connectors without version in URL need verification: Email Octopus, Omeda, Ghost, Sailthru, MailerLite, PostUp, Iterable."
     },
     {
       "id": "US-026",

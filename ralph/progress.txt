@@ -345,3 +345,17 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - All 17 ESP connectors are compatible with the updated interface (verified via backend build)
   - Interface documentation clarifies ESP terminology differences for future developers
 ---
+
+## Mon Jan 19, 2026 - US-025
+- **What was implemented**: Audited all 17 ESP connectors to document API versions and identify connectors that may need updates
+- **Files changed**:
+  - `ralph/esp-api-version-audit.md` - Comprehensive audit document documenting API versions for all 17 connectors
+- **Learnings for future iterations:**
+  - 10 connectors have explicit API versions in their URLs (Beehiiv v2, Kit v1, Mailchimp v3.0, Campaign Monitor v3.2, SparkPost v1, ActiveCampaign v3, Customer.io v1, Constant Contact v3, SendGrid v3, Brevo v3)
+  - 7 connectors don't have version in URL (Email Octopus, Omeda, Ghost, Sailthru, MailerLite, PostUp, Iterable) - need to verify they're using latest APIs
+  - Some connectors have API documentation links in comments (Campaign Monitor, Email Octopus, Omeda, Ghost, SparkPost, ActiveCampaign, Customer.io, Sailthru, MailerLite, PostUp, Constant Contact, Iterable, SendGrid, Brevo)
+  - Missing documentation links: Beehiiv, Kit, Mailchimp
+  - Email Octopus has potential version mismatch: documentation mentions v2 but connector may use v1.6
+  - Connectors using v1 APIs (Kit, Customer.io, SparkPost) should be checked for v2+ availability
+  - Audit document created at `ralph/esp-api-version-audit.md` for future reference
+---
