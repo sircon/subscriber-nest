@@ -36,7 +36,8 @@ async function bootstrap() {
   ]);
   app.use('/admin/queues', bullBoardRouter);
 
-  const port = process.env.PORT ?? 4000;
+  // Use API_PORT if set, otherwise fall back to PORT, default to 4000
+  const port = parseInt(process.env.API_PORT || process.env.PORT || '4000', 10);
   await app.listen(port);
   console.log(`Backend is running on http://localhost:${port}`);
   console.log(`Bull Board dashboard: http://localhost:${port}/admin/queues`);
