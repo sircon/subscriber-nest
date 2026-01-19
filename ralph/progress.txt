@@ -86,3 +86,20 @@ Started: Mon Jan 19 22:21:55 CET 2026
   - This product name appears in Stripe invoices and billing portal for users
   - Typecheck verified via `turbo run build --filter=backend` - passes successfully
 ---
+
+## 2026-01-19 - US-008
+- Updated documentation files from SubscriberNest to AudienceSafe
+- README.md title and all references updated to "AudienceSafe"
+- AGENTS.md title and references updated to "AudienceSafe"
+- DEPLOYMENT.md title and references updated to "AudienceSafe", including container names and database references
+- All task PRD files updated to reference "AudienceSafe" where applicable (esp-connectors, homepage-update, auth-onboarding-flow, billing, dashboard)
+- Database name references updated from "subscriber_nest" to "audience_safe" in README.md and DEPLOYMENT.md
+- Container names updated in DEPLOYMENT.md (postgres_audience_safe, redis_audience_safe, api_audience_safe, worker_audience_safe, frontend_audience_safe)
+- Files changed: `README.md`, `AGENTS.md`, `DEPLOYMENT.md`, `tasks/prd-esp-connectors.md`, `tasks/prd-homepage-update.md`, `tasks/prd-auth-onboarding-flow.md`, `tasks/prd-billing.md`, `tasks/prd-dashboard.md`
+- **Learnings for future iterations:**
+  - Documentation files are located at the root level (README.md, AGENTS.md, DEPLOYMENT.md) and in the tasks/ directory (PRD files)
+  - Container names in DEPLOYMENT.md follow the pattern `{service}_{project_name}` (e.g., `api_audience_safe`)
+  - Database name references appear in both README.md (setup instructions) and DEPLOYMENT.md (backup/restore commands)
+  - Task PRD files in `tasks/` directory contain project references in their introduction sections that should be updated during rebranding
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---
