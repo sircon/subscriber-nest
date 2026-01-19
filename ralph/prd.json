@@ -584,8 +584,8 @@
         "Integration tests pass with latest API version"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added API version note. Verified Ghost uses current Admin API without versioning in URL. All API calls use /ghost/api/admin/ correctly. Backend build and integration tests pass."
     },
     {
       "id": "US-033",

@@ -13,6 +13,7 @@ import { Publication, SubscriberData } from './esp.interface';
  * The API key must be parsed to extract the key ID and secret for JWT signing.
  *
  * API Documentation: https://ghost.org/docs/admin-api/
+ * API Version: Current Admin API (no versioning in URL, current as of January 2026)
  */
 @Injectable()
 export class GhostConnector implements IEspConnector {

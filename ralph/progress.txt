@@ -436,3 +436,16 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format for APIs without versioning: "Current REST API (no versioning in URL, current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-032
+- **What was implemented**: Updated Ghost connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/ghost.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Ghost API uses current Admin API without versioning in URL (no version number in base URL)
+  - API documentation URL: https://ghost.org/docs/admin-api/
+  - All API endpoints in the connector correctly use /ghost/api/admin/ (current Admin API path)
+  - Ghost Admin API version is determined by the Ghost instance version, not the API path
+  - API version note format for APIs without versioning: "Current Admin API (no versioning in URL, current as of {date})"
+  - Backend build and integration tests pass
+---
