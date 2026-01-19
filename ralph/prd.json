@@ -134,7 +134,7 @@
         "Integration test passes with mock ActiveCampaign API"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

@@ -12,6 +12,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Some ESPs use compound API keys (e.g., Omeda: "client:appid:inputid") - parse to extract components
 - Ghost uses JWT authentication: API key format "siteUrl|id:secret", create JWT with HMAC-SHA256 signing
 - SparkPost uses API key directly in Authorization header, supports US/EU regions with "eu|" prefix
+- ActiveCampaign uses "accountName|apiKey" format for compound API key; base URL is `https://{accountName}.api-us1.com/api/3`
 
 ---
 
@@ -102,4 +103,20 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - No explicit status field - infer from `suppressed` or metadata fields
   - Name stored in `address.name` as full name - need to split for firstName/lastName
   - Custom data stored in `substitution_data` object
+---
+
+## Mon Jan 19, 2026 - US-007
+- **What was implemented**: Created ActiveCampaign ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/active-campaign.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - ActiveCampaign uses compound API key format: "accountName|apiKey"
+  - API base URL is account-specific: `https://{accountName}.api-us1.com/api/3`
+  - Authentication via `Api-Token` header (not Authorization header)
+  - Lists endpoint: GET /lists with pagination via limit/offset params
+  - Contacts endpoint: GET /contacts with `listid` param to filter by list
+  - Status is numeric: 0=unconfirmed, 1=active, 2=unsubscribed, 3=bounced
+  - Custom fields are in `fieldValues` array with `field` and `value` properties
+  - List details include `subscriber_count` for efficient count queries
+  - Default page size is 100
 ---
