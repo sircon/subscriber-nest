@@ -477,3 +477,18 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - API version note format: "API Version: v3 (current as of {date})"
   - Backend build and integration tests pass
 ---
+
+## Mon Jan 19, 2026 - US-035
+- **What was implemented**: Updated Customer.io connector to add API version note and verify API version
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/customer-io.connector.ts` - Added API version note in class-level JSDoc comment
+- **Learnings for future iterations:**
+  - Customer.io API v1 is the current version (verified January 2026)
+  - API documentation URL: https://customer.io/docs/api/
+  - All API endpoints in the connector correctly use v1 via baseUrl (getBaseUrl() method)
+  - API documentation link was already present, only version note was added
+  - Customer.io supports US and EU regions with "eu|" prefix in API key
+  - Base URLs: US = `https://api.customer.io/v1`, EU = `https://api-eu.customer.io/v1`
+  - API version note format: "API Version: v1 (current as of {date})"
+  - Backend build and integration tests pass
+---

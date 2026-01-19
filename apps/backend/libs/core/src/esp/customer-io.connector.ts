@@ -19,6 +19,10 @@ import { Publication, SubscriberData } from './esp.interface';
  * - Track API (track.customer.io): For tracking events and customer data
  *
  * This connector uses the App API for listing segments and customers.
+ *
+ * API Version: v1 (current as of January 2026)
+ * - Base URL (US): https://api.customer.io/v1
+ * - Base URL (EU): https://api-eu.customer.io/v1
  */
 @Injectable()
 export class CustomerIoConnector implements IEspConnector {
