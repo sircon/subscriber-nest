@@ -1,3 +1,17 @@
 # Ralph Progress Log
 Started: Mon Jan 19 22:21:55 CET 2026
 ---
+
+## 2026-01-19 - US-001
+- Updated frontend homepage branding from SubscriberNest to AudienceSafe
+- Navigation logo text changed to "AudienceSafe"
+- Domain reference in screenshot changed from "subscribernest.com" to "audiencesafe.com"
+- Footer logo and copyright updated to "AudienceSafe"
+- FAQ section reference updated to "AudienceSafe"
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - Homepage is a single file component (`apps/frontend/src/app/page.tsx`) with all sections (Navigation, Hero, Pricing, FAQ, Footer) defined as separate functions within the same file
+  - Branding text appears in multiple places: navigation logo, footer logo, footer copyright, FAQ answers, and screenshot placeholder
+  - Build and typecheck pass successfully; pre-existing lint errors in other files don't block commits
+  - Frontend dev server runs on port 3000 (can be started with `turbo run dev --filter=frontend`)
+---
