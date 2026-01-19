@@ -12,6 +12,11 @@ apps/backend/**/*.d.ts
 apps/backend/**/*.js.map
 !apps/backend/jest.config.js
 
+# Build artifacts in frontend src directory
+apps/frontend/src/**/*.js
+apps/frontend/src/**/*.d.ts
+apps/frontend/src/**/*.js.map
+
 # Env
 .env
 .env.local
