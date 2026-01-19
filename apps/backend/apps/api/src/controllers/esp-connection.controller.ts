@@ -338,16 +338,10 @@ export class EspConnectionController {
         this.configService.get<string>('FRONTEND_URL') ||
         'http://localhost:3000';
 
-      // Redirect based on whether this is an onboarding flow
-      let successUrl: string;
-      if (isOnboarding) {
-        // Redirect to Stripe onboarding step
-        successUrl = `${frontendUrl}/onboarding/stripe`;
-      } else {
-        // Redirect to ESP detail page
-        successUrl = `${frontendUrl}/dashboard/esp/${savedConnection.id}?oauth=success`;
-      }
-      res.redirect(successUrl);
+      // Redirect to list selection page for OAuth connections
+      // User will select lists, then be redirected to appropriate next page
+      const listSelectionUrl = `${frontendUrl}/onboarding/oauth-lists?connectionId=${savedConnection.id}&isOnboarding=${isOnboarding ? 'true' : 'false'}`;
+      res.redirect(listSelectionUrl);
     } catch (error) {
       // Handle BadRequestException (400 - invalid provider, missing params, invalid state)
       if (error instanceof BadRequestException) {
