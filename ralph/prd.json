@@ -326,7 +326,7 @@
         "All connectors are accessible through the service"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
