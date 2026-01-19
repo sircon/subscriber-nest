@@ -29,3 +29,28 @@ Started: Mon Jan 19 08:58:03 CET 2026
   - Safety/protection messaging works well with phrases like "keep it safe" and "always protected"
   - Auto-fixed linting issues in generated files (next-env.d.ts) don't need to be tracked separately
 ---
+
+## Mon Jan 19 09:03:45 CET 2026 - US-003
+- Updated hero features row to emphasize daily sync frequency
+- Changed feature text from "Auto-sync daily" to "Synced every day" for clearer messaging
+- Maintained visual consistency with existing RefreshCw icon and styling
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - The hero features row is a simple array of objects with icon and text properties
+  - "Synced every day" is clearer and more impactful than "Auto-sync daily" for emphasizing frequency
+  - Browser verification can be done by checking the rendered HTML output from the dev server
+---
+
+## Mon Jan 19 09:15:00 CET 2026 - US-004
+- Updated pricing section to remove all free trial messaging
+- Changed CTA button from "Start your free trial" to "Get Started" (with Link wrapper to /login)
+- Removed "14-day free trial · Cancel anytime" text and replaced with "Credit card required to start"
+- Updated pricing section header from "Simple, transparent pricing" to "Super affordable pricing to keep your audience safe"
+- Updated pricing section subheader to emphasize affordability and accessibility: "One plan. No hidden fees. We cover our costs while keeping it accessible to everyone."
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - PricingSection CTA button needs `asChild` prop when wrapping with Link component
+  - Prettier will auto-format multi-line Button props when running `yarn lint --fix`
+  - The pricing section header and subheader are in the PricingSection component, separate from the pricing card itself
+  - Browser verification via curl shows the changes are correctly rendered in the HTML output
+---

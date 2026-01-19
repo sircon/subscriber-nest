@@ -226,10 +226,11 @@ function PricingSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">
-            Simple, transparent pricing
+            Super affordable pricing to keep your audience safe
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            One plan. No hidden fees. Scale as your list grows.
+            One plan. No hidden fees. We cover our costs while keeping it
+            accessible to everyone.
           </p>
         </div>
 
@@ -294,12 +295,18 @@ function PricingSection() {
                 </div>
 
                 {/* CTA */}
-                <Button size="lg" className="w-full gap-2 text-base h-14">
-                  Start your free trial <ArrowRight className="w-4 h-4" />
+                <Button
+                  size="lg"
+                  className="w-full gap-2 text-base h-14"
+                  asChild
+                >
+                  <Link href="/login">
+                    Get Started <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground mt-4">
-                  14-day free trial · Cancel anytime
+                  Credit card required to start
                 </p>
               </div>
             </div>
