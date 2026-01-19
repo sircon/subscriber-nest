@@ -3,6 +3,7 @@ import { BeehiivConnector } from '@app/core/esp/beehiiv.connector';
 import { KitConnector } from '@app/core/esp/kit.connector';
 import { MailchimpConnector } from '@app/core/esp/mailchimp.connector';
 import { IEspConnector } from '@app/core/esp/esp-connector.interface';
+import { Publication } from '@app/core/esp/esp.interface';
 // New connectors
 import { ActiveCampaignConnector } from '@app/core/esp/active-campaign.connector';
 import { BrevoConnector } from '@app/core/esp/brevo.connector';
@@ -466,6 +467,65 @@ export class EspConnectionService {
 
       // If we've already retried or it's not a 401 error, throw the original error
       throw error;
+    }
+  }
+
+  /**
+   * Fetches available lists (publications/segments/lists depending on ESP) for an ESP connection
+   * @param id - The ID of the ESP connection
+   * @param userId - Optional user ID to validate ownership
+   * @returns Array of publications (lists/segments/publications depending on ESP terminology)
+   * @throws NotFoundException if connection not found
+   * @throws BadRequestException if user doesn't own the connection (when userId provided) or if auth method is invalid
+   * @throws InternalServerErrorException if API call fails
+   */
+  async fetchAvailableLists(id: string, userId?: string): Promise<Publication[]> {
+    const connection = await this.findById(id, userId);
+
+    const connector = this.getConnector(connection.espType);
+
+    if (connection.authMethod === AuthMethod.API_KEY) {
+      if (!connection.encryptedApiKey) {
+        throw new BadRequestException(
+          'API key is missing for this connection'
+        );
+      }
+
+      // Decrypt the API key
+      const apiKey = this.encryptionService.decrypt(connection.encryptedApiKey);
+
+      // Fetch publications using API key
+      return connector.fetchPublications(apiKey);
+    } else if (connection.authMethod === AuthMethod.OAUTH) {
+      if (!connection.encryptedAccessToken) {
+        throw new BadRequestException(
+          'Access token is missing for this OAuth connection'
+        );
+      }
+
+      if (!connector.fetchPublicationsWithOAuth) {
+        throw new BadRequestException(
+          `OAuth is not supported for ESP type: ${connection.espType}`
+        );
+      }
+
+      // Decrypt access token
+      let accessToken = this.encryptionService.decrypt(
+        connection.encryptedAccessToken
+      );
+
+      // Fetch publications using OAuth with automatic retry on 401
+      return this.callOAuthConnectorMethodWithRetry(
+        connection,
+        async (token: string) => {
+          return connector.fetchPublicationsWithOAuth!(token);
+        },
+        accessToken
+      );
+    } else {
+      throw new BadRequestException(
+        `Unsupported auth method: ${connection.authMethod}`
+      );
     }
   }
 

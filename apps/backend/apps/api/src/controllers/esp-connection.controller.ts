@@ -416,6 +416,42 @@ export class EspConnectionController {
     }
   }
 
+  @Get(':id/lists')
+  async getLists(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<Array<{ id: string; name: string; [key: string]: any }>> {
+    try {
+      // Fetch available lists from ESP API (validates ownership internally)
+      // Note: fetchAvailableLists() returns lists/segments/publications depending on ESP terminology
+      const lists = await this.espConnectionService.fetchAvailableLists(
+        id,
+        user.id
+      );
+      return lists;
+    } catch (error) {
+      // Handle NotFoundException from service (404 - connection not found)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // Handle BadRequestException (400 - missing API key/token, invalid auth method, or 403 - ownership validation failed)
+      if (error instanceof BadRequestException) {
+        if (error.message.includes('permission') || error.message.includes('own')) {
+          throw new ForbiddenException(
+            'You do not have permission to access this ESP connection'
+          );
+        }
+        throw error;
+      }
+
+      // Handle other errors as 500
+      throw new InternalServerErrorException(
+        'Failed to retrieve available lists'
+      );
+    }
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createConnection(
