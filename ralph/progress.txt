@@ -17,6 +17,7 @@ Started: Mon Jan 19 09:42:21 CET 2026
 - Sailthru uses signature-based auth (MD5 hash of secret + sorted values); API key format "apiKey|apiSecret"; subscriber export uses job-based approach
 - MailerLite uses Bearer token auth; API URL `https://connect.mailerlite.com/api`; cursor-based pagination via links.next or meta.next_cursor
 - PostUp uses Basic Auth with compound API key format "username:password"; API URL `https://api.postup.com/api`; lists = publications, recipients = subscribers
+- Constant Contact uses Bearer token auth with OAuth access token; API URL `https://api.cc.email/v3`; cursor-based pagination; contact_lists = publications, contacts = subscribers
 
 ---
 
@@ -191,4 +192,21 @@ Started: Mon Jan 19 09:42:21 CET 2026
   - Status values: A=Active, U=Unsubscribed, H=Hard Bounce, S=Soft Bounce, C=Complaint, P=Pending
   - Demographics (custom fields) stored in `demographics` object
   - List IDs referenced by `listId`, recipient IDs by `recipientId`
+---
+
+## Mon Jan 19, 2026 - US-012
+- **What was implemented**: Created Constant Contact ESP connector
+- **Files changed**:
+  - `apps/backend/libs/core/src/esp/constant-contact.connector.ts` - New connector implementing IEspConnector interface
+- **Learnings for future iterations:**
+  - Constant Contact uses OAuth 2.0 with Bearer token authentication (access token as API key)
+  - API base URL is `https://api.cc.email/v3`
+  - Publications = contact_lists; GET /contact_lists endpoint returns all lists
+  - Subscribers = contacts; GET /contacts with `lists` param to filter by list ID
+  - Uses cursor-based pagination via `cursor.next` field in response
+  - Account validation via GET /account/summary endpoint
+  - List details include `membership_count` for subscriber counts (use `include_membership_count=all`)
+  - Contact status based on `permission_to_send`: implicit, explicit, pending_confirmation, unsubscribed, temp_hold, not_set
+  - Custom fields stored in `custom_fields` array with `custom_field_id` and `value`
+  - Max 50 records for lists, 500 for contacts per API request
 ---
