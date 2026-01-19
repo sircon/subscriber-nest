@@ -396,7 +396,7 @@ function FAQSection() {
     {
       question: 'Is there a free tier?',
       answer:
-        "We offer a 14-day free trial with full access to all features. After that, it's $5/month for up to 10,000 subscribers. We keep it simple — one plan with all features included.",
+        "We keep it simple with one affordable plan: $5/month for up to 10,000 subscribers. All features are included. A credit card is required to start, but our pricing is designed to be accessible to everyone. We cover our costs while keeping it affordable—protecting your audience shouldn't break the bank.",
     },
   ];
 
