@@ -193,7 +193,7 @@ services:
     container_name: frontend_audience_safe
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3000 # Explicitly set to 3000 to prevent Coolify's PORT=4000 from overriding
+      PORT: 3000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     ports:
       - "3000:3000"
@@ -204,20 +204,6 @@ services:
     networks:
       - audience_safe_network
       - coolify
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=coolify"
-      - "traefik.http.routers.audiencesafe-http.rule=Host(`audiencesafe.com`) || Host(`www.audiencesafe.com`)"
-      - "traefik.http.routers.audiencesafe-http.entrypoints=http"
-      - "traefik.http.routers.audiencesafe-http.service=audiencesafe"
-      - "traefik.http.middlewares.redirect-frontend-to-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.audiencesafe-http.middlewares=redirect-frontend-to-https"
-      - "traefik.http.routers.audiencesafe-https.rule=Host(`audiencesafe.com`) || Host(`www.audiencesafe.com`)"
-      - "traefik.http.routers.audiencesafe-https.entrypoints=https"
-      - "traefik.http.routers.audiencesafe-https.tls=true"
-      - "traefik.http.routers.audiencesafe-https.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.audiencesafe-https.service=audiencesafe"
-      - "traefik.http.services.audiencesafe.loadbalancer.server.port=3000"
     healthcheck:
       test:
         [
