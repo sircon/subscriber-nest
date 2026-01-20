@@ -203,6 +203,7 @@ services:
     restart: unless-stopped
     networks:
       - audience_safe_network
+      - coolify
     healthcheck:
       test:
         [
@@ -225,3 +226,5 @@ volumes:
 networks:
   audience_safe_network:
     driver: bridge
+  coolify:
+    external: true
