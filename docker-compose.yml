@@ -206,10 +206,13 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.audiencesafe-http.rule=Host(`audiencesafe.com`)"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.audiencesafe-http.rule=Host(`audiencesafe.com`) || Host(`www.audiencesafe.com`)"
       - "traefik.http.routers.audiencesafe-http.entrypoints=http"
       - "traefik.http.routers.audiencesafe-http.service=audiencesafe"
-      - "traefik.http.routers.audiencesafe-https.rule=Host(`audiencesafe.com`)"
+      - "traefik.http.middlewares.redirect-frontend-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.audiencesafe-http.middlewares=redirect-frontend-to-https"
+      - "traefik.http.routers.audiencesafe-https.rule=Host(`audiencesafe.com`) || Host(`www.audiencesafe.com`)"
       - "traefik.http.routers.audiencesafe-https.entrypoints=https"
       - "traefik.http.routers.audiencesafe-https.tls=true"
       - "traefik.http.routers.audiencesafe-https.tls.certresolver=letsencrypt"
