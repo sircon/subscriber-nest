@@ -16,6 +16,7 @@ apps/backend/**/*.js.map
 apps/frontend/src/**/*.js
 apps/frontend/src/**/*.d.ts
 apps/frontend/src/**/*.js.map
+apps/frontend/next-env.d.ts
 
 # Env
 .env
