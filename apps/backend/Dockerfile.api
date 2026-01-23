@@ -63,12 +63,16 @@ COPY --from=builder /app/apps/backend/run-migrations.js ./run-migrations.js
 COPY infisical-entrypoint.sh /app/infisical-entrypoint.sh
 RUN chmod +x /app/infisical-entrypoint.sh
 
+# Copy health check script
+COPY apps/backend/healthcheck.sh /app/healthcheck.sh
+RUN chmod +x /app/healthcheck.sh
+
 # Expose API port
 EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+# Health check - increased start_period to 60s to allow Infisical auth and app startup
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD /app/healthcheck.sh 4000 5 || exit 1
 
 # Start API with Infisical, per docs:
 # `infisical run --projectId <id> -- <command>`
