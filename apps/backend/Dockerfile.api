@@ -45,12 +45,23 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install Infisical CLI
+# Following official installation guide: https://infisical.com/docs/cli/overview#alpine
+RUN apk add --no-cache bash curl coreutils && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.alpine.sh' | bash && \
+    apk update && apk add infisical && \
+    apk del curl
+
 # Copy built application and dependencies
 COPY --from=builder /app/apps/backend/dist/api ./dist
 # In yarn workspaces, all node_modules are hoisted to root, so only copy root node_modules
 COPY --from=builder /app/node_modules ./node_modules
 # Copy migration runner script
 COPY --from=builder /app/apps/backend/run-migrations.js ./run-migrations.js
+
+# Infisical entrypoint
+COPY infisical-entrypoint.sh /app/infisical-entrypoint.sh
+RUN chmod +x /app/infisical-entrypoint.sh
 
 # Expose API port
 EXPOSE 4000
@@ -59,5 +70,8 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
 
-# Start API
+# Start API with Infisical, per docs:
+# `infisical run --projectId <id> -- <command>`
+ENTRYPOINT ["/app/infisical-entrypoint.sh"]
+
 CMD ["node", "dist/apps/api/src/main.js"]

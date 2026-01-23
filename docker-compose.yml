@@ -46,48 +46,13 @@ services:
       dockerfile: apps/backend/Dockerfile.api
     container_name: api_audience_safe
     environment:
-      # Server
-      NODE_ENV: ${NODE_ENV:-production}
-      API_PORT: ${API_PORT:-4000} # Use API_PORT to avoid conflicts with frontend PORT
-      PORT: ${API_PORT:-4000} # Map API_PORT to PORT for backward compatibility
+      # Infisical Configuration
+      INFISICAL_MACHINE_CLIENT_ID: ${INFISICAL_MACHINE_CLIENT_ID}
+      INFISICAL_MACHINE_CLIENT_SECRET: ${INFISICAL_MACHINE_CLIENT_SECRET}
+      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
+      INFISICAL_ENV: ${INFISICAL_ENV:-prod}
+      INFISICAL_API_URL: ${INFISICAL_API_URL:-https://app.infisical.com}
 
-      # Database
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${DATABASE_USER:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      DATABASE_NAME: ${DATABASE_NAME:-audience_safe}
-      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
-
-      # Redis
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-
-      # Stripe
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      STRIPE_METER_ID: ${STRIPE_METER_ID}
-      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
-
-      # Resend Email
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@audiencesafe.com}
-
-      # OAuth (optional)
-      KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
-      KIT_OAUTH_CLIENT_SECRET: ${KIT_OAUTH_CLIENT_SECRET:-}
-      KIT_OAUTH_AUTHORIZATION_URL: ${KIT_OAUTH_AUTHORIZATION_URL:-}
-      KIT_OAUTH_TOKEN_URL: ${KIT_OAUTH_TOKEN_URL:-}
-      KIT_OAUTH_SCOPES: ${KIT_OAUTH_SCOPES:-}
-
-      MAILCHIMP_OAUTH_CLIENT_ID: ${MAILCHIMP_OAUTH_CLIENT_ID:-}
-      MAILCHIMP_OAUTH_CLIENT_SECRET: ${MAILCHIMP_OAUTH_CLIENT_SECRET:-}
-      MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
-      MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
-      MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
-
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
     # Port mappings removed for Coolify - use docker-compose.override.yml for local development
     ports:
       - "4000:4000"
@@ -119,47 +84,14 @@ services:
       dockerfile: apps/backend/Dockerfile.worker
     container_name: worker_audience_safe
     environment:
-      # Server
-      NODE_ENV: ${NODE_ENV:-production}
-      WORKER_PORT: ${WORKER_PORT:-4001}
+      # Infisical Configuration
+      INFISICAL_MACHINE_CLIENT_ID: ${INFISICAL_MACHINE_CLIENT_ID}
+      INFISICAL_MACHINE_CLIENT_SECRET: ${INFISICAL_MACHINE_CLIENT_SECRET}
+      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
+      INFISICAL_ENV: ${INFISICAL_ENV:-prod}
+      INFISICAL_API_URL: ${INFISICAL_API_URL:-https://app.infisical.com}
 
-      # Database
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${DATABASE_USER:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      DATABASE_NAME: ${DATABASE_NAME:-audience_safe}
-      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE:-false}
-
-      # Redis
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-
-      # Stripe
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      STRIPE_METER_ID: ${STRIPE_METER_ID}
-      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
-
-      # Resend Email
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@audiencesafe.com}
-
-      # OAuth (optional)
-      KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
-      KIT_OAUTH_CLIENT_SECRET: ${KIT_OAUTH_CLIENT_SECRET:-}
-      KIT_OAUTH_AUTHORIZATION_URL: ${KIT_OAUTH_AUTHORIZATION_URL:-}
-      KIT_OAUTH_TOKEN_URL: ${KIT_OAUTH_TOKEN_URL:-}
-      KIT_OAUTH_SCOPES: ${KIT_OAUTH_SCOPES:-}
-
-      MAILCHIMP_OAUTH_CLIENT_ID: ${MAILCHIMP_OAUTH_CLIENT_ID:-}
-      MAILCHIMP_OAUTH_CLIENT_SECRET: ${MAILCHIMP_OAUTH_CLIENT_SECRET:-}
-      MAILCHIMP_OAUTH_AUTHORIZATION_URL: ${MAILCHIMP_OAUTH_AUTHORIZATION_URL:-}
-      MAILCHIMP_OAUTH_TOKEN_URL: ${MAILCHIMP_OAUTH_TOKEN_URL:-}
-      MAILCHIMP_OAUTH_SCOPES: ${MAILCHIMP_OAUTH_SCOPES:-}
-
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # Note: All other secrets (DATABASE_PASSWORD, DATABASE_USER, etc.) are injected by Infisical at runtime
     ports:
       - "4001:4001"
     depends_on:
@@ -192,9 +124,15 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     container_name: frontend_audience_safe
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      # Frontend doesn't need database/redis config, but keeping structure consistent
+      # Infisical Configuration
+      INFISICAL_MACHINE_CLIENT_ID: ${INFISICAL_MACHINE_CLIENT_ID}
+      INFISICAL_MACHINE_CLIENT_SECRET: ${INFISICAL_MACHINE_CLIENT_SECRET}
+      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
+      INFISICAL_ENV: ${INFISICAL_ENV:-prod}
+      INFISICAL_API_URL: ${INFISICAL_API_URL:-https://app.infisical.com}
+
+      # Note: All secrets are injected by Infisical at runtime
     ports:
       - "3000:3000"
     depends_on:

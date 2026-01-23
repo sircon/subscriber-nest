@@ -53,6 +53,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Install Infisical CLI
+# Following official installation guide: https://infisical.com/docs/cli/overview#alpine
+RUN apk add --no-cache bash curl coreutils && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.alpine.sh' | bash && \
+    apk update && apk add infisical && \
+    apk del curl
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -62,6 +69,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
 # Create public directory (Next.js public folder is optional, create empty if it doesn't exist)
 RUN mkdir -p ./apps/frontend/public
+
+# Infisical entrypoint
+COPY --chown=nextjs:nodejs infisical-entrypoint.sh /app/infisical-entrypoint.sh
+RUN chmod +x /app/infisical-entrypoint.sh
 
 USER nextjs
 
@@ -75,5 +86,7 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 || r.statusCode === 404 ? 0 : 1)})" || exit 1
 
-# Start Next.js
+# Start Next.js with Infisical, per docs:
+# `infisical run --projectId <id> -- <command>`
+ENTRYPOINT ["/app/infisical-entrypoint.sh"]
 CMD ["node", "apps/frontend/server.js"]

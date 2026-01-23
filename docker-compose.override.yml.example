@@ -6,17 +6,38 @@
 # Docker Compose automatically merges docker-compose.override.yml with docker-compose.yml
 # This file is git-ignored, so your local port mappings won't affect production
 
-version: '3.8'
-
 services:
   api:
     ports:
       - "${PORT:-4000}:4000"
+    environment:
+      # Override Infisical values with Docker service names for local development
+      # These will take precedence over Infisical-injected values
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
   frontend:
     ports:
       - "${FRONTEND_PORT:-3099}:3000"
+    networks:
+      - audience_safe_network
+      # coolify network removed for local development (only needed in Coolify production)
 
   worker:
     ports:
       - "${WORKER_PORT:-4001}:4001"
+    environment:
+      # Override Infisical values with Docker service names for local development
+      # These will take precedence over Infisical-injected values
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+networks:
+  # Override coolify network to not require it externally for local development
+  coolify:
+    driver: bridge
+    external: false

@@ -26,7 +26,6 @@ import { SubscriberExportService } from './services/subscriber-export.service';
 import { SubscriberService } from './services/subscriber.service';
 import { SyncHistoryService } from './services/sync-history.service';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -100,4 +99,4 @@ import { SyncHistoryService } from './services/sync-history.service';
   ],
   exports: [EmailService],
 })
-export class AppModule { }
+export class AppModule {}
