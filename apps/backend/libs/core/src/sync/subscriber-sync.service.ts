@@ -13,6 +13,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -229,6 +230,15 @@ export class SubscriberSyncService {
     }
   }
 
+  private getSelectedPublicationIds(
+    espConnection: EspConnection
+  ): string[] {
+    return (
+      espConnection.publicationIds ||
+      (espConnection.publicationId ? [espConnection.publicationId] : [])
+    );
+  }
+
   /**
    * Syncs subscribers from an ESP connection to our database
    * - Fetches subscribers using the ESP connector
@@ -273,13 +283,26 @@ export class SubscriberSyncService {
         // Get publication IDs to sync
         // API key connections use publicationIds array, but fallback to single publicationId for backward compatibility
         // Note: publicationIds contains list IDs (terminology varies by ESP: lists, segments, publications)
-        const publicationIds =
-          espConnection.publicationIds ||
-          (espConnection.publicationId ? [espConnection.publicationId] : []);
+        const publicationIds = this.getSelectedPublicationIds(espConnection);
 
         if (publicationIds.length === 0) {
-          throw new InternalServerErrorException(
-            'No publication IDs available for this API key connection'
+          throw new BadRequestException(
+            'No lists selected for this connection. Please select at least one list to sync.'
+          );
+        }
+
+        const availableLists = await connector.fetchPublications(apiKey);
+        const availableListIds = new Set(
+          availableLists.map((list) => list.id)
+        );
+        const invalidListIds = publicationIds.filter(
+          (id) => !availableListIds.has(id)
+        );
+        if (invalidListIds.length > 0) {
+          throw new BadRequestException(
+            `Selected lists no longer exist for this connection: ${invalidListIds.join(
+              ', '
+            )}. Please update your list selection.`
           );
         }
 
@@ -408,13 +431,38 @@ export class SubscriberSyncService {
 
         // Get publication IDs to sync
         // OAuth connections use publicationIds array, but fallback to single publicationId for backward compatibility
-        const publicationIds =
-          espConnection.publicationIds ||
-          (espConnection.publicationId ? [espConnection.publicationId] : []);
+        const publicationIds = this.getSelectedPublicationIds(espConnection);
 
         if (publicationIds.length === 0) {
+          throw new BadRequestException(
+            'No lists selected for this connection. Please select at least one list to sync.'
+          );
+        }
+
+        if (!connector.fetchPublicationsWithOAuth) {
           throw new InternalServerErrorException(
-            'No publication IDs available for this OAuth connection'
+            `OAuth is not supported for ESP type: ${espConnection.espType}`
+          );
+        }
+
+        const availableLists = await this.callOAuthConnectorMethodWithRetry(
+          espConnection,
+          async (token: string) => {
+            return connector.fetchPublicationsWithOAuth!(token);
+          },
+          accessToken
+        );
+        const availableListIds = new Set(
+          availableLists.map((list) => list.id)
+        );
+        const invalidListIds = publicationIds.filter(
+          (id) => !availableListIds.has(id)
+        );
+        if (invalidListIds.length > 0) {
+          throw new BadRequestException(
+            `Selected lists no longer exist for this connection: ${invalidListIds.join(
+              ', '
+            )}. Please update your list selection.`
           );
         }
 

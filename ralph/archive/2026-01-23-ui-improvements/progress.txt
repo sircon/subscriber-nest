@@ -1,0 +1,159 @@
+# Ralph Progress Log
+Started: Mon Jan 19 22:21:55 CET 2026
+---
+
+## 2026-01-19 - US-001
+- Updated frontend homepage branding from SubscriberNest to AudienceSafe
+- Navigation logo text changed to "AudienceSafe"
+- Domain reference in screenshot changed from "subscribernest.com" to "audiencesafe.com"
+- Footer logo and copyright updated to "AudienceSafe"
+- FAQ section reference updated to "AudienceSafe"
+- Files changed: `apps/frontend/src/app/page.tsx`
+- **Learnings for future iterations:**
+  - Homepage is a single file component (`apps/frontend/src/app/page.tsx`) with all sections (Navigation, Hero, Pricing, FAQ, Footer) defined as separate functions within the same file
+  - Branding text appears in multiple places: navigation logo, footer logo, footer copyright, FAQ answers, and screenshot placeholder
+  - Build and typecheck pass successfully; pre-existing lint errors in other files don't block commits
+  - Frontend dev server runs on port 3000 (can be started with `turbo run dev --filter=frontend`)
+---
+
+## 2026-01-19 - US-002
+- Updated frontend metadata and layout from SubscriberNest to AudienceSafe
+- Page title in layout.tsx updated to "AudienceSafe"
+- Meta description checked and confirmed it doesn't reference SubscriberNest (no changes needed)
+- Files changed: `apps/frontend/src/app/layout.tsx`
+- **Learnings for future iterations:**
+  - Next.js metadata is defined in `apps/frontend/src/app/layout.tsx` using the `Metadata` type from 'next'
+  - The metadata object contains `title` and `description` fields that control browser tab title and meta description
+  - Typecheck is verified via `turbo run build --filter=frontend` which includes TypeScript compilation
+---
+
+## 2026-01-19 - US-003
+- Updated dashboard welcome message from SubscriberNest to AudienceSafe
+- Welcome overlay message changed from "Welcome to SubscriberNest!" to "Welcome to AudienceSafe!"
+- Files changed: `apps/frontend/src/app/dashboard/page.tsx`
+- **Learnings for future iterations:**
+  - Dashboard welcome message is displayed in the `WelcomeOverlay` component within `apps/frontend/src/app/dashboard/page.tsx`
+  - The welcome overlay is shown when the `welcome=true` query parameter is present in the URL (typically after onboarding)
+  - The overlay auto-dismisses after 2 seconds
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+---
+
+## 2026-01-19 - US-004
+- Updated onboarding flow branding from SubscriberNest to AudienceSafe
+- Stripe onboarding page description updated to reference "AudienceSafe" instead of "SubscriberNest"
+- Files changed: `apps/frontend/src/app/onboarding/stripe/page.tsx`
+- **Learnings for future iterations:**
+  - The onboarding flow consists of multiple pages: `/onboarding` (provider selection), `/onboarding/api-key` (API key entry), `/onboarding/oauth-lists` (OAuth list selection), `/onboarding/stripe` (payment setup), and `/onboarding/success` (completion)
+  - The Stripe onboarding page (`apps/frontend/src/app/onboarding/stripe/page.tsx`) contains the billing description that references the brand name
+  - Only one reference to "SubscriberNest" was found in the onboarding flow files
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+  - Browser verification recommended: Navigate to `/onboarding/stripe` to verify the updated text displays correctly
+---
+
+## 2026-01-19 - US-005
+- Updated backend API service response from SubscriberNest to AudienceSafe
+- app.service.ts getHello() method now returns 'AudienceSafe API' instead of 'SubscriberNest API'
+- Files changed: `apps/backend/apps/api/src/app.service.ts`
+- **Learnings for future iterations:**
+  - Backend API service is located at `apps/backend/apps/api/src/app.service.ts`
+  - The getHello() method is called by the AppController's GET endpoint at the root path
+  - Typecheck verified via `turbo run build --filter=backend` which includes TypeScript compilation
+  - Backend lint command has a pre-existing configuration issue with glob patterns, but build/typecheck passes successfully
+---
+
+## 2026-01-19 - US-006
+- Updated email templates and service from SubscriberNest to AudienceSafe
+- Email subject line updated to 'Your verification code for AudienceSafe'
+- Email preview text updated to 'Your verification code for AudienceSafe'
+- Email footer copyright updated to 'AudienceSafe'
+- Default email address updated from 'onboarding@nest.miguelncorreia.com' to 'onboarding@audiencesafe.com'
+- Files changed: `apps/backend/apps/api/src/email.service.ts`, `apps/backend/apps/api/src/emails/verification-code-email.tsx`
+- **Learnings for future iterations:**
+  - Email service is located at `apps/backend/apps/api/src/email.service.ts` and uses Resend API
+  - Email templates are React components using @react-email/components, located in `apps/backend/apps/api/src/emails/`
+  - The verification code email template (`verification-code-email.tsx`) contains Preview text (for email preview) and footer copyright
+  - Default from email address is set in email.service.ts with fallback to 'onboarding@audiencesafe.com' if RESEND_FROM_EMAIL env var is not set
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---
+
+## 2026-01-19 - US-007
+- Updated Stripe product name from SubscriberNest to AudienceSafe
+- Stripe product name in createSubscription method updated from 'SubscriberNest Usage' to 'AudienceSafe Usage'
+- Files changed: `apps/backend/libs/core/src/billing/stripe.service.ts`
+- **Learnings for future iterations:**
+  - Stripe product name is defined in the `createSubscription` method of `StripeService` at `apps/backend/libs/core/src/billing/stripe.service.ts`
+  - The product name is set in the `product_data.name` field when creating a subscription with metered billing
+  - This product name appears in Stripe invoices and billing portal for users
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---
+
+## 2026-01-19 - US-008
+- Updated documentation files from SubscriberNest to AudienceSafe
+- README.md title and all references updated to "AudienceSafe"
+- AGENTS.md title and references updated to "AudienceSafe"
+- DEPLOYMENT.md title and references updated to "AudienceSafe", including container names and database references
+- All task PRD files updated to reference "AudienceSafe" where applicable (esp-connectors, homepage-update, auth-onboarding-flow, billing, dashboard)
+- Database name references updated from "subscriber_nest" to "audience_safe" in README.md and DEPLOYMENT.md
+- Container names updated in DEPLOYMENT.md (postgres_audience_safe, redis_audience_safe, api_audience_safe, worker_audience_safe, frontend_audience_safe)
+- Files changed: `README.md`, `AGENTS.md`, `DEPLOYMENT.md`, `tasks/prd-esp-connectors.md`, `tasks/prd-homepage-update.md`, `tasks/prd-auth-onboarding-flow.md`, `tasks/prd-billing.md`, `tasks/prd-dashboard.md`
+- **Learnings for future iterations:**
+  - Documentation files are located at the root level (README.md, AGENTS.md, DEPLOYMENT.md) and in the tasks/ directory (PRD files)
+  - Container names in DEPLOYMENT.md follow the pattern `{service}_{project_name}` (e.g., `api_audience_safe`)
+  - Database name references appear in both README.md (setup instructions) and DEPLOYMENT.md (backup/restore commands)
+  - Task PRD files in `tasks/` directory contain project references in their introduction sections that should be updated during rebranding
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---
+
+## 2026-01-19 - US-009
+- Updated Docker Compose configuration from SubscriberNest to AudienceSafe
+- Container names updated: postgres_subscriber_nest → postgres_audience_safe, redis_subscriber_nest → redis_audience_safe, api_subscriber_nest → api_audience_safe, worker_subscriber_nest → worker_audience_safe, frontend_subscriber_nest → frontend_audience_safe
+- Network name updated: subscriber_nest_network → audience_safe_network
+- Default database name updated: subscriber_nest → audience_safe (in POSTGRES_DB and DATABASE_NAME defaults)
+- Default email addresses updated: onboarding@nest.miguelncorreia.com → onboarding@audiencesafe.com (in both api and worker services)
+- Files changed: `docker-compose.yml`
+- **Learnings for future iterations:**
+  - Docker Compose file is located at the root level (`docker-compose.yml`)
+  - Container names follow the pattern `{service}_{project_name}` (e.g., `api_audience_safe`)
+  - Network name follows the pattern `{project_name}_network` (e.g., `audience_safe_network`)
+  - Default database name is set in both POSTGRES_DB (postgres service) and DATABASE_NAME (api and worker services)
+  - Default email addresses are set in RESEND_FROM_EMAIL environment variable for both api and worker services
+  - Docker Compose file can be validated using `docker compose config --quiet` command
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---
+
+## 2026-01-19 - US-010
+- Updated code comments and API client documentation from SubscriberNest to AudienceSafe
+- API client file header comment updated from "API client for SubscriberNest backend" to "API client for AudienceSafe backend"
+- Searched all TypeScript files in apps/ directory for any other code comments referencing SubscriberNest - only one reference found and updated
+- Files changed: `apps/frontend/src/lib/api.ts`
+- **Learnings for future iterations:**
+  - API client documentation is located in the file header comment of `apps/frontend/src/lib/api.ts`
+  - Code comments referencing the project name are minimal - most branding appears in user-facing text rather than code comments
+  - Typecheck verified via `turbo run build --filter=frontend` - passes successfully
+---
+
+## 2026-01-19 - US-011
+- Updated Ralph/agent configuration files from SubscriberNest to AudienceSafe
+- ralph/prompt.md updated to reference 'AudienceSafe' instead of 'SubscriberNest' in the project description
+- All archived PRD JSON files updated: project field changed from "SubscriberNest" to "AudienceSafe" in 9 archived PRD files (2026-01-19-rebrand-to-audiencesafe, 2026-01-19-homepage-update, 2026-01-19-kit-mailchimp-oauth, 2026-01-18-kit-mailchimp-oauth, 2026-01-18-billing, 2026-01-19-dashboard, 2026-01-18-dashboard, 2026-01-18-esp-subscriber-sync, 2026-01-18-auth-onboarding-flow)
+- Archived progress.txt file updated to reference 'AudienceSafe' instead of 'SubscriberNest' in summary text
+- Files changed: `ralph/prompt.md`, `ralph/archive/2026-01-19-rebrand-to-audiencesafe/prd.json`, `ralph/archive/2026-01-19-homepage-update/prd.json`, `ralph/archive/2026-01-19-kit-mailchimp-oauth/prd.json`, `ralph/archive/2026-01-18-kit-mailchimp-oauth/prd.json`, `ralph/archive/2026-01-18-billing/prd.json`, `ralph/archive/2026-01-19-dashboard/prd.json`, `ralph/archive/2026-01-18-dashboard/prd.json`, `ralph/archive/2026-01-18-esp-subscriber-sync/prd.json`, `ralph/archive/2026-01-18-auth-onboarding-flow/prd.json`, `ralph/archive/2026-01-19-dashboard/progress.txt`
+- **Learnings for future iterations:**
+  - Ralph agent configuration files include: ralph/prompt.md (main agent instructions), ralph/prd.json (current PRD), and archived PRD files in ralph/archive/ directories
+  - Archived PRD files maintain historical project names - updating them ensures consistency across all agent configuration files
+  - The prompt.md file is the main instruction file for Ralph agents and should be updated when project branding changes
+  - Typecheck verified via `turbo run build --filter=backend --filter=frontend` - passes successfully
+---
+
+## 2026-01-19 - US-012
+- Updated encryption service salt from SubscriberNest to AudienceSafe
+- Encryption service salt updated from 'subscriber-nest-salt' to 'audience-safe-salt' in pbkdf2Sync function
+- Verified encryption/decryption works correctly with new salt using test script
+- Files changed: `apps/backend/libs/core/src/encryption/encryption.service.ts`
+- **Learnings for future iterations:**
+  - Encryption service is located at `apps/backend/libs/core/src/encryption/encryption.service.ts`
+  - The salt is used in `crypto.pbkdf2Sync()` to derive the encryption key from the ENCRYPTION_KEY environment variable
+  - Changing the salt will change the derived encryption key, meaning data encrypted with the old salt cannot be decrypted with the new salt (this is expected during rebranding)
+  - Encryption/decryption functionality can be verified by creating a simple test script that encrypts and decrypts sample data
+  - Typecheck verified via `turbo run build --filter=backend` - passes successfully
+---

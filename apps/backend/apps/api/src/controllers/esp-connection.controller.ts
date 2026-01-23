@@ -71,7 +71,7 @@ export class EspConnectionController {
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue
-  ) {}
+  ) { }
 
   @Get()
   async listConnections(
@@ -412,11 +412,36 @@ export class EspConnectionController {
     }
   }
 
+  @Get(':id/subscriber-stats')
+  async getSubscriberStats(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<{ active: number; unsubscribed: number; total: number }> {
+    try {
+      await this.espConnectionService.findById(id, user.id);
+      return await this.subscriberService.getConnectionStats(id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection'
+        );
+      }
+
+      throw new InternalServerErrorException(
+        'Failed to retrieve subscriber statistics'
+      );
+    }
+  }
+
   @Get(':id/lists')
   async getLists(
     @Param('id') id: string,
     @CurrentUser() user: User
-  ): Promise<Array<{ id: string; name: string; [key: string]: any }>> {
+  ): Promise<Array<{ id: string; name: string;[key: string]: any }>> {
     try {
       // Fetch available lists from ESP API (validates ownership internally)
       // Note: fetchAvailableLists() returns lists/segments/publications depending on ESP terminology
@@ -443,7 +468,7 @@ export class EspConnectionController {
 
       // Handle other errors as 500
       throw new InternalServerErrorException(
-        'Failed to retrieve available lists'
+        `Failed to retrieve available lists: ${(error as Error)?.message ?? 'Unknown error'}`
       );
     }
   }
@@ -597,6 +622,16 @@ export class EspConnectionController {
       if (connection.syncStatus === EspSyncStatus.SYNCING) {
         throw new ConflictException(
           'A sync is already in progress for this ESP connection'
+        );
+      }
+
+      const selectedPublicationIds =
+        connection.publicationIds ||
+        (connection.publicationId ? [connection.publicationId] : []);
+
+      if (selectedPublicationIds.length === 0) {
+        throw new BadRequestException(
+          'No lists selected. Please select at least one list to sync.'
         );
       }
 

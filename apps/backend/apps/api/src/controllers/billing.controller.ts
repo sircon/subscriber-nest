@@ -282,12 +282,11 @@ export class BillingController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async createCheckoutSession(
-    @CurrentUser() user: User
+    @CurrentUser() user: User,
+    @Req() req: Request
   ): Promise<{ url: string }> {
     try {
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000';
+      const frontendUrl = this.resolveFrontendUrl(req);
 
       // Build success and cancel URLs
       const successUrl = `${frontendUrl}/onboarding/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -339,12 +338,11 @@ export class BillingController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async createPortalSession(
-    @CurrentUser() user: User
+    @CurrentUser() user: User,
+    @Req() req: Request
   ): Promise<{ url: string }> {
     try {
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000';
+      const frontendUrl = this.resolveFrontendUrl(req);
       const returnUrl = `${frontendUrl}/dashboard/settings`;
 
       const existingSubscription =
@@ -605,5 +603,28 @@ export class BillingController {
         `Failed to verify checkout session: ${error.message}`
       );
     }
+  }
+
+  private resolveFrontendUrl(req: Request): string {
+    const configuredUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('NEXT_PUBLIC_URL');
+
+    if (configuredUrl && configuredUrl.trim()) {
+      return configuredUrl.replace(/\/+$/, '');
+    }
+
+    const forwardedProto = req.get('x-forwarded-proto');
+    const forwardedHost = req.get('x-forwarded-host');
+    const protocol = forwardedProto
+      ? forwardedProto.split(',')[0].trim()
+      : req.protocol;
+    const host =
+      (forwardedHost ? forwardedHost.split(',')[0].trim() : null) ||
+      req.get('host') ||
+      req.hostname ||
+      'localhost:3000';
+
+    return `${protocol}://${host}`.replace(/\/+$/, '');
   }
 }

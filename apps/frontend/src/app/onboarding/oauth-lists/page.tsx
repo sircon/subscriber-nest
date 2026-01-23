@@ -54,9 +54,7 @@ function OAuthListSelection() {
       } catch (err) {
         console.error('Error fetching lists:', err);
         setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to fetch available lists'
+          err instanceof Error ? err.message : 'Failed to fetch available lists'
         );
       } finally {
         setLoading(false);
@@ -88,9 +86,7 @@ function OAuthListSelection() {
     } catch (err) {
       console.error('Error updating selected lists:', err);
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to save list selection'
+        err instanceof Error ? err.message : 'Failed to save list selection'
       );
       setSaving(false);
     }

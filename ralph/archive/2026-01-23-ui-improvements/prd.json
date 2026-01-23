@@ -1,0 +1,173 @@
+{
+  "project": "AudienceSafe",
+  "branchName": "ralph/rebrand-to-audiencesafe",
+  "description": "Rebrand from SubscriberNest to AudienceSafe - Replace all instances of 'SubscriberNest' and 'Subscriber Nest' with 'AudienceSafe' across user-facing text, documentation, code comments, and configuration. Update domain references to audiencesafe.com.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Update frontend homepage branding",
+      "description": "As a user, I want to see 'AudienceSafe' branding on the homepage so the application reflects the new brand identity.",
+      "acceptanceCriteria": [
+        "Navigation logo text shows 'AudienceSafe' instead of 'SubscriberNest'",
+        "All homepage text references updated to 'AudienceSafe'",
+        "Domain reference updated to 'audiencesafe.com' in homepage",
+        "Footer copyright shows 'AudienceSafe'",
+        "FAQ section references updated to 'AudienceSafe'",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Update frontend metadata and layout",
+      "description": "As a user, I want the browser tab and metadata to show 'AudienceSafe' so the brand is consistent in browser UI.",
+      "acceptanceCriteria": [
+        "Page title in layout.tsx updated to 'AudienceSafe'",
+        "Meta description updated if it references SubscriberNest",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Update dashboard welcome message",
+      "description": "As a user, I want to see 'AudienceSafe' in the dashboard welcome message so the branding is consistent.",
+      "acceptanceCriteria": [
+        "Dashboard welcome message shows 'Welcome to AudienceSafe!' instead of 'Welcome to SubscriberNest!'",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Update onboarding flow branding",
+      "description": "As a user, I want to see 'AudienceSafe' branding during onboarding so the experience is consistent.",
+      "acceptanceCriteria": [
+        "Stripe onboarding page references updated to 'AudienceSafe'",
+        "All onboarding text updated to use 'AudienceSafe'",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update backend API service response",
+      "description": "As a developer, I want the API service to return 'AudienceSafe API' so the backend reflects the new brand.",
+      "acceptanceCriteria": [
+        "app.service.ts returns 'AudienceSafe API' instead of 'SubscriberNest API'",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Update email templates and service",
+      "description": "As a user, I want to receive emails with 'AudienceSafe' branding so the email experience is consistent.",
+      "acceptanceCriteria": [
+        "Email subject lines updated to reference 'AudienceSafe'",
+        "Email template footer shows 'AudienceSafe' copyright",
+        "Email preview text updated to reference 'AudienceSafe'",
+        "Default email address updated to use audiencesafe.com domain",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Update Stripe product name",
+      "description": "As a user, I want Stripe billing to show 'AudienceSafe' so billing reflects the new brand.",
+      "acceptanceCriteria": [
+        "Stripe product name updated to 'AudienceSafe Usage' instead of 'SubscriberNest Usage'",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Update documentation files",
+      "description": "As a developer, I want documentation to reference 'AudienceSafe' so it's consistent with the codebase.",
+      "acceptanceCriteria": [
+        "README.md title and all references updated to 'AudienceSafe'",
+        "AGENTS.md title and references updated to 'AudienceSafe'",
+        "DEPLOYMENT.md title and references updated to 'AudienceSafe'",
+        "All task PRD files updated to reference 'AudienceSafe' where applicable",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Update Docker Compose configuration",
+      "description": "As a developer, I want Docker container names and email defaults to use 'AudienceSafe' branding.",
+      "acceptanceCriteria": [
+        "Container names updated (e.g., api_audience_safe instead of api_subscriber_nest)",
+        "Default email addresses updated to use audiencesafe.com domain",
+        "Network names updated if they reference 'subscriber_nest'",
+        "Docker Compose file validates successfully",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Update code comments and API client documentation",
+      "description": "As a developer, I want code comments to reference 'AudienceSafe' so documentation is consistent.",
+      "acceptanceCriteria": [
+        "API client file comments updated to reference 'AudienceSafe'",
+        "All code comments referencing 'SubscriberNest' updated",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Update Ralph/agent configuration files",
+      "description": "As a developer, I want agent configuration files to reference 'AudienceSafe' so automated tools use the correct branding.",
+      "acceptanceCriteria": [
+        "ralph/prd.json project name updated to 'AudienceSafe'",
+        "All archived PRD JSON files updated to 'AudienceSafe'",
+        "ralph/prompt.md updated to reference 'AudienceSafe'",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Update encryption service salt",
+      "description": "As a developer, I want encryption salt to reference 'AudienceSafe' for consistency.",
+      "acceptanceCriteria": [
+        "Encryption service salt updated from 'subscriber-nest-salt' to 'audience-safe-salt'",
+        "Verify encryption/decryption still works correctly",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

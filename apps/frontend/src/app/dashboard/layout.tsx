@@ -8,10 +8,25 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { espConnectionApi, EspConnection } from '@/lib/api';
-import { Menu, Plus, Settings, Database, LayoutDashboard } from 'lucide-react';
+import {
+  Menu,
+  Plus,
+  Settings,
+  Shield,
+  LayoutDashboard,
+  MoreHorizontal,
+  ListChecks,
+  Trash2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SubscriptionWarningBanner } from '@/components/subscription-warning-banner';
 import { getEspName, EspType } from '@/lib/esp-config';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function DashboardLayout({
   children,
@@ -99,14 +114,17 @@ export default function DashboardLayout({
             ) : (
               connections.map((connection) => {
                 const isActive = pathname === `/dashboard/esp/${connection.id}`;
-                
+
                 // Helper function to get list names for display (with fallback to IDs)
                 const getListNames = (): string[] => {
                   if (connection.listNames && connection.listNames.length > 0) {
                     return connection.listNames;
                   }
                   // Fallback to IDs if names not available
-                  if (connection.publicationIds && connection.publicationIds.length > 0) {
+                  if (
+                    connection.publicationIds &&
+                    connection.publicationIds.length > 0
+                  ) {
                     return connection.publicationIds;
                   }
                   if (connection.publicationId) {
@@ -125,27 +143,28 @@ export default function DashboardLayout({
 
                 const listNames = getListNames();
                 const listDisplay = formatListNames(listNames);
-                const espDisplayName = getEspName(connection.espType as EspType);
+                const espDisplayName = getEspName(
+                  connection.espType as EspType
+                );
 
                 return (
-                  <Link
+                  <div
                     key={connection.id}
-                    href={`/dashboard/esp/${connection.id}`}
-                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'group flex items-center gap-2 rounded-lg px-3 py-2 transition-all',
+                      isActive
+                        ? 'bg-primary/10 border-l-4 border-primary text-primary font-medium'
+                        : 'hover:bg-accent'
+                    )}
                   >
-                    <div
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 transition-all',
-                        isActive
-                          ? 'bg-primary/10 border-l-4 border-primary text-primary font-medium'
-                          : 'hover:bg-accent'
-                      )}
+                    <Link
+                      href={`/dashboard/esp/${connection.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-3"
+                      onClick={() => setMobileOpen(false)}
                     >
-                      <Database className="h-4 w-4" />
+                      <Shield className="h-4 w-4 text-primary fill-primary" />
                       <div className="flex-1 truncate">
-                        <div className="text-sm truncate">
-                          {espDisplayName}
-                        </div>
+                        <div className="text-sm truncate">{espDisplayName}</div>
                         <div
                           className={cn(
                             'text-xs truncate',
@@ -157,8 +176,45 @@ export default function DashboardLayout({
                           {listDisplay}
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
+                          aria-label="Connection actions"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            router.push(
+                              `/dashboard/esp/${connection.id}?manageLists=1`
+                            );
+                            setMobileOpen(false);
+                          }}
+                        >
+                          <ListChecks className="h-4 w-4" />
+                          Manage Lists
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onSelect={() => {
+                            router.push(
+                              `/dashboard/esp/${connection.id}?deleteConnection=1`
+                            );
+                            setMobileOpen(false);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Connection
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 );
               })
             )}

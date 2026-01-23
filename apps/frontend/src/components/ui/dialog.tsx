@@ -71,7 +71,7 @@ const DialogContent: React.FC<DialogContentProps> = ({
   return (
     <div
       className={cn(
-        'bg-white rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto',
+        'bg-card text-card-foreground border border-border rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto',
         className
       )}
     >
@@ -105,7 +105,9 @@ const DialogDescription: React.FC<DialogDescriptionProps> = ({
   children,
   className,
 }) => {
-  return <p className={cn('text-sm text-gray-600', className)}>{children}</p>;
+  return (
+    <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>
+  );
 };
 
 const DialogFooter: React.FC<DialogFooterProps> = ({ children, className }) => {

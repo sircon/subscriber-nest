@@ -15,8 +15,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Changed selected checkbox styling from solid bg-primary to bg-primary/10 (subtle tint) with border-primary and text-primary checkmark. Maintains checkbox appearance while clearly indicating selection. Typecheck and lint pass."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Checkout/portal redirects now resolve FRONTEND_URL or NEXT_PUBLIC_URL and fall back to request origin when unset."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
@@ -49,8 +49,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Sync now validates selected lists, blocks sync when no lists are chosen, and frontend shows a clear message instead of triggering a sync."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
@@ -65,8 +65,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Added /esp-connections/:id/subscriber-stats endpoint that validates connection ownership and returns active/unsubscribed/total counts from all subscribers."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
@@ -81,8 +81,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "ESP detail page now fetches /subscriber-stats for connection-wide counts, uses stats total for list size, and refreshes stats after sync completion polling."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
@@ -98,8 +98,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Added Skip button on onboarding Stripe step to complete onboarding via auth API, refresh auth, and redirect to dashboard without triggering sync."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
@@ -114,8 +114,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Updated ESP detail loading skeletons to use theme-aware secondary background for dark mode-friendly appearance."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-008",
@@ -130,8 +130,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Dialog component now uses theme-aware tokens for background, text, border, and description to match dark theme."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-009",
@@ -150,8 +150,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Manage Lists now uses draft selections saved via Save button; cancel discards changes, auto-save removed, and a success toast appears after saving."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-010",
@@ -170,8 +170,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "Removed the Selected Lists card from the connection page, added a per-connection three-dot menu in the sidebar with Manage Lists/Delete actions, and wired actions to open the existing dialogs via query params."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-011",
@@ -189,8 +189,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "Replaced dashboard sync history with an all-subscribers table backed by a new /dashboard/subscribers endpoint, added pagination (50 per page), and displayed ESP connection names."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
