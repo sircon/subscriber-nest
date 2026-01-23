@@ -7,7 +7,14 @@ Started: Fri Jan 23 15:03:39 CET 2026
 - UI components are in `apps/frontend/src/components/ui/` (shadcn/ui style)
 - ListSelector component is in `apps/frontend/src/components/ListSelector.tsx`
 - Checkbox styling: Use `bg-primary/10` for subtle selected state instead of solid `bg-primary` to maintain checkbox appearance
+- Loading skeletons should use theme-aware colors like `bg-secondary` instead of fixed gray tones
+- Dialogs should use theme tokens (`bg-card`, `text-card-foreground`, `border-border`, `text-muted-foreground`) instead of hardcoded white/gray values
 - ESLint rule `no-unused-vars` applies to function type parameter names - use `// eslint-disable-next-line` if needed
+- Stripe billing redirects use `FRONTEND_URL` or `NEXT_PUBLIC_URL`, falling back to request origin when unset
+- Sync requires selected list IDs; trigger sync should be blocked when none are selected
+- ESP detail subscriber breakdown should use `/esp-connections/:id/subscriber-stats` for connection-wide counts
+- Sidebar connection actions are triggered via query params (`manageLists=1`, `deleteConnection=1`) on `/dashboard/esp/:id`
+- Dashboard all-subscribers table uses `/dashboard/subscribers` with pagination (50 items per page by default)
 
 ---
 
@@ -24,4 +31,154 @@ Started: Fri Jan 23 15:03:39 CET 2026
   - TypeScript type checking via `yarn tsc --noEmit` in frontend directory
   - Linting via `yarn lint` in frontend directory (uses ESLint with Prettier)
   - Browser verification requires separate dev-browser skill/MCP tool not available in current session
+---
+## Fri Jan 23 2026 15:40:36 CET - US-002
+- What was implemented: Updated Stripe checkout/portal redirect URLs to prefer FRONTEND_URL or NEXT_PUBLIC_URL and fall back to request origin when unset
+- Files changed
+  - apps/backend/apps/api/src/controllers/billing.controller.ts
+  - apps/backend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Backend: [lint failed: ESLint ignored "apps/**/*.ts" glob] [build ✓]
+- **Learnings for future iterations:**
+  - Stripe redirect URLs should resolve from FRONTEND_URL or NEXT_PUBLIC_URL with request-origin fallback
+  - Backend lint currently fails because ESLint ignores the "apps/**/*.ts" glob in apps/backend
+---
+## Fri Jan 23 2026 16:00:55 CET - US-003
+- What was implemented: Sync now validates selected lists, blocks sync when none are selected, and frontend shows a clear error before queuing sync.
+- Files changed
+  - apps/backend/libs/core/src/sync/subscriber-sync.service.ts
+  - apps/backend/apps/api/src/controllers/esp-connection.controller.ts
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [failed: backend ESLint ignores "apps/**/*.ts" glob]
+  - Build: [backend ✓] [frontend failed: Turbopack "Operation not permitted" binding to a port]
+- **Learnings for future iterations:**
+  - Sync should validate selected list IDs against available lists before processing
+  - Trigger sync should fail fast when no lists are selected to avoid queued jobs
+  - Frontend should guard sync actions when no lists are selected for better UX
+  - Browser verification requires separate dev-browser skill/MCP tool not available in current session
+---
+## Fri Jan 23 2026 16:03:51 CET - US-004
+- What was implemented: Added connection-wide subscriber stats endpoint returning active/unsubscribed/total counts.
+- Files changed
+  - apps/backend/apps/api/src/controllers/esp-connection.controller.ts
+  - apps/backend/apps/api/src/services/subscriber.service.ts
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [failed: backend ESLint ignores "apps/**/*.ts" glob]
+  - Build: [backend ✓]
+- **Learnings for future iterations:**
+  - Connection-wide subscriber stats are computed in SubscriberService via counts by status (active/unsubscribed) plus total.
+  - Backend lint currently fails because ESLint ignores the "apps/**/*.ts" glob in apps/backend.
+---
+## Fri Jan 23 2026 16:08:19 CET - US-005
+- What was implemented: Fetch connection-wide subscriber stats from /subscriber-stats for the breakdown card, use total stats for list size, and refresh stats after sync completion polling.
+- Files changed
+  - apps/frontend/src/lib/api.ts
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+  - apps/frontend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+  - Typecheck: [frontend tsc ✓]
+  - Build: [frontend failed: Turbopack "Operation not permitted" binding to a port]
+- **Learnings for future iterations:**
+  - Subscriber breakdown on ESP detail should use /esp-connections/:id/subscriber-stats for connection-wide counts.
+  - Frontend build may fail in this environment due to Turbopack port binding permissions.
+  - Browser verification requires dev-browser skill/MCP tool not available in this session.
+---
+## Fri Jan 23 2026 16:11:14 CET - US-006
+- What was implemented: Added Skip button on Stripe onboarding to complete onboarding without payment and redirect to dashboard.
+- Files changed
+  - apps/frontend/src/app/onboarding/stripe/page.tsx
+  - apps/frontend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+  - Build: [frontend failed: Turbopack "Operation not permitted" binding to a port]
+- **Learnings for future iterations:**
+  - Onboarding can be completed client-side via `authApi.completeOnboarding()` followed by `checkAuth()` and a full-page redirect so middleware sees updated cookies.
+  - Browser verification requires dev-browser skill/MCP tool not available in current session.
+---
+## Fri Jan 23 2026 16:13:47 CET - US-007
+- What was implemented: Updated ESP detail loading skeletons to use theme-aware secondary background colors for dark mode.
+- Files changed
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+  - Build: [frontend failed: Turbopack "Operation not permitted" binding to a port]
+- **Learnings for future iterations:**
+  - Use theme-aware skeleton colors (e.g., `bg-secondary/60`) for dark theme compatibility on loading states
+  - Frontend build may fail in this environment due to Turbopack port binding permissions
+  - Browser verification requires dev-browser skill/MCP tool not available in this session
+---
+## Fri Jan 23 2026 16:16:29 CET - US-008
+- What was implemented: Updated dialog theming to use theme tokens so Manage Lists modal matches dark mode.
+- Files changed
+  - apps/frontend/src/components/ui/dialog.tsx
+  - apps/frontend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+- **Learnings for future iterations:**
+  - Dialogs should use theme-aware tokens for background, text, and borders to support dark mode.
+  - Browser verification requires dev-browser skill/MCP tool not available in this session.
+---
+## Fri Jan 23 2026 16:20:50 CET - US-009
+- What was implemented: Switched Manage Lists dialog to draft-only selection with Save/Cancel actions, removed auto-save success alert, and added a success toast after saving.
+- Files changed
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+  - Typecheck: [frontend tsc ✓]
+- **Learnings for future iterations:**
+  - Manage Lists changes should be staged in local state and only persisted on explicit Save action.
+  - Success feedback is now shown as a lightweight toast rather than inline alerts in the dialog.
+  - Browser verification requires dev-browser skill/MCP tool not available in this session.
+---
+## Fri Jan 23 2026 16:26:52 CET - US-010
+- What was implemented: Moved connection actions into a sidebar three-dot menu, removed the Selected Lists card, and wired Manage Lists/Delete dialogs to open via query params.
+- Files changed
+  - apps/frontend/src/app/dashboard/layout.tsx
+  - apps/frontend/src/app/dashboard/esp/[id]/page.tsx
+  - apps/frontend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [frontend ✓]
+  - Typecheck: [frontend tsc ✓]
+- **Learnings for future iterations:**
+  - Sidebar connection actions open ESP detail dialogs via query params (`manageLists=1`, `deleteConnection=1`).
+  - Browser verification requires dev-browser skill/MCP tool not available in this session.
+---
+## Fri Jan 23 2026 16:34:02 CET - US-011
+- What was implemented: Replaced dashboard sync history with an all-subscribers table, added a paginated /dashboard/subscribers endpoint, and wired dashboard pagination + ESP name display.
+- Files changed
+  - apps/backend/apps/api/src/controllers/dashboard.controller.ts
+  - apps/backend/AGENTS.md
+  - apps/frontend/src/app/dashboard/page.tsx
+  - apps/frontend/src/lib/api.ts
+  - apps/frontend/AGENTS.md
+  - ralph/prd.json
+  - ralph/progress.txt
+- Quality checks status:
+  - Lint: [backend failed: ESLint ignores "apps/**/*.ts" glob] [frontend ✓]
+  - Build: [backend ✓] [frontend failed: Turbopack "Operation not permitted" binding to a port]
+- **Learnings for future iterations:**
+  - Dashboard now uses /dashboard/subscribers for cross-connection subscriber pagination instead of aggregating sync history client-side.
+  - Backend lint currently fails because ESLint ignores the "apps/**/*.ts" glob in apps/backend.
+  - Frontend build may fail in this environment due to Turbopack port binding permissions.
+  - Browser verification requires dev-browser skill/MCP tool not available in this session.
 ---

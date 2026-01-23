@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { billingApi, espConnectionApi } from '@/lib/api';
+import { authApi, billingApi, espConnectionApi } from '@/lib/api';
 
 /**
  * Calculate estimated monthly cost based on subscriber count
@@ -27,8 +27,9 @@ function calculateEstimatedCost(subscriberCount: number): number {
 function StripeOnboardingForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { token } = useAuth();
+  const { token, checkAuth } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [skipLoading, setSkipLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canceled, setCanceled] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
@@ -113,6 +114,29 @@ function StripeOnboardingForm() {
     }
   };
 
+  const handleSkip = async () => {
+    setSkipLoading(true);
+    setError(null);
+    setCanceled(false);
+
+    try {
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      await authApi.completeOnboarding(token, () => {
+        router.push('/login');
+      });
+
+      await checkAuth();
+
+      window.location.href = '/dashboard?welcome=true';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setSkipLoading(false);
+    }
+  };
+
   const estimatedCost =
     subscriberCount !== null ? calculateEstimatedCost(subscriberCount) : null;
 
@@ -174,13 +198,23 @@ function StripeOnboardingForm() {
               </div>
             )}
 
-            <Button
-              onClick={handleConnectStripe}
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? 'Connecting...' : 'Connect Stripe'}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleConnectStripe}
+                className="w-full"
+                disabled={loading || skipLoading}
+              >
+                {loading ? 'Connecting...' : 'Connect Stripe'}
+              </Button>
+              <Button
+                onClick={handleSkip}
+                className="w-full"
+                variant="outline"
+                disabled={loading || skipLoading}
+              >
+                {skipLoading ? 'Skipping...' : 'Skip for now'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

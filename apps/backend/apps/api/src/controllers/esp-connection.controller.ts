@@ -412,6 +412,31 @@ export class EspConnectionController {
     }
   }
 
+  @Get(':id/subscriber-stats')
+  async getSubscriberStats(
+    @Param('id') id: string,
+    @CurrentUser() user: User
+  ): Promise<{ active: number; unsubscribed: number; total: number }> {
+    try {
+      await this.espConnectionService.findById(id, user.id);
+      return await this.subscriberService.getConnectionStats(id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      if (error instanceof BadRequestException) {
+        throw new ForbiddenException(
+          'You do not have permission to access this ESP connection'
+        );
+      }
+
+      throw new InternalServerErrorException(
+        'Failed to retrieve subscriber statistics'
+      );
+    }
+  }
+
   @Get(':id/lists')
   async getLists(
     @Param('id') id: string,
@@ -597,6 +622,16 @@ export class EspConnectionController {
       if (connection.syncStatus === EspSyncStatus.SYNCING) {
         throw new ConflictException(
           'A sync is already in progress for this ESP connection'
+        );
+      }
+
+      const selectedPublicationIds =
+        connection.publicationIds ||
+        (connection.publicationId ? [connection.publicationId] : []);
+
+      if (selectedPublicationIds.length === 0) {
+        throw new BadRequestException(
+          'No lists selected. Please select at least one list to sync.'
         );
       }
 

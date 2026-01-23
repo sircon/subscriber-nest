@@ -21,16 +21,13 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import {
   dashboardApi,
-  espConnectionApi,
   DashboardStats,
-  SyncHistory,
+  PaginatedDashboardSubscribers,
 } from '@/lib/api';
 import { getEspName, EspType } from '@/lib/esp-config';
+import { Pagination } from '@/components/ui/pagination';
 
-interface SyncHistoryWithEsp extends SyncHistory {
-  espName: string;
-  listNames: string[];
-}
+const ITEMS_PER_PAGE = 50;
 
 function WelcomeOverlay({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
@@ -61,10 +58,12 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { token } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [syncHistory, setSyncHistory] = useState<SyncHistoryWithEsp[]>([]);
+  const [subscribers, setSubscribers] =
+    useState<PaginatedDashboardSubscribers | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     // Check for welcome param
@@ -78,6 +77,12 @@ function DashboardContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const pageParam = searchParams.get('page');
+    const parsedPage = Number.parseInt(pageParam ?? '1', 10);
+    setCurrentPage(Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage);
+  }, [searchParams]);
+
+  useEffect(() => {
     const fetchDashboardData = async () => {
       if (!token) {
         setLoading(false);
@@ -85,74 +90,19 @@ function DashboardContent() {
       }
 
       try {
-        // Fetch stats and connections in parallel
-        const [statsData, connections] = await Promise.all([
+        // Fetch stats and subscribers in parallel
+        const [statsData, subscribersData] = await Promise.all([
           dashboardApi.getStats(token, () => router.push('/login')),
-          espConnectionApi.getUserConnections(token, () =>
-            router.push('/login')
+          dashboardApi.getSubscribers(
+            token,
+            () => router.push('/login'),
+            currentPage,
+            ITEMS_PER_PAGE
           ),
         ]);
 
         setStats(statsData);
-
-        // Fetch sync history for all connections
-        if (connections.length > 0) {
-          // Helper function to get list names for display (with fallback to IDs)
-          const getListNames = (conn: (typeof connections)[0]): string[] => {
-            if (conn.listNames && conn.listNames.length > 0) {
-              return conn.listNames;
-            }
-            // Fallback to IDs if names not available
-            if (conn.publicationIds && conn.publicationIds.length > 0) {
-              return conn.publicationIds;
-            }
-            if (conn.publicationId) {
-              return [conn.publicationId];
-            }
-            return [];
-          };
-
-          // Helper function to format list names for display
-          const formatListNames = (listNames: string[]): string => {
-            if (listNames.length === 0) return '';
-            if (listNames.length === 1) return listNames[0];
-            if (listNames.length <= 3) return listNames.join(', ');
-            return `${listNames.length} lists`;
-          };
-
-          const syncHistoryPromises = connections.map(
-            (conn) =>
-              espConnectionApi
-                .getSyncHistory(conn.id, token, () => router.push('/login'), 50)
-                .then((history) => {
-                  const listNames = getListNames(conn);
-                  const listDisplay = formatListNames(listNames);
-                  const espDisplayName = getEspName(conn.espType as EspType);
-                  return history.map((h) => ({
-                    ...h,
-                    espName: listDisplay
-                      ? `${espDisplayName} (${listDisplay})`
-                      : espDisplayName,
-                    listNames,
-                  }));
-                })
-                .catch(() => []) // Silently handle errors for individual connections
-          );
-
-          const allSyncHistory = await Promise.all(syncHistoryPromises);
-
-          // Flatten and sort by startedAt DESC
-          const mergedHistory = allSyncHistory
-            .flat()
-            .sort(
-              (a, b) =>
-                new Date(b.startedAt).getTime() -
-                new Date(a.startedAt).getTime()
-            )
-            .slice(0, 50); // Keep only top 50
-
-          setSyncHistory(mergedHistory);
-        }
+        setSubscribers(subscribersData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -193,6 +143,32 @@ function DashboardContent() {
     return formatDateTime(dateString);
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      active: 'bg-green-500',
+      unsubscribed: 'bg-gray-500',
+      bounced: 'bg-red-500',
+    };
+    const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
+    return (
+      <Badge className={`${colors[status] || 'bg-gray-500'} text-white`}>
+        {capitalizedStatus}
+      </Badge>
+    );
+  };
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', newPage.toString());
+    router.push(`/dashboard?${params.toString()}`);
+  };
+
   // Show welcome overlay when coming from onboarding
   if (showWelcome) {
     return (
@@ -212,7 +188,7 @@ function DashboardContent() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
         <p className="text-muted-foreground">
-          Monitor your ESP connections and sync activity
+          Monitor your ESP connections and subscriber activity
         </p>
       </div>
 
@@ -254,76 +230,67 @@ function DashboardContent() {
         </Card>
       </div>
 
-      {/* Sync History Table */}
+      {/* All Subscribers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Sync History</CardTitle>
+          <CardTitle>All Subscribers</CardTitle>
           <CardDescription>
-            Most recent sync operations across all ESP connections
+            Subscribers from all ESP connections
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {syncHistory.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No sync history yet. Sync your ESP connections to see activity
-              here.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Last Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Subscribed At</TableHead>
+                  <TableHead>Connection</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscribers && subscribers.data.length === 0 ? (
                   <TableRow>
-                    <TableHead>ESP Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Started At</TableHead>
-                    <TableHead>Completed At</TableHead>
-                    <TableHead>Error</TableHead>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-gray-500"
+                    >
+                      No subscribers found
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {syncHistory.map((history) => (
-                    <TableRow key={history.id}>
-                      <TableCell className="font-medium">
-                        {history.espName}
+                ) : (
+                  subscribers?.data.map((subscriber) => (
+                    <TableRow key={subscriber.id}>
+                      <TableCell className="font-mono text-sm">
+                        {subscriber.maskedEmail}
+                      </TableCell>
+                      <TableCell>{subscriber.firstName || '-'}</TableCell>
+                      <TableCell>{subscriber.lastName || '-'}</TableCell>
+                      <TableCell>{getStatusBadge(subscriber.status)}</TableCell>
+                      <TableCell>
+                        {formatDate(subscriber.subscribedAt)}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            history.status === 'success'
-                              ? 'default'
-                              : 'destructive'
-                          }
-                          className={
-                            history.status === 'success'
-                              ? 'bg-green-500 hover:bg-green-600'
-                              : ''
-                          }
-                        >
-                          {history.status.charAt(0).toUpperCase() +
-                            history.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDateTime(history.startedAt)}</TableCell>
-                      <TableCell>
-                        {formatDateTime(history.completedAt)}
-                      </TableCell>
-                      <TableCell>
-                        {history.status === 'failed' && history.errorMessage ? (
-                          <span
-                            className="text-sm text-destructive max-w-xs truncate block"
-                            title={history.errorMessage}
-                          >
-                            {history.errorMessage}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
+                        {getEspName(subscriber.espType as EspType)}
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {subscribers && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={subscribers.totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={ITEMS_PER_PAGE}
+              totalItems={subscribers.total}
+            />
           )}
         </CardContent>
       </Card>

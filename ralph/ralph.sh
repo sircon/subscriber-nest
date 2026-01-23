@@ -1,18 +1,28 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop
-# Usage: ./ralph.sh [--model MODEL] [--debug] [max_iterations]
+# Usage: ./ralph.sh [--agent agent|codex] [--model MODEL] [--profile PROFILE] [--debug] [max_iterations]
 
 set -e
 
 # Parse arguments
+AGENT="agent"
 MODEL="auto"
 MAX_ITERATIONS=10
 DEBUG=false
+PROFILE=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --agent)
+      AGENT="$2"
+      shift 2
+      ;;
     --model)
       MODEL="$2"
+      shift 2
+      ;;
+    --profile)
+      PROFILE="$2"
       shift 2
       ;;
     --debug)
@@ -38,8 +48,32 @@ debug_log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 debug_log "SCRIPT_DIR: $SCRIPT_DIR"
 
-# Change to project root (parent of scripts directory)
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Resolve agent command
+case "$AGENT" in
+  agent|codex)
+    if [ "$AGENT" = "codex" ]; then
+      AGENT_CMD=("codex" "exec")
+    else
+      AGENT_CMD=("agent")
+    fi
+    ;;
+  *)
+    echo "Unknown agent: $AGENT (expected 'agent' or 'codex')" >&2
+    exit 2
+    ;;
+esac
+
+# Resolve codex profile
+if [ "$AGENT" = "codex" ] && [ -z "$PROFILE" ] && [ -n "$CODEX_PROFILE" ]; then
+  PROFILE="$CODEX_PROFILE"
+fi
+if [ "$AGENT" = "codex" ] && [ -z "$PROFILE" ]; then
+  echo "codex requires a profile; pass --profile <name> or set CODEX_PROFILE" >&2
+  exit 2
+fi
+
+# Change to project root (parent of ralph directory)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 debug_log "PROJECT_ROOT: $PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 debug_log "Changed to PROJECT_ROOT: $(pwd)"
@@ -122,8 +156,8 @@ else
   debug_log "PROGRESS_FILE exists: $(ls -lh "$PROGRESS_FILE")"
 fi
 
-debug_log "Configuration: MODEL=$MODEL, MAX_ITERATIONS=$MAX_ITERATIONS, DEBUG=$DEBUG"
-echo "Starting Ralph - Model: $MODEL, Max iterations: $MAX_ITERATIONS"
+debug_log "Configuration: AGENT=$AGENT, MODEL=$MODEL, MAX_ITERATIONS=$MAX_ITERATIONS, DEBUG=$DEBUG"
+echo "Starting Ralph - Agent: $AGENT, Model: $MODEL, Max iterations: $MAX_ITERATIONS"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
   echo ""
@@ -140,19 +174,34 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   # Read prompt file and pass as argument (agent CLI expects prompt as argument, not stdin)
   PROMPT=$(cat "$SCRIPT_DIR/prompt.md")
   debug_log "Read prompt from: $SCRIPT_DIR/prompt.md"
-  debug_log "Running agent command: agent -p --model $MODEL --output-format text --force [PROMPT]"
-  
-  OUTPUT=$(agent -p --model "$MODEL" --output-format text --force "$PROMPT" 2>&1 | tee /dev/stderr) || true
+  if [ "$AGENT" = "codex" ]; then
+    AGENT_ARGS=()
+    if [ "$MODEL" != "auto" ]; then
+      AGENT_ARGS+=(--model "$MODEL")
+    fi
+    AGENT_ARGS+=(--profile "$PROFILE")
+    debug_log "Running agent command: ${AGENT_CMD[*]} ${AGENT_ARGS[*]} [PROMPT]"
+    OUTPUT=$("${AGENT_CMD[@]}" "${AGENT_ARGS[@]}" "$PROMPT" 2>&1 | tee /dev/stderr) || true
+  else
+    AGENT_ARGS=(-p --model "$MODEL" --output-format text --force)
+    debug_log "Running agent command: ${AGENT_CMD[*]} ${AGENT_ARGS[*]} [PROMPT]"
+    OUTPUT=$("${AGENT_CMD[@]}" "${AGENT_ARGS[@]}" "$PROMPT" 2>&1 | tee /dev/stderr) || true
+  fi
   
   debug_log "Agent command completed"
   
-  # Check for completion signal
+  # Check for completion signal, but verify PRD is actually complete
   if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
     debug_log "Completion signal detected in output"
-    echo ""
-    echo "Ralph completed all tasks!"
-    echo "Completed at iteration $i of $MAX_ITERATIONS"
-    exit 0
+    if jq -e 'all(.userStories[]; .passes == true)' "$PRD_FILE" >/dev/null 2>&1; then
+      echo ""
+      echo "Ralph completed all tasks!"
+      echo "Completed at iteration $i of $MAX_ITERATIONS"
+      exit 0
+    else
+      echo "Completion signal received but PRD has incomplete stories; continuing."
+      debug_log "PRD not complete; ignoring completion signal"
+    fi
   fi
   
   debug_log "No completion signal, continuing to next iteration"
