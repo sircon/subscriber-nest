@@ -98,7 +98,7 @@ function DashboardContent() {
         // Fetch sync history for all connections
         if (connections.length > 0) {
           // Helper function to get list names for display (with fallback to IDs)
-          const getListNames = (conn: typeof connections[0]): string[] => {
+          const getListNames = (conn: (typeof connections)[0]): string[] => {
             if (conn.listNames && conn.listNames.length > 0) {
               return conn.listNames;
             }

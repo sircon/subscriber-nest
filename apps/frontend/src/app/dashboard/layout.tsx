@@ -99,14 +99,17 @@ export default function DashboardLayout({
             ) : (
               connections.map((connection) => {
                 const isActive = pathname === `/dashboard/esp/${connection.id}`;
-                
+
                 // Helper function to get list names for display (with fallback to IDs)
                 const getListNames = (): string[] => {
                   if (connection.listNames && connection.listNames.length > 0) {
                     return connection.listNames;
                   }
                   // Fallback to IDs if names not available
-                  if (connection.publicationIds && connection.publicationIds.length > 0) {
+                  if (
+                    connection.publicationIds &&
+                    connection.publicationIds.length > 0
+                  ) {
                     return connection.publicationIds;
                   }
                   if (connection.publicationId) {
@@ -125,7 +128,9 @@ export default function DashboardLayout({
 
                 const listNames = getListNames();
                 const listDisplay = formatListNames(listNames);
-                const espDisplayName = getEspName(connection.espType as EspType);
+                const espDisplayName = getEspName(
+                  connection.espType as EspType
+                );
 
                 return (
                   <Link
@@ -143,9 +148,7 @@ export default function DashboardLayout({
                     >
                       <Database className="h-4 w-4" />
                       <div className="flex-1 truncate">
-                        <div className="text-sm truncate">
-                          {espDisplayName}
-                        </div>
+                        <div className="text-sm truncate">{espDisplayName}</div>
                         <div
                           className={cn(
                             'text-xs truncate',

@@ -19,7 +19,8 @@ export interface ListSelectorProps {
   /**
    * Callback when selection changes
    */
-  onSelectionChange: (_selectedIds: string[]) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSelectionChange: (ids: string[]) => void;
   /**
    * Whether the component is in a loading state
    */
@@ -179,13 +180,13 @@ export function ListSelector({
                     className={cn(
                       'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors',
                       isSelected
-                        ? 'bg-primary border-primary text-primary-foreground'
+                        ? 'bg-primary/10 border-primary text-primary'
                         : 'border-input bg-background'
                     )}
                     aria-hidden="true"
                   >
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                      <Check className="h-3.5 w-3.5 text-primary" />
                     )}
                   </div>
                 </div>
