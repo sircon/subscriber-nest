@@ -15,8 +15,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Changed selected checkbox styling from solid bg-primary to bg-primary/10 (subtle tint) with border-primary and text-primary checkmark. Maintains checkbox appearance while clearly indicating selection. Typecheck and lint pass."
     },
     {
       "id": "US-002",

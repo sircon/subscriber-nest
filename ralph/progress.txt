@@ -1,3 +1,27 @@
 # Ralph Progress Log
 Started: Fri Jan 23 15:03:39 CET 2026
 ---
+
+## Codebase Patterns
+- Frontend uses Next.js with TypeScript and Tailwind CSS
+- UI components are in `apps/frontend/src/components/ui/` (shadcn/ui style)
+- ListSelector component is in `apps/frontend/src/components/ListSelector.tsx`
+- Checkbox styling: Use `bg-primary/10` for subtle selected state instead of solid `bg-primary` to maintain checkbox appearance
+- ESLint rule `no-unused-vars` applies to function type parameter names - use `// eslint-disable-next-line` if needed
+
+---
+
+## Fri Jan 23 2026 - US-001
+- What was implemented: Fixed ListSelector checkbox styling to maintain checkbox appearance when selected
+- Files changed:
+  - apps/frontend/src/components/ListSelector.tsx (changed selected checkbox from solid bg-primary to bg-primary/10 with border-primary)
+- Quality checks status:
+  - Frontend: [tsc ✓] [lint ✓]
+- **Learnings for future iterations:**
+  - Selected checkboxes should use subtle background tint (`bg-primary/10`) rather than solid primary color (`bg-primary`) to maintain checkbox appearance
+  - Checkmark icon should use `text-primary` to match border color for consistency
+  - ESLint `no-unused-vars` rule applies to function type parameter names in TypeScript interfaces - use `// eslint-disable-next-line no-unused-vars` to disable for type definitions
+  - TypeScript type checking via `yarn tsc --noEmit` in frontend directory
+  - Linting via `yarn lint` in frontend directory (uses ESLint with Prettier)
+  - Browser verification requires separate dev-browser skill/MCP tool not available in current session
+---
