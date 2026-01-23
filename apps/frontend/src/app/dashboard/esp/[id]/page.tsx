@@ -9,6 +9,7 @@ import {
   billingApi,
   EspConnection,
   PaginatedSubscribers,
+  SubscriberStats,
   SyncHistory,
   BillingStatusResponse,
 } from '@/lib/api';
@@ -45,7 +46,6 @@ import {
   Download,
   RefreshCw,
   Trash2,
-  Settings,
 } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import {
@@ -68,6 +68,8 @@ export default function EspDetailPage() {
   const [subscribers, setSubscribers] = useState<PaginatedSubscribers | null>(
     null
   );
+  const [subscriberStats, setSubscriberStats] =
+    useState<SubscriberStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,12 +110,66 @@ export default function EspDetailPage() {
   const [loadingLists, setLoadingLists] = useState(false);
   const [listsError, setListsError] = useState<string | null>(null);
   const [isUpdatingLists, setIsUpdatingLists] = useState(false);
-  const [listUpdateSuccess, setListUpdateSuccess] = useState(false);
   const [listUpdateError, setListUpdateError] = useState<string | null>(null);
+  const [draftSelectedListIds, setDraftSelectedListIds] = useState<string[]>(
+    []
+  );
+  const [showListSaveToast, setShowListSaveToast] = useState(false);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const itemsPerPage = parseInt(searchParams.get('limit') || '50', 10);
+
+  useEffect(() => {
+    if (!id) return;
+    const params = new URLSearchParams(searchParams.toString());
+    let shouldReplace = false;
+
+    const manageListsRequested = searchParams.get('manageLists') === '1';
+    const deleteConnectionRequested =
+      searchParams.get('deleteConnection') === '1';
+
+    if (manageListsRequested && token && connection) {
+      setShowManageLists(true);
+      setDraftSelectedListIds(getSelectedListIds());
+      setLoadingLists(true);
+      setListsError(null);
+      setListUpdateError(null);
+
+      espConnectionApi
+        .getLists(id as string, token)
+        .then((lists) => {
+          setAvailableLists(lists);
+        })
+        .catch((err) => {
+          console.error('Error fetching available lists:', err);
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : 'Failed to fetch available lists';
+          setListsError(errorMessage);
+        })
+        .finally(() => {
+          setLoadingLists(false);
+        });
+
+      params.delete('manageLists');
+      shouldReplace = true;
+    }
+
+    if (deleteConnectionRequested) {
+      setShowDisconnectDialog(true);
+      params.delete('deleteConnection');
+      shouldReplace = true;
+    }
+
+    if (shouldReplace) {
+      const query = params.toString();
+      router.replace(
+        query ? `/dashboard/esp/${id}?${query}` : `/dashboard/esp/${id}`
+      );
+    }
+  }, [connection, id, router, searchParams, token]);
 
   useEffect(() => {
     async function fetchData() {
@@ -124,21 +180,29 @@ export default function EspDetailPage() {
 
       try {
         // Fetch connection, sync history, and subscribers in parallel
-        const [connectionData, syncData, subscribersData] = await Promise.all([
-          espConnectionApi.getConnection(id as string, token),
-          espConnectionApi.getSyncHistory(id as string, token, undefined, 1),
-          espConnectionApi.getSubscribers(
-            id as string,
-            token,
-            undefined,
-            currentPage,
-            itemsPerPage
-          ),
-        ]);
+        const [connectionData, syncData, subscribersData, statsData] =
+          await Promise.all([
+            espConnectionApi.getConnection(id as string, token),
+            espConnectionApi.getSyncHistory(id as string, token, undefined, 1),
+            espConnectionApi.getSubscribers(
+              id as string,
+              token,
+              undefined,
+              currentPage,
+              itemsPerPage
+            ),
+            espConnectionApi
+              .getSubscriberStats(id as string, token)
+              .catch((err) => {
+                console.error('Error fetching subscriber stats:', err);
+                return null;
+              }),
+          ]);
 
         setConnection(connectionData);
         setSyncHistory(syncData);
         setSubscribers(subscribersData);
+        setSubscriberStats(statsData);
       } catch (err) {
         console.error('Error fetching ESP detail data:', err);
         setError(
@@ -153,6 +217,29 @@ export default function EspDetailPage() {
 
     fetchData();
   }, [token, id, currentPage, itemsPerPage]);
+
+  const refreshSubscriberStats = async () => {
+    if (!token || !id) return;
+    try {
+      const statsData = await espConnectionApi.getSubscriberStats(
+        id as string,
+        token
+      );
+      setSubscriberStats(statsData);
+    } catch (err) {
+      console.error('Error refreshing subscriber stats:', err);
+    }
+  };
+
+  const getSelectedListIds = (): string[] => {
+    if (connection?.publicationIds && connection.publicationIds.length > 0) {
+      return connection.publicationIds;
+    }
+    if (connection?.publicationId) {
+      return [connection.publicationId];
+    }
+    return [];
+  };
 
   // Check subscription status on page load
   useEffect(() => {
@@ -329,6 +416,18 @@ export default function EspDetailPage() {
   const handleSync = async () => {
     if (!token || !id) return;
 
+    const selectedListIds =
+      connection?.publicationIds ||
+      (connection?.publicationId ? [connection.publicationId] : []);
+
+    if (selectedListIds.length === 0) {
+      setSyncError(
+        'No lists selected. Click "Manage Lists" to select lists to sync.'
+      );
+      setTimeout(() => setSyncError(null), 5000);
+      return;
+    }
+
     setIsSyncing(true);
     setSyncError(null);
 
@@ -340,7 +439,7 @@ export default function EspDetailPage() {
       setConnection(response.connection);
 
       // Optionally refresh sync history after a short delay to see the new sync record
-      setTimeout(async () => {
+      const refreshSyncHistory = async (attempt: number) => {
         try {
           const syncData = await espConnectionApi.getSyncHistory(
             id as string,
@@ -349,10 +448,26 @@ export default function EspDetailPage() {
             1
           );
           setSyncHistory(syncData);
+
+          const latestSync = syncData[0];
+          if (latestSync?.status === 'success' && latestSync.completedAt) {
+            await refreshSubscriberStats();
+            return;
+          }
         } catch (err) {
           // Silently fail - sync history refresh is optional
           console.error('Error refreshing sync history:', err);
         }
+
+        if (attempt < 4) {
+          setTimeout(() => {
+            void refreshSyncHistory(attempt + 1);
+          }, 2000);
+        }
+      };
+
+      setTimeout(() => {
+        void refreshSyncHistory(0);
       }, 1000);
     } catch (err) {
       console.error('Error triggering sync:', err);
@@ -389,32 +504,11 @@ export default function EspDetailPage() {
     }
   };
 
-  const handleManageLists = async () => {
-    if (!token || !id) return;
-
-    setShowManageLists(true);
-    setLoadingLists(true);
-    setListsError(null);
-
-    try {
-      const lists = await espConnectionApi.getLists(id as string, token);
-      setAvailableLists(lists);
-    } catch (err) {
-      console.error('Error fetching available lists:', err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch available lists';
-      setListsError(errorMessage);
-    } finally {
-      setLoadingLists(false);
-    }
-  };
-
   const handleUpdateSelectedLists = async (selectedListIds: string[]) => {
     if (!token || !id) return;
 
     setIsUpdatingLists(true);
     setListUpdateError(null);
-    setListUpdateSuccess(false);
 
     try {
       const updatedConnection = await espConnectionApi.updateSelectedLists(
@@ -423,11 +517,10 @@ export default function EspDetailPage() {
         token
       );
       setConnection(updatedConnection);
-      setListUpdateSuccess(true);
-      // Hide success message after 3 seconds
+      setShowManageLists(false);
+      setShowListSaveToast(true);
       setTimeout(() => {
-        setListUpdateSuccess(false);
-        setShowManageLists(false);
+        setShowListSaveToast(false);
       }, 3000);
     } catch (err) {
       console.error('Error updating selected lists:', err);
@@ -460,13 +553,13 @@ export default function EspDetailPage() {
     return (
       <div className="p-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-secondary/60 rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              <div key={i} className="h-32 bg-secondary/60 rounded"></div>
             ))}
           </div>
-          <div className="h-96 bg-gray-200 rounded"></div>
+          <div className="h-96 bg-secondary/60 rounded"></div>
         </div>
       </div>
     );
@@ -493,16 +586,29 @@ export default function EspDetailPage() {
   }
 
   // Calculate subscriber counts by status
-  const activeCount = subscribers.data.filter(
-    (s) => s.status === 'active'
-  ).length;
-  const unsubscribedCount = subscribers.data.filter(
-    (s) => s.status === 'unsubscribed'
-  ).length;
+  const activeCount =
+    subscriberStats?.active ??
+    subscribers.data.filter((s) => s.status === 'active').length;
+  const unsubscribedCount =
+    subscriberStats?.unsubscribed ??
+    subscribers.data.filter((s) => s.status === 'unsubscribed').length;
+  const totalCount = subscriberStats?.total ?? subscribers.total;
   const lastSync = syncHistory[0];
+  const selectedListIds = getSelectedListIds();
+  const hasListChanges =
+    draftSelectedListIds.length !== selectedListIds.length ||
+    selectedListIds.some((id) => !draftSelectedListIds.includes(id));
 
   return (
     <div className="p-8">
+      {showListSaveToast && (
+        <Alert className="fixed top-4 right-4 z-50 w-[min(24rem,calc(100%-2rem))] border-green-500/60 bg-card shadow-lg">
+          <AlertTitle className="text-green-600">Lists updated</AlertTitle>
+          <AlertDescription className="text-muted-foreground">
+            Your selected lists have been saved.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* OAuth Success Message */}
       {showOAuthSuccess && (
         <Alert className="mb-6 border-green-500 bg-green-50">
@@ -654,7 +760,7 @@ export default function EspDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{subscribers.total}</p>
+            <p className="text-3xl font-bold">{totalCount}</p>
           </CardContent>
         </Card>
 
@@ -728,72 +834,26 @@ export default function EspDetailPage() {
         </Card>
       </div>
 
-      {/* Selected Lists Card */}
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Selected Lists</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManageLists}
-              disabled={loadingLists}
-            >
-              {loadingLists ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Lists
-                </>
-              )}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {(() => {
-            const listNames = getListNames();
-            if (listNames.length > 0) {
-              return (
-                <div className="flex flex-wrap gap-2">
-                  {listNames.map((listName, index) => (
-                    <Badge key={index} variant="outline" className="text-sm">
-                      {listName}
-                    </Badge>
-                  ))}
-                </div>
-              );
-            }
-            return (
-              <p className="text-sm text-gray-500">
-                No lists selected. Click "Manage Lists" to select lists to sync.
-              </p>
-            );
-          })()}
-        </CardContent>
-      </Card>
-
       {/* Manage Lists Dialog */}
-      <Dialog open={showManageLists} onOpenChange={setShowManageLists}>
+      <Dialog
+        open={showManageLists}
+        onOpenChange={(open) => {
+          setShowManageLists(open);
+          if (!open) {
+            setListsError(null);
+            setListUpdateError(null);
+            setDraftSelectedListIds([]);
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Lists</DialogTitle>
             <DialogDescription>
-              Select which lists to sync from this ESP connection. Changes will
-              be saved immediately.
+              Select which lists to sync from this ESP connection. Changes are
+              saved when you click Save.
             </DialogDescription>
           </DialogHeader>
-          {listUpdateSuccess && (
-            <Alert className="border-green-500 bg-green-50">
-              <AlertTitle className="text-green-800">Success!</AlertTitle>
-              <AlertDescription className="text-green-700">
-                Selected lists have been updated successfully.
-              </AlertDescription>
-            </Alert>
-          )}
           {listUpdateError && (
             <Alert variant="destructive">
               <AlertTitle>Error</AlertTitle>
@@ -802,12 +862,8 @@ export default function EspDetailPage() {
           )}
           <ListSelector
             lists={availableLists}
-            selectedListIds={
-              connection?.publicationIds || connection?.publicationId
-                ? connection.publicationIds || [connection.publicationId!]
-                : []
-            }
-            onSelectionChange={handleUpdateSelectedLists}
+            selectedListIds={draftSelectedListIds}
+            onSelectionChange={setDraftSelectedListIds}
             loading={loadingLists}
             error={listsError}
           />
@@ -818,11 +874,24 @@ export default function EspDetailPage() {
                 setShowManageLists(false);
                 setListsError(null);
                 setListUpdateError(null);
-                setListUpdateSuccess(false);
+                setDraftSelectedListIds([]);
               }}
               disabled={isUpdatingLists}
             >
-              Close
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleUpdateSelectedLists(draftSelectedListIds)}
+              disabled={isUpdatingLists || !hasListChanges}
+            >
+              {isUpdatingLists ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

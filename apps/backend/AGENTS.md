@@ -40,6 +40,10 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - TypeScript config includes `"jsx": "react"` to support JSX syntax in email templates
 - React and react-dom are required dependencies for react-email to work in backend
 
+## Billing
+
+- Stripe checkout/portal redirects use `FRONTEND_URL` or `NEXT_PUBLIC_URL`; fallback to the request origin when unset
+
 ## Authentication
 
 - `src/auth.controller.ts` – AuthController with authentication endpoints
@@ -69,6 +73,7 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - Provider validation checks against EspProvider enum values using `Object.values(EspProvider).includes()`
 - API keys are encrypted before storing in database using EncryptionService
 - API keys are never returned in API responses (only id, provider, createdAt, isActive)
+- Sync operations rely on selected `publicationIds`; block sync when none are selected (fall back to `publicationId` only for legacy data)
 
 ## OAuth Integration
 
@@ -104,6 +109,7 @@ NestJS app in `apps/backend`: ESP integration, subscriber sync, storage, and exp
 - `src/subscriber.controller.ts` – SubscriberController with subscriber-specific endpoints (e.g., unmask email)
 - When validating subscriber ownership: query with `relations: ['espConnection']` and compare `espConnection.userId` with authenticated user ID
 - Pattern for sensitive operations on subscribers: fetch with relations → validate ownership → perform operation → handle errors
+- Cross-connection subscriber lists use `GET /dashboard/subscribers` in `DashboardController`, joining `espConnection` to scope by user and returning paginated results without `encryptedEmail`.
 
 ## File Export
 

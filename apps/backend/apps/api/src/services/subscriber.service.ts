@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscriber } from '@app/database/entities/subscriber.entity';
+import {
+  Subscriber,
+  SubscriberStatus,
+} from '@app/database/entities/subscriber.entity';
 import { CreateSubscriberDto } from '@app/core/sync/create-subscriber.dto';
 
 @Injectable()
@@ -76,5 +79,23 @@ export class SubscriberService {
       limit,
       totalPages,
     };
+  }
+
+  async getConnectionStats(espConnectionId: string): Promise<{
+    active: number;
+    unsubscribed: number;
+    total: number;
+  }> {
+    const [active, unsubscribed, total] = await Promise.all([
+      this.subscriberRepository.count({
+        where: { espConnectionId, status: SubscriberStatus.ACTIVE },
+      }),
+      this.subscriberRepository.count({
+        where: { espConnectionId, status: SubscriberStatus.UNSUBSCRIBED },
+      }),
+      this.subscriberRepository.count({ where: { espConnectionId } }),
+    ]);
+
+    return { active, unsubscribed, total };
   }
 }

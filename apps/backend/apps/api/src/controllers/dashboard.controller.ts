@@ -1,8 +1,9 @@
 import {
   Controller,
   Get,
-  UseGuards,
   InternalServerErrorException,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -70,6 +71,60 @@ export class DashboardController {
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to retrieve dashboard statistics'
+      );
+    }
+  }
+
+  @Get('subscribers')
+  async getDashboardSubscribers(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ): Promise<{
+    data: Array<
+      Omit<Subscriber, 'encryptedEmail' | 'espConnection'> & {
+        espType: string;
+      }
+    >;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    try {
+      const pageNumber = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
+      const limitNumber = Math.max(1, Number.parseInt(limit ?? '50', 10) || 50);
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const [subscribers, total] = await this.subscriberRepository
+        .createQueryBuilder('subscriber')
+        .innerJoinAndSelect('subscriber.espConnection', 'connection')
+        .where('connection.userId = :userId', { userId: user.id })
+        .orderBy('subscriber.createdAt', 'DESC')
+        .skip(offset)
+        .take(limitNumber)
+        .getManyAndCount();
+
+      const data = subscribers.map((subscriber) => {
+        const { encryptedEmail, espConnection, ...subscriberData } = subscriber;
+        return {
+          ...subscriberData,
+          espType: espConnection.espType,
+        };
+      });
+
+      const totalPages = Math.ceil(total / limitNumber);
+
+      return {
+        data,
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve dashboard subscribers'
       );
     }
   }

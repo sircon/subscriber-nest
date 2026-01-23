@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
   ChevronDown,
-  Database,
   Download,
   RefreshCw,
   Shield,
@@ -33,10 +32,10 @@ function Navigation() {
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <a href="#" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Database className="w-4 h-4 text-primary" />
+            <Shield className="w-4 h-4 text-primary fill-primary" />
           </div>
           <span className="font-semibold text-lg tracking-tight">
-            AudienceSafe
+            Audience Safe
           </span>
         </a>
         <div className="hidden md:flex items-center gap-8">
@@ -387,7 +386,7 @@ function FAQSection() {
     {
       question: 'Do you offer refunds?',
       answer:
-        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment, no questions asked. We're confident you'll love AudienceSafe, but we want you to feel safe trying it out.",
+        "Yes. If you're not satisfied within the first 30 days, we'll refund your payment, no questions asked. We're confident you'll love , but we want you to feel safe trying it out.",
     },
     {
       question: 'Is there a free tier?',
@@ -421,9 +420,8 @@ function FAQSection() {
                 <button className="w-full p-6 flex items-center justify-between text-left">
                   <span className="font-medium pr-4">{faq.question}</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
-                      openIndex === index ? 'rotate-180' : ''
-                    }`}
+                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
                 <div
@@ -458,9 +456,9 @@ function Footer() {
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Database className="w-3 h-3 text-primary" />
+            <Shield className="w-3 h-3 text-primary fill-primary" />
           </div>
-          <span className="font-medium">AudienceSafe</span>
+          <span className="font-medium"></span>
         </div>
 
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -476,7 +474,7 @@ function Footer() {
         </div>
 
         <div className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} AudienceSafe. All rights reserved.
+          © {new Date().getFullYear()} . All rights reserved.
         </div>
       </div>
     </footer>

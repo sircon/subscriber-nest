@@ -95,6 +95,12 @@ export interface List {
   [key: string]: any; // Allow additional ESP-specific fields
 }
 
+export interface SubscriberStats {
+  active: number;
+  unsubscribed: number;
+  total: number;
+}
+
 export interface UpdateSelectedListsRequest {
   selectedListIds: string[];
 }
@@ -130,8 +136,20 @@ export interface Subscriber {
   updatedAt: string;
 }
 
+export interface DashboardSubscriber extends Subscriber {
+  espType: string;
+}
+
 export interface PaginatedSubscribers {
   data: Subscriber[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PaginatedDashboardSubscribers {
+  data: DashboardSubscriber[];
   total: number;
   page: number;
   limit: number;
@@ -389,6 +407,24 @@ export const espConnectionApi = {
   },
 
   /**
+   * Get connection-wide subscriber stats (active/unsubscribed/total)
+   */
+  getSubscriberStats: async (
+    connectionId: string,
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback
+  ): Promise<SubscriberStats> => {
+    return apiRequest<SubscriberStats>(
+      `/esp-connections/${connectionId}/subscriber-stats`,
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized
+    );
+  },
+
+  /**
    * Get paginated subscribers for ESP connection
    */
   getSubscribers: async (
@@ -614,6 +650,30 @@ export const dashboardApi = {
   ): Promise<DashboardStats> => {
     return apiRequest<DashboardStats>(
       '/dashboard/stats',
+      {
+        method: 'GET',
+      },
+      token,
+      onUnauthorized
+    );
+  },
+
+  /**
+   * Get paginated subscribers across all connections
+   */
+  getSubscribers: async (
+    token: string | null,
+    onUnauthorized?: OnUnauthorizedCallback,
+    page?: number,
+    limit?: number
+  ): Promise<PaginatedDashboardSubscribers> => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+
+    const url = `/dashboard/subscribers${params.toString() ? `?${params.toString()}` : ''}`;
+    return apiRequest<PaginatedDashboardSubscribers>(
+      url,
       {
         method: 'GET',
       },
