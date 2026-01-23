@@ -11,8 +11,7 @@ INFISICAL_ENV="${INFISICAL_ENV:-prod}"
 INFISICAL_API_URL="${INFISICAL_API_URL:-https://app.infisical.com}"
 INFISICAL_API_URL="${INFISICAL_API_URL%/}"
 
-echo "=== Infisical Entrypoint Starting ===" >&2
-echo "Timestamp: $(date -Iseconds)" >&2
+# Entrypoint starting
 
 # Validate required variables
 if [ -z "${INFISICAL_PROJECT_ID:-}" ]; then
@@ -27,10 +26,6 @@ if [ -z "${INFISICAL_TOKEN:-}" ]; then
     exit 1
   fi
   
-  echo "Logging in to Infisical..." >&2
-  echo "Client ID: ${INFISICAL_MACHINE_CLIENT_ID:0:8}..." >&2
-  echo "Domain: $INFISICAL_API_URL" >&2
-  
   INFISICAL_TOKEN=$(infisical login \
     --method=universal-auth \
     --client-id=$INFISICAL_MACHINE_CLIENT_ID \
@@ -43,9 +38,6 @@ if [ -z "${INFISICAL_TOKEN:-}" ]; then
     exit 1
   }
   export INFISICAL_TOKEN
-  echo "✓ Infisical login successful" >&2
-else
-  echo "Using provided INFISICAL_TOKEN" >&2
 fi
 
 # Preserve Docker-specific infrastructure variables before Infisical injection
@@ -57,15 +49,6 @@ SAVED_REDIS_PORT="${REDIS_PORT:-}"
 
 # Run the application with Infisical injecting secrets
 # Use a wrapper to restore Docker-specific vars after Infisical injection
-echo "=== Starting application with Infisical ===" >&2
-echo "Project ID: $INFISICAL_PROJECT_ID" >&2
-echo "Environment: $INFISICAL_ENV" >&2
-echo "API URL: $INFISICAL_API_URL" >&2
-echo "Command to run: $*" >&2
-echo "Saved DATABASE_HOST: ${SAVED_DATABASE_HOST:-<not set>}" >&2
-echo "Saved DATABASE_PORT: ${SAVED_DATABASE_PORT:-<not set>}" >&2
-echo "Saved REDIS_HOST: ${SAVED_REDIS_HOST:-<not set>}" >&2
-echo "Saved REDIS_PORT: ${SAVED_REDIS_PORT:-<not set>}" >&2
 
 # Create wrapper script with saved values embedded
 WRAPPER_SCRIPT="/tmp/infisical-wrapper-$$.sh"
@@ -77,13 +60,6 @@ WRAPPER_SCRIPT="/tmp/infisical-wrapper-$$.sh"
   [ -n "$SAVED_DATABASE_PORT" ] && echo "export DATABASE_PORT=\"$SAVED_DATABASE_PORT\""
   [ -n "$SAVED_REDIS_HOST" ] && echo "export REDIS_HOST=\"$SAVED_REDIS_HOST\""
   [ -n "$SAVED_REDIS_PORT" ] && echo "export REDIS_PORT=\"$SAVED_REDIS_PORT\""
-  echo "# Log restored values for debugging"
-  echo 'echo "=== Environment after Infisical injection ===" >&2'
-  echo 'echo "DATABASE_HOST: ${DATABASE_HOST:-<not set>}" >&2'
-  echo 'echo "DATABASE_PORT: ${DATABASE_PORT:-<not set>}" >&2'
-  echo 'echo "REDIS_HOST: ${REDIS_HOST:-<not set>}" >&2'
-  echo 'echo "REDIS_PORT: ${REDIS_PORT:-<not set>}" >&2'
-  echo 'echo "Starting application..." >&2'
   echo "# Execute the original command"
   echo 'exec "$@"'
 } > "$WRAPPER_SCRIPT"
