@@ -88,5 +88,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Start Next.js with Infisical, per docs:
 # `infisical run --projectId <id> -- <command>`
+# Explicitly set PORT=3000 to override any PORT from Infisical or deployment platform
 ENTRYPOINT ["/app/infisical-entrypoint.sh"]
-CMD ["node", "apps/frontend/server.js"]
+CMD ["sh", "-c", "PORT=3000 node apps/frontend/server.js"]
