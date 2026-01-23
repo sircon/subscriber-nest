@@ -44,7 +44,7 @@ function WelcomeOverlay({ onComplete }: { onComplete: () => void }) {
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
         <div>
           <h2 className="text-2xl font-semibold mb-2">
-            Welcome to AudienceSafe!
+            Welcome to Audience Safe!
           </h2>
           <p className="text-muted-foreground">Setting up your dashboard...</p>
         </div>

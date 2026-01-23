@@ -84,7 +84,7 @@ export class StripeService {
               currency: 'usd',
               recurring: { interval: 'month', usage_type: 'metered' },
               billing_scheme: 'per_unit',
-              product_data: { name: 'AudienceSafe Usage' },
+              product_data: { name: 'Audience Safe Usage' },
               meter: meterId,
             } as any,
           },

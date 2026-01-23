@@ -12,7 +12,7 @@ import {
   Menu,
   Plus,
   Settings,
-  Database,
+  Shield,
   LayoutDashboard,
   MoreHorizontal,
   ListChecks,
@@ -162,7 +162,7 @@ export default function DashboardLayout({
                       className="flex min-w-0 flex-1 items-center gap-3"
                       onClick={() => setMobileOpen(false)}
                     >
-                      <Database className="h-4 w-4" />
+                      <Shield className="h-4 w-4 text-primary fill-primary" />
                       <div className="flex-1 truncate">
                         <div className="text-sm truncate">{espDisplayName}</div>
                         <div

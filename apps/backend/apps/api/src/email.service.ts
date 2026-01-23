@@ -30,7 +30,7 @@ export class EmailService {
     await this.resend.emails.send({
       from: fromEmail,
       to: email,
-      subject: 'Your verification code for AudienceSafe',
+      subject: 'Your verification code for Audience Safe',
       html: emailHtml,
     });
   }

@@ -59,7 +59,7 @@ function StripeOnboardingForm() {
       const counts = await Promise.all(
         connections.map((conn) =>
           espConnectionApi
-            .getSubscriberCount(conn.id, token, () => {})
+            .getSubscriberCount(conn.id, token, () => { })
             .then((res) => res.count)
             .catch(() => 0)
         )
@@ -149,7 +149,7 @@ function StripeOnboardingForm() {
               Connect your payment method
             </CardTitle>
             <CardDescription>
-              AudienceSafe uses a usage-based billing model. You'll be charged
+              Audience Safe uses a usage-based billing model. You'll be charged
               $5 for the first 10,000 subscribers, then $1 per each additional
               10,000 subscribers per month. Your subscription will be billed
               monthly based on your maximum subscriber count during each billing

@@ -163,9 +163,7 @@ export function ListSelector({
                 key={list.id}
                 className={cn(
                   'flex items-start space-x-3 p-3 rounded-md border cursor-pointer transition-colors',
-                  'hover:bg-accent hover:text-accent-foreground',
-                  isSelected && 'bg-accent border-primary',
-                  !isSelected && 'bg-background'
+                  'bg-background hover:bg-background/10'
                 )}
               >
                 <div className="relative flex items-center justify-center mt-0.5">
@@ -180,13 +178,13 @@ export function ListSelector({
                     className={cn(
                       'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors',
                       isSelected
-                        ? 'bg-primary/10 border-primary text-primary'
+                        ? 'bg-primary border-primary text-primary'
                         : 'border-input bg-background'
                     )}
                     aria-hidden="true"
                   >
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-primary" />
+                      <Check className="h-3.5 w-3.5 text-background" />
                     )}
                   </div>
                 </div>

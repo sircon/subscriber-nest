@@ -71,7 +71,7 @@ export class EspConnectionController {
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectQueue('subscriber-sync')
     private readonly subscriberSyncQueue: Queue
-  ) {}
+  ) { }
 
   @Get()
   async listConnections(
@@ -441,7 +441,7 @@ export class EspConnectionController {
   async getLists(
     @Param('id') id: string,
     @CurrentUser() user: User
-  ): Promise<Array<{ id: string; name: string; [key: string]: any }>> {
+  ): Promise<Array<{ id: string; name: string;[key: string]: any }>> {
     try {
       // Fetch available lists from ESP API (validates ownership internally)
       // Note: fetchAvailableLists() returns lists/segments/publications depending on ESP terminology
@@ -468,7 +468,7 @@ export class EspConnectionController {
 
       // Handle other errors as 500
       throw new InternalServerErrorException(
-        'Failed to retrieve available lists'
+        `Failed to retrieve available lists: ${(error as Error)?.message ?? 'Unknown error'}`
       );
     }
   }
