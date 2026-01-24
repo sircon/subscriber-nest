@@ -23,15 +23,16 @@ export const VerificationCodeEmail = ({
       <Preview>Your verification code for Audience Safe</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Your Verification Code</Heading>
+          <Heading style={heading}>Your Audience Safe Code</Heading>
           <Text style={paragraph}>
-            Please use the following code to verify your email address:
+            Use this one-time code to finish signing in. It expires in 10 minutes.
           </Text>
           <Section style={codeContainer}>
+            <Text style={codeLabel}>Verification code</Text>
             <Text style={codeText}>{code}</Text>
           </Section>
           <Text style={paragraph}>
-            This code will expire in 10 minutes.
+            For your security, never share this code with anyone.
           </Text>
           <Text style={paragraph}>
             If you didn't request this code, you can safely ignore this email.
@@ -86,13 +87,22 @@ const codeContainer = {
   padding: '24px',
   textAlign: 'center' as const,
   maxWidth: '300px',
+  border: '1px solid #e6e6e6',
+};
+
+const codeLabel = {
+  color: '#6b7280',
+  fontSize: '12px',
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+  margin: '0 0 8px',
 };
 
 const codeText = {
   color: '#1a1a1a',
   fontSize: '36px',
   fontWeight: '700',
-  letterSpacing: '8px',
+  letterSpacing: '6px',
   lineHeight: '1.2',
   margin: '0',
   fontFamily: 'monospace',

@@ -21,6 +21,11 @@ export class EmailService {
     const fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') ||
       'onboarding@audiencesafe.com';
+    const fromName =
+      this.configService.get<string>('RESEND_FROM_NAME') || 'Audience Safe';
+    const from = fromEmail.includes('<')
+      ? fromEmail
+      : `${fromName} <${fromEmail}>`;
 
     const emailHtml = await render(
       React.createElement(VerificationCodeEmail, { code }),
@@ -28,7 +33,7 @@ export class EmailService {
     );
 
     await this.resend.emails.send({
-      from: fromEmail,
+      from,
       to: email,
       subject: 'Your verification code for Audience Safe',
       html: emailHtml,
