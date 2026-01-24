@@ -63,9 +63,11 @@ export class AuthGuard implements CanActivate {
 
     if (user.deleteRequestedAt) {
       const url = request.url || '';
+      const method = request.method || '';
       const isExportEndpoint = url.includes('/subscribers/export');
+      const isReadOnlyRequest = method.toUpperCase() === 'GET';
 
-      if (!isExportEndpoint) {
+      if (!isExportEndpoint && !isReadOnlyRequest) {
         throw new ForbiddenException(
           'Account deletion in progress. You can export your data for 30 days.'
         );

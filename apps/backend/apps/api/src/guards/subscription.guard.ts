@@ -21,6 +21,10 @@ export class SubscriptionGuard implements CanActivate {
       throw new ForbiddenException('Active subscription required');
     }
 
+    if (user.deleteRequestedAt) {
+      return true;
+    }
+
     const subscription = await this.billingSubscriptionService.findByUserId(
       user.id
     );

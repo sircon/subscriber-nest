@@ -9,8 +9,4 @@ export class CreateEspConnectionDto {
   @IsNotEmpty()
   @IsString()
   apiKey: string;
-
-  @IsNotEmpty()
-  @IsString()
-  publicationId: string;
 }

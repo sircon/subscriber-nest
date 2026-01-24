@@ -112,7 +112,8 @@ export default function AccountSettingsPage() {
                   type="email"
                   value={user.email}
                   readOnly
-                  className="bg-gray-50 cursor-not-allowed"
+                  className="cursor-not-allowed"
+                  disabled
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Your email address cannot be changed

@@ -529,8 +529,7 @@ export class EspConnectionController {
       const connection = await this.espConnectionService.createConnection(
         user.id,
         createEspConnectionDto.espType,
-        createEspConnectionDto.apiKey,
-        createEspConnectionDto.publicationId
+        createEspConnectionDto.apiKey
       );
       const { encryptedApiKey, ...connectionResponse } = connection;
       return connectionResponse;

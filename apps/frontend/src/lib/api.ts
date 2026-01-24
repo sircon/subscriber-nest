@@ -49,14 +49,13 @@ export interface CompleteOnboardingResponse {
 export interface CreateEspConnectionRequest {
   espType: string;
   apiKey: string;
-  publicationId: string;
 }
 
 export interface CreateEspConnectionResponse {
   id: string;
   userId: string;
   espType: string;
-  publicationId: string;
+  publicationId: string | null;
   status: string;
   lastValidatedAt: string | null;
   lastSyncedAt: string | null;
@@ -740,8 +739,8 @@ export interface BillingStatusResponse {
 export interface CurrentUsageResponse {
   maxSubscriberCount: number;
   calculatedAmount: number;
-  billingPeriodStart: string;
-  billingPeriodEnd: string;
+  billingPeriodStart: string | null;
+  billingPeriodEnd: string | null;
 }
 
 export interface BillingHistoryItem {

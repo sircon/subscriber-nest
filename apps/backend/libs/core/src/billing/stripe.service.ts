@@ -142,6 +142,50 @@ export class StripeService {
     }
   }
 
+  /**
+   * List subscriptions for a Stripe customer. Used to backfill stripeSubscriptionId
+   * and currentPeriodStart/End when we have stripeCustomerId but no subscription link yet.
+   */
+  async listSubscriptionsForCustomer(
+    customerId: string
+  ): Promise<Stripe.Subscription[]> {
+    try {
+      const res = await this.stripe.subscriptions.list({
+        customer: customerId,
+        limit: 10,
+      });
+      return res.data;
+    } catch (error: any) {
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to list Stripe subscriptions: ${error.message}`
+        );
+      }
+      throw new InternalServerErrorException(
+        `Failed to list Stripe subscriptions: ${error?.message || 'Unknown error'}`
+      );
+    }
+  }
+
+  async findCustomerByEmail(email: string): Promise<Stripe.Customer | null> {
+    try {
+      const res = await this.stripe.customers.list({
+        email,
+        limit: 1,
+      });
+      return res.data[0] || null;
+    } catch (error: any) {
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new InternalServerErrorException(
+          `Failed to find Stripe customer: ${error.message}`
+        );
+      }
+      throw new InternalServerErrorException(
+        `Failed to find Stripe customer: ${error?.message || 'Unknown error'}`
+      );
+    }
+  }
+
   async createInvoiceItem(
     customerId: string,
     amount: number,

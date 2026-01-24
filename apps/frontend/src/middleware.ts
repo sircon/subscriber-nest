@@ -89,9 +89,10 @@ export function middleware(request: NextRequest) {
   // (except if already on deletion page or trying to access export endpoints)
   if (isAuthenticated && user?.deleteRequestedAt) {
     const isDeletionPage = pathname.startsWith('/account-deletion');
+    const isDashboardRoute = pathname.startsWith('/dashboard');
     const isExportEndpoint = pathname.includes('/subscribers/export');
 
-    if (!isDeletionPage && !isExportEndpoint) {
+    if (!isDeletionPage && !isDashboardRoute && !isExportEndpoint) {
       const deletionUrl = new URL('/account-deletion', request.url);
       return NextResponse.redirect(deletionUrl);
     }

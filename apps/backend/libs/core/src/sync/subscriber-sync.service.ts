@@ -612,42 +612,33 @@ export class SubscriberSyncService {
         });
       }
 
-      await this.billingUsageService.updateUsage(userId, totalSubscriberCount);
+      const updateResult = await this.billingUsageService.updateUsage(
+        userId,
+        totalSubscriberCount
+      );
 
-      // Report usage to Stripe meter
+      // Report usage to Stripe meter (uses perPublicationMax from updateUsage for Stripe-aligned period)
       try {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth();
-        const billingPeriodStart = new Date(year, month, 1, 0, 0, 0, 0);
-        const billingPeriodEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
-        const perPublicationMax =
-          await this.billingUsageService.calculatePerPublicationMaxUsage(
-            userId,
-            billingPeriodStart,
-            billingPeriodEnd
-          );
-
-        const meterUsageUnits =
-          this.billingUsageService.calculateMeterUsage(perPublicationMax);
-
         const subscription =
           await this.billingSubscriptionService.findByUserId(userId);
-
         if (
-          subscription &&
-          subscription.stripeSubscriptionItemId &&
-          meterUsageUnits > 0
+          updateResult &&
+          subscription?.stripeSubscriptionItemId
         ) {
-          await this.stripeService.reportUsageToMeter(
-            subscription.stripeSubscriptionItemId,
-            meterUsageUnits
-          );
+          const meterUsageUnits =
+            this.billingUsageService.calculateMeterUsage(
+              updateResult.perPublicationMax
+            );
+          if (meterUsageUnits > 0) {
+            await this.stripeService.reportUsageToMeter(
+              subscription.stripeSubscriptionItemId,
+              meterUsageUnits
+            );
 
-          this.logger.log(
-            `Reported ${meterUsageUnits} units to Stripe meter for user ${userId}`
-          );
+            this.logger.log(
+              `Reported ${meterUsageUnits} units to Stripe meter for user ${userId}`
+            );
+          }
         }
       } catch (meterError: any) {
         this.logger.error(

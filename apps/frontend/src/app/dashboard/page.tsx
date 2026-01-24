@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useCallback, useEffect, Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -21,11 +21,13 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import {
   dashboardApi,
+  espConnectionApi,
   DashboardStats,
   PaginatedDashboardSubscribers,
 } from '@/lib/api';
 import { getEspName, EspType } from '@/lib/esp-config';
 import { Pagination } from '@/components/ui/pagination';
+import { useSyncPolling } from '@/hooks/useSyncPolling';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -64,6 +66,8 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const lastSyncTimeRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Check for welcome param
@@ -82,36 +86,103 @@ function DashboardContent() {
     setCurrentPage(Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage);
   }, [searchParams]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+  const fetchDashboardData = useCallback(async () => {
+    if (!token) return;
 
-      try {
-        // Fetch stats and subscribers in parallel
-        const [statsData, subscribersData] = await Promise.all([
-          dashboardApi.getStats(token, () => router.push('/login')),
-          dashboardApi.getSubscribers(
-            token,
-            () => router.push('/login'),
-            currentPage,
-            ITEMS_PER_PAGE
-          ),
-        ]);
+    setError(null);
 
-        setStats(statsData);
+    try {
+      // Fetch sync status, stats, and subscribers in parallel
+      const [connections, statsData, subscribersData] = await Promise.all([
+        espConnectionApi.getUserConnections(token, () => router.push('/login')),
+        dashboardApi.getStats(token, () => router.push('/login')),
+        dashboardApi.getSubscribers(
+          token,
+          () => router.push('/login'),
+          currentPage,
+          ITEMS_PER_PAGE
+        ),
+      ]);
+
+      const syncingNow = connections.some(
+        (connection) => connection.syncStatus === 'syncing'
+      );
+      setIsSyncing(syncingNow);
+      setStats((prev) => {
+        const resolvedLastSyncTime =
+          statsData.lastSyncTime ??
+          (syncingNow ? prev?.lastSyncTime ?? null : null);
+        if (resolvedLastSyncTime) {
+          lastSyncTimeRef.current = resolvedLastSyncTime;
+        }
+        return { ...statsData, lastSyncTime: resolvedLastSyncTime };
+      });
+      setSubscribers(subscribersData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, router, token]);
+
+  const pollDashboardData = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const [connections, statsData] = await Promise.all([
+        espConnectionApi.getUserConnections(token, () => router.push('/login')),
+        dashboardApi.getStats(token, () => router.push('/login')),
+      ]);
+
+      const syncingNow = connections.some(
+        (connection) => connection.syncStatus === 'syncing'
+      );
+      setIsSyncing(syncingNow);
+      setStats((prev) => {
+        const resolvedLastSyncTime =
+          statsData.lastSyncTime ??
+          (syncingNow ? prev?.lastSyncTime ?? null : null);
+        if (resolvedLastSyncTime) {
+          lastSyncTimeRef.current = resolvedLastSyncTime;
+        }
+        return { ...statsData, lastSyncTime: resolvedLastSyncTime };
+      });
+
+      const lastSyncTime = statsData.lastSyncTime ?? lastSyncTimeRef.current;
+      const shouldRefreshSubscribers =
+        lastSyncTime && lastSyncTime !== lastSyncTimeRef.current;
+
+      if (shouldRefreshSubscribers) {
+        const subscribersData = await dashboardApi.getSubscribers(
+          token,
+          () => router.push('/login'),
+          currentPage,
+          ITEMS_PER_PAGE
+        );
         setSubscribers(subscribersData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
+        lastSyncTimeRef.current = lastSyncTime;
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  }, [currentPage, router, token]);
 
-    fetchDashboardData();
-  }, [token, router]);
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    void fetchDashboardData();
+  }, [currentPage, fetchDashboardData, token]);
+
+  useSyncPolling({
+    enabled: Boolean(token),
+    isSyncing,
+    onPoll: pollDashboardData,
+    pollKey: currentPage,
+  });
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -224,7 +295,7 @@ function DashboardContent() {
           <CardHeader>
             <CardDescription>Last Sync</CardDescription>
             <CardTitle className="text-2xl">
-              {formatLastSync(stats?.lastSyncTime || null)}
+              {formatLastSync(stats?.lastSyncTime ?? lastSyncTimeRef.current)}
             </CardTitle>
           </CardHeader>
         </Card>

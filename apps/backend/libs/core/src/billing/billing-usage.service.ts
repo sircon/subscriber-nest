@@ -4,8 +4,10 @@ import { Subscriber } from '@app/database/entities/subscriber.entity';
 import { SyncHistory, SyncHistoryStatus } from '@app/database/entities/sync-history.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { LessThan, LessThanOrEqual, MoreThan, Repository } from 'typeorm';
 import { BillingCalculationService } from './billing-calculation.service';
+import { BillingSubscriptionService } from './billing-subscription.service';
+import { StripeService } from './stripe.service';
 
 @Injectable()
 export class BillingUsageService {
@@ -18,32 +20,105 @@ export class BillingUsageService {
     private subscriberRepository: Repository<Subscriber>,
     @InjectRepository(EspConnection)
     private espConnectionRepository: Repository<EspConnection>,
-    private billingCalculationService: BillingCalculationService
-  ) {}
+    private billingCalculationService: BillingCalculationService,
+    private billingSubscriptionService: BillingSubscriptionService,
+    private stripeService: StripeService
+  ) { }
 
   /**
-   * Get the start and end dates for the current billing period (calendar month)
+   * Get the current billing period (start/end) from the user's Stripe subscription.
+   * Returns null if the user has no subscription or currentPeriodStart/End are not set.
+   * If our DB has no period but stripeSubscriptionId exists, fetches from Stripe and syncs.
    */
-  private getCurrentBillingPeriod(): { start: Date; end: Date } {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+  async getCurrentBillingPeriodForUser(
+    userId: string
+  ): Promise<{ start: Date; end: Date } | null> {
+    let subscription =
+      await this.billingSubscriptionService.findByUserId(userId);
+    if (!subscription) return null;
 
-    const start = new Date(year, month, 1, 0, 0, 0, 0);
-    const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    if (subscription.currentPeriodStart && subscription.currentPeriodEnd) {
+      return {
+        start: subscription.currentPeriodStart,
+        end: subscription.currentPeriodEnd,
+      };
+    }
 
-    return { start, end };
+    // Period missing in our DB; try to refresh from Stripe by subscription ID
+    if (subscription.stripeSubscriptionId) {
+      try {
+        const stripeSubscription =
+          await this.stripeService.getSubscription(
+            subscription.stripeSubscriptionId
+          );
+        await this.billingSubscriptionService.syncFromStripe(
+          stripeSubscription,
+          userId
+        );
+        const refreshed =
+          await this.billingSubscriptionService.findByUserId(userId);
+        if (
+          refreshed?.currentPeriodStart &&
+          refreshed.currentPeriodEnd
+        ) {
+          return {
+            start: refreshed.currentPeriodStart,
+            end: refreshed.currentPeriodEnd,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Fallback: list by customer (e.g. we never got stripeSubscriptionId from verify-checkout or webhooks)
+    if (subscription.stripeCustomerId) {
+      try {
+        const list = await this.stripeService.listSubscriptionsForCustomer(
+          subscription.stripeCustomerId
+        );
+        const toSync =
+          list.find(
+            (s) =>
+              s.status === 'active' ||
+              s.status === 'trialing' ||
+              s.status === 'past_due'
+          ) || list[0];
+        if (toSync) {
+          await this.billingSubscriptionService.syncFromStripe(toSync, userId);
+          const refreshed =
+            await this.billingSubscriptionService.findByUserId(userId);
+          if (
+            refreshed?.currentPeriodStart &&
+            refreshed.currentPeriodEnd
+          ) {
+            return {
+              start: refreshed.currentPeriodStart,
+              end: refreshed.currentPeriodEnd,
+            };
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
   }
 
   /**
-   * Update billing usage for a user by tracking the maximum subscriber count during the current billing period
+   * Update billing usage for a user by tracking the maximum subscriber count during the current billing period (from Stripe).
+   * Returns { perPublicationMax } when a period exists, or null when there is no Stripe period (no-op).
    */
   async updateUsage(
     userId: string,
     currentSubscriberCount: number
-  ): Promise<void> {
-    const { start, end } = this.getCurrentBillingPeriod();
+  ): Promise<{ perPublicationMax: Map<string, number> } | null> {
+    const period = await this.getCurrentBillingPeriodForUser(userId);
+    if (!period) {
+      return null;
+    }
 
+    const { start, end } = period;
     const perPublicationMax = await this.calculatePerPublicationMaxUsage(
       userId,
       start,
@@ -81,6 +156,7 @@ export class BillingUsageService {
     );
 
     await this.billingUsageRepository.save(billingUsage);
+    return { perPublicationMax };
   }
 
   async findByStripeInvoiceId(
@@ -126,12 +202,17 @@ export class BillingUsageService {
   }
 
   async getCurrentUsage(userId: string): Promise<BillingUsage | null> {
-    const { start } = this.getCurrentBillingPeriod();
-
+    const period = await this.getCurrentBillingPeriodForUser(userId);
+    if (!period) {
+      return null;
+    }
+    // Find by range (period that contains now) to avoid exact Date match issues (precision, timezone)
+    const now = new Date();
     return this.billingUsageRepository.findOne({
       where: {
         userId,
-        billingPeriodStart: start,
+        billingPeriodStart: LessThanOrEqual(now),
+        billingPeriodEnd: MoreThan(now),
       },
     });
   }
@@ -145,7 +226,7 @@ export class BillingUsageService {
     return this.billingUsageRepository.find({
       where: {
         userId,
-        billingPeriodStart: LessThanOrEqual(now),
+        billingPeriodEnd: LessThan(now),
       },
       order: { billingPeriodStart: 'DESC' },
       take: limit,

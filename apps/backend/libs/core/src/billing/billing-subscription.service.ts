@@ -9,7 +9,7 @@ export class BillingSubscriptionService {
   constructor(
     @InjectRepository(BillingSubscription)
     private billingSubscriptionRepository: Repository<BillingSubscription>
-  ) {}
+  ) { }
 
   async findByUserId(userId: string): Promise<BillingSubscription | null> {
     return this.billingSubscriptionRepository.findOne({
@@ -112,17 +112,27 @@ export class BillingSubscriptionService {
       );
     }
 
+    let currentPeriodStart = this.readStripePeriodDate(
+      stripeSubscription,
+      'start'
+    );
+    let currentPeriodEnd = this.readStripePeriodDate(
+      stripeSubscription,
+      'end'
+    );
+    if (!currentPeriodStart || !currentPeriodEnd) {
+      const fallback = this.inferPeriodFromAnchor(stripeSubscription);
+      currentPeriodStart = currentPeriodStart || fallback?.start || null;
+      currentPeriodEnd = currentPeriodEnd || fallback?.end || null;
+    }
+
     const updateData: Partial<BillingSubscription> = {
       stripeSubscriptionId: stripeSubscription.id,
       stripePriceId: stripeSubscription.items.data[0]?.price.id || null,
       stripeSubscriptionItemId: stripeSubscription.items.data[0]?.id || null,
       status,
-      currentPeriodStart: (stripeSubscription as any).current_period_start
-        ? new Date((stripeSubscription as any).current_period_start * 1000)
-        : null,
-      currentPeriodEnd: (stripeSubscription as any).current_period_end
-        ? new Date((stripeSubscription as any).current_period_end * 1000)
-        : null,
+      currentPeriodStart,
+      currentPeriodEnd,
       cancelAtPeriodEnd:
         (stripeSubscription as any).cancel_at_period_end || false,
       canceledAt: (stripeSubscription as any).canceled_at
@@ -162,5 +172,84 @@ export class BillingSubscriptionService {
       subscription.status === BillingSubscriptionStatus.ACTIVE &&
       !subscription.cancelAtPeriodEnd
     );
+  }
+
+  private readStripePeriodDate(
+    stripeSubscription: Stripe.Subscription,
+    which: 'start' | 'end'
+  ): Date | null {
+    const anySub = stripeSubscription as any;
+    const direct =
+      anySub[`current_period_${which}`] ??
+      anySub[`currentPeriod${which === 'start' ? 'Start' : 'End'}`];
+    const nested =
+      anySub.current_period?.[which] ??
+      anySub.currentPeriod?.[which] ??
+      anySub.billing_period?.[which] ??
+      anySub.billingPeriod?.[which];
+    const value = direct ?? nested;
+
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'number') return new Date(value * 1000);
+    if (typeof value === 'string') {
+      const asNumber = Number(value);
+      if (!Number.isNaN(asNumber)) return new Date(asNumber * 1000);
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return null;
+  }
+
+  private inferPeriodFromAnchor(
+    stripeSubscription: Stripe.Subscription
+  ): { start: Date; end: Date } | null {
+    const anySub = stripeSubscription as any;
+    const anchor = anySub.billing_cycle_anchor;
+    if (!anchor || typeof anchor !== 'number') return null;
+
+    const item = anySub.items?.data?.[0];
+    const recurring = item?.price?.recurring || item?.plan;
+    const interval = recurring?.interval as
+      | 'day'
+      | 'week'
+      | 'month'
+      | 'year'
+      | undefined;
+    const intervalCount = Number(recurring?.interval_count ?? 1);
+    if (!interval) return null;
+
+    const start = new Date(anchor * 1000);
+    const end = this.addInterval(start, interval, intervalCount);
+    return { start, end };
+  }
+
+  private addInterval(
+    start: Date,
+    interval: 'day' | 'week' | 'month' | 'year',
+    count: number
+  ): Date {
+    const safeCount = Number.isFinite(count) && count > 0 ? count : 1;
+    const date = new Date(start.getTime());
+
+    if (interval === 'day') {
+      date.setUTCDate(date.getUTCDate() + safeCount);
+      return date;
+    }
+    if (interval === 'week') {
+      date.setUTCDate(date.getUTCDate() + safeCount * 7);
+      return date;
+    }
+    if (interval === 'month') {
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      const nextMonthIndex = month + safeCount;
+      const lastDay = new Date(Date.UTC(year, nextMonthIndex + 1, 0)).getUTCDate();
+      date.setUTCFullYear(year, nextMonthIndex, Math.min(day, lastDay));
+      return date;
+    }
+    date.setUTCFullYear(date.getUTCFullYear() + safeCount);
+    return date;
   }
 }

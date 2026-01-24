@@ -110,8 +110,7 @@ export class EspConnectionService {
   async createConnection(
     userId: string,
     espType: string,
-    apiKey: string,
-    publicationId: string
+    apiKey: string
   ): Promise<EspConnection> {
     if (!Object.values(EspType).includes(espType as EspType)) {
       throw new BadRequestException(`Invalid ESP type: ${espType}`);
@@ -119,11 +118,6 @@ export class EspConnectionService {
 
     const espTypeEnum = espType as EspType;
     const connector = this.getConnector(espTypeEnum);
-
-    const isValid = await connector.validateApiKey(apiKey, publicationId);
-    if (!isValid) {
-      throw new BadRequestException('Invalid API key or publication ID');
-    }
 
     const encryptedApiKey = this.encryptionService.encrypt(apiKey);
 
@@ -134,7 +128,7 @@ export class EspConnectionService {
 
     try {
       const publications = await connector.fetchPublications(apiKey);
-      
+
       if (publications && publications.length > 0) {
         // Extract IDs and names from fetched publications
         // Default to all lists selected if none specified
@@ -142,13 +136,13 @@ export class EspConnectionService {
         listNames = publications.map((pub) => pub.name || '');
       }
     } catch (error: any) {
-      // Handle errors gracefully - log but don't fail connection creation
-      // Connection will be created without list names, which can be fetched later
-      console.error(
-        `Failed to fetch lists for ESP connection (${espTypeEnum}):`,
-        error.message
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        throw new BadRequestException('Invalid API key');
+      }
+      throw new BadRequestException(
+        error?.message || 'Failed to verify API key'
       );
-      // Continue with null values - user can update lists later
     }
 
     const espConnection = this.espConnectionRepository.create({
@@ -156,7 +150,7 @@ export class EspConnectionService {
       espType: espTypeEnum,
       authMethod: AuthMethod.API_KEY,
       encryptedApiKey,
-      publicationId, // Keep for backward compatibility
+      publicationId: null,
       publicationIds, // Array of all list IDs (default: all selected)
       listNames, // Array of list display names
       status: EspConnectionStatus.ACTIVE,

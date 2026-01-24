@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSyncPolling } from '@/hooks/useSyncPolling';
 
 export default function DashboardLayout({
   children,
@@ -40,27 +41,39 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const hasSyncingConnections = connections.some(
+    (connection) => connection.syncStatus === 'syncing'
+  );
+
+  const fetchConnections = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const data = await espConnectionApi.getUserConnections(token, () => {
+        router.push('/login');
+      });
+      setConnections(data);
+    } catch (err) {
+      console.error('Failed to fetch connections:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [router, token]);
+
   useEffect(() => {
-    const fetchConnections = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const data = await espConnectionApi.getUserConnections(token, () => {
-          router.push('/login');
-        });
-        setConnections(data);
-      } catch (err) {
-        console.error('Failed to fetch connections:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+  }, [token]);
 
-    fetchConnections();
-  }, [token, router]);
+  useSyncPolling({
+    enabled: Boolean(token),
+    isSyncing: hasSyncingConnections,
+    onPoll: fetchConnections,
+  });
 
   const SidebarContent = () => {
     const isDashboardActive = pathname === '/dashboard';

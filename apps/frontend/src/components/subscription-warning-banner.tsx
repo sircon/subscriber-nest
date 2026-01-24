@@ -12,11 +12,13 @@ const DISMISSAL_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function SubscriptionWarningBanner() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [billingStatus, setBillingStatus] =
     useState<BillingStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkDismissal = () => {
@@ -75,6 +77,65 @@ export function SubscriptionWarningBanner() {
     router.push('/dashboard/settings/billing');
   };
 
+  const handleStartSubscription = async () => {
+    if (!token) return;
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      const response = await billingApi.createCheckoutSession(token, () => {
+        router.push('/login');
+      });
+      if (response?.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (err) {
+      setCheckoutError(
+        err instanceof Error ? err.message : 'Failed to create checkout session'
+      );
+      setCheckoutLoading(false);
+    }
+  };
+
+  if (user?.deleteRequestedAt) {
+    const deletionDate =
+      typeof user.deleteRequestedAt === 'string'
+        ? new Date(user.deleteRequestedAt)
+        : user.deleteRequestedAt;
+    const deletionDeadline = new Date(deletionDate);
+    deletionDeadline.setDate(deletionDeadline.getDate() + 30);
+
+    return (
+      <div className="mb-6 relative rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/8 to-amber-500/10 p-5 shadow-sm backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-1.5">
+            <h5 className="font-semibold text-amber-200 leading-tight tracking-tight">
+              Account Deletion Scheduled
+            </h5>
+            <p className="text-sm text-amber-100/90 leading-relaxed">
+              Your account is scheduled for deletion on{' '}
+              {deletionDeadline.toLocaleDateString()}.
+            </p>
+            <p className="text-sm text-amber-100/80 leading-relaxed">
+              To cancel deletion, contact support before the deadline.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => router.push('/account-deletion')}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all hover:shadow-md"
+            >
+              View Details
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Don't show banner if:
   // - Still loading
   // - User dismissed it (and less than 24 hours passed)
@@ -91,19 +152,35 @@ export function SubscriptionWarningBanner() {
             Subscription Inactive
           </h5>
           <p className="text-sm text-amber-100/90 leading-relaxed">
-            Your subscription is inactive. Please update your payment method to
-            continue syncing and exporting.
+            {billingStatus?.subscription == null
+              ? "You don't have an active subscription. Start one to continue syncing and exporting."
+              : 'Your subscription is inactive. Please update your payment method to continue syncing and exporting.'}
           </p>
+          {checkoutError && (
+            <p className="text-sm text-amber-200/90">{checkoutError}</p>
+          )}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleManageSubscription}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all hover:shadow-md"
-          >
-            Manage Subscription
-          </Button>
+          {billingStatus?.subscription == null ? (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleStartSubscription}
+              disabled={checkoutLoading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all hover:shadow-md"
+            >
+              {checkoutLoading ? 'Opening...' : 'Start Subscription'}
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleManageSubscription}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all hover:shadow-md"
+            >
+              Manage Subscription
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

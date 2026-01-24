@@ -115,7 +115,7 @@ export default function AccountDeletionPage() {
                   You have{' '}
                   {Math.ceil(
                     (deletionDeadline.getTime() - Date.now()) /
-                      (1000 * 60 * 60 * 24)
+                    (1000 * 60 * 60 * 24)
                   )}{' '}
                   days remaining to export your data.
                 </p>
@@ -146,7 +146,7 @@ export default function AccountDeletionPage() {
                     >
                       <div>
                         <h4 className="font-medium">
-                          {connection.espType.toUpperCase()} Connection
+                          {connection.espType} Connection
                         </h4>
                         <p className="text-sm text-muted-foreground">
                           Export subscribers from this connection

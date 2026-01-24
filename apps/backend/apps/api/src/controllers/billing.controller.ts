@@ -44,7 +44,7 @@ export class BillingController {
     private readonly espConnectionRepository: Repository<EspConnection>,
     @InjectRepository(Subscriber)
     private readonly subscriberRepository: Repository<Subscriber>
-  ) {}
+  ) { }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
@@ -278,6 +278,84 @@ export class BillingController {
     }
   }
 
+  private pickStripeSubscription(
+    subscriptions: Stripe.Subscription[]
+  ): Stripe.Subscription | null {
+    if (!subscriptions.length) return null;
+    return (
+      subscriptions.find(
+        (s) =>
+          s.status === 'active' ||
+          s.status === 'trialing' ||
+          s.status === 'past_due'
+      ) || subscriptions[0]
+    );
+  }
+
+  private async fetchStripeSubscriptionForUser(
+    user: User,
+    subscription: BillingSubscription | null
+  ): Promise<Stripe.Subscription | null> {
+    if (subscription?.stripeSubscriptionId) {
+      return this.stripeService.getSubscription(
+        subscription.stripeSubscriptionId
+      );
+    }
+
+    if (subscription?.stripeCustomerId) {
+      const list = await this.stripeService.listSubscriptionsForCustomer(
+        subscription.stripeCustomerId
+      );
+      const picked = this.pickStripeSubscription(list);
+      if (picked) {
+        return picked;
+      }
+    }
+
+    const customer = await this.stripeService.findCustomerByEmail(user.email);
+    if (customer && !customer.deleted) {
+      const list = await this.stripeService.listSubscriptionsForCustomer(
+        customer.id
+      );
+      return this.pickStripeSubscription(list);
+    }
+
+    return null;
+  }
+
+  private async refreshSubscriptionFromStripe(
+    user: User,
+    subscription: BillingSubscription | null
+  ): Promise<BillingSubscription | null> {
+    const needsRefresh =
+      !subscription ||
+      !subscription.currentPeriodStart ||
+      !subscription.currentPeriodEnd;
+
+    if (!needsRefresh) {
+      return subscription;
+    }
+
+    try {
+      const stripeSubscription = await this.fetchStripeSubscriptionForUser(
+        user,
+        subscription
+      );
+      if (!stripeSubscription) return subscription;
+
+      await this.billingSubscriptionService.syncFromStripe(
+        stripeSubscription,
+        user.id
+      );
+      return this.billingSubscriptionService.findByUserId(user.id);
+    } catch (error: any) {
+      this.logger.warn(
+        `Could not refresh billing period from Stripe for user ${user.id}: ${error?.message}`
+      );
+      return subscription;
+    }
+  }
+
   @Post('create-checkout-session')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -381,8 +459,13 @@ export class BillingController {
     currentPeriodEnd: Date | null;
   }> {
     try {
-      const subscription = await this.billingSubscriptionService.findByUserId(
+      let subscription = await this.billingSubscriptionService.findByUserId(
         user.id
+      );
+
+      subscription = await this.refreshSubscriptionFromStripe(
+        user,
+        subscription
       );
 
       if (!subscription) {
@@ -414,10 +497,26 @@ export class BillingController {
   async getCurrentUsage(@CurrentUser() user: User): Promise<{
     maxSubscriberCount: number;
     calculatedAmount: number;
-    billingPeriodStart: Date;
-    billingPeriodEnd: Date;
+    billingPeriodStart: Date | null;
+    billingPeriodEnd: Date | null;
   }> {
     try {
+      const existingSubscription =
+        await this.billingSubscriptionService.findByUserId(user.id);
+      await this.refreshSubscriptionFromStripe(user, existingSubscription);
+
+      const billingPeriod =
+        await this.billingUsageService.getCurrentBillingPeriodForUser(user.id);
+
+      if (!billingPeriod) {
+        return {
+          maxSubscriberCount: 0,
+          calculatedAmount: 0,
+          billingPeriodStart: null,
+          billingPeriodEnd: null,
+        };
+      }
+
       let billingUsage = await this.billingUsageService.getCurrentUsage(
         user.id
       );
@@ -436,12 +535,22 @@ export class BillingController {
           });
         }
 
-        await this.billingUsageService.updateUsage(
+        const updated = await this.billingUsageService.updateUsage(
           user.id,
           currentSubscriberCount
         );
 
         billingUsage = await this.billingUsageService.getCurrentUsage(user.id);
+
+        // If updateUsage could not create (e.g. no period in service) and we still have no usage, return empty shape instead of 500
+        if (!billingUsage && !updated) {
+          return {
+            maxSubscriberCount: 0,
+            calculatedAmount: 0,
+            billingPeriodStart: null,
+            billingPeriodEnd: null,
+          };
+        }
       }
 
       if (!billingUsage) {

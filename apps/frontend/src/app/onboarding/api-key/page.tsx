@@ -21,7 +21,6 @@ function ApiKeyForm() {
   const searchParams = useSearchParams();
   const { token } = useAuth();
   const [apiKey, setApiKey] = useState('');
-  const [publicationId, setPublicationId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lists, setLists] = useState<List[]>([]);
@@ -98,16 +97,11 @@ function ApiKeyForm() {
         throw new Error('Authentication required. Please log in again.');
       }
 
-      // Some ESPs require publicationId for validation
-      // If not provided, we'll try with an empty string and handle the error
-      const tempPublicationId = publicationId.trim() || '';
-
       // Create connection (this validates API key and fetches lists)
       const connection = await espConnectionApi.createConnection(
         {
           espType: provider,
           apiKey,
-          publicationId: tempPublicationId || 'placeholder',
         },
         token,
         () => {
@@ -149,17 +143,7 @@ function ApiKeyForm() {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to validate API key';
 
-      // Check if error is about missing publicationId
-      if (
-        errorMessage.toLowerCase().includes('publication') ||
-        errorMessage.toLowerCase().includes('publication id')
-      ) {
-        setError(
-          'This ESP requires a Publication ID. Please enter it above and try again.'
-        );
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
     } finally {
       setFetchingLists(false);
     }
@@ -280,27 +264,6 @@ function ApiKeyForm() {
                         disabled={loading || fetchingLists}
                         autoFocus
                       />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="publicationId"
-                        className="block text-sm font-medium mb-2"
-                      >
-                        Publication ID (optional)
-                      </label>
-                      <Input
-                        id="publicationId"
-                        type="text"
-                        placeholder="Enter your publication ID (optional)"
-                        value={publicationId}
-                        onChange={(e) => setPublicationId(e.target.value)}
-                        disabled={loading || fetchingLists}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Some ESPs require a publication ID for validation. If
-                        not provided, we'll try to fetch it automatically.
-                      </p>
                     </div>
 
                     {error && (

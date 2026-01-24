@@ -28,12 +28,10 @@ export default function NewEspConnectionPage() {
   const { token } = useAuth();
   const [selectedEspType, setSelectedEspType] = useState<EspType | null>(null);
   const [apiKey, setApiKey] = useState('');
-  const [publicationId, setPublicationId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
     apiKey?: string;
-    publicationId?: string;
   }>({});
   const [lists, setLists] = useState<List[]>([]);
   const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
@@ -96,14 +94,13 @@ export default function NewEspConnectionPage() {
       // Go back from form to ESP selection
       setSelectedEspType(null);
       setApiKey('');
-      setPublicationId('');
       setError(null);
       setValidationErrors({});
     }
   };
 
   const validateForm = (): boolean => {
-    const errors: { apiKey?: string; publicationId?: string } = {};
+    const errors: { apiKey?: string } = {};
 
     if (!apiKey.trim()) {
       errors.apiKey = 'API Key is required';
@@ -128,16 +125,11 @@ export default function NewEspConnectionPage() {
         throw new Error('Authentication required. Please log in again.');
       }
 
-      // Some ESPs require publicationId for validation
-      // If not provided, we'll try with a placeholder and handle the error
-      const tempPublicationId = publicationId.trim() || 'placeholder';
-
       // Create connection (this validates API key and fetches lists)
       const connection = await espConnectionApi.createConnection(
         {
           espType: selectedEspType,
           apiKey: apiKey.trim(),
-          publicationId: tempPublicationId,
         },
         token,
         () => {
@@ -177,17 +169,7 @@ export default function NewEspConnectionPage() {
       const errorMessage =
         err.message || 'Failed to validate API key. Please try again.';
 
-      // Check if error is about missing publicationId
-      if (
-        errorMessage.toLowerCase().includes('publication') ||
-        errorMessage.toLowerCase().includes('publication id')
-      ) {
-        setError(
-          'This ESP requires a Publication ID. Please enter it above and try again.'
-        );
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
     } finally {
       setFetchingLists(false);
     }
@@ -330,7 +312,7 @@ export default function NewEspConnectionPage() {
           <CardDescription>
             {hasOAuth
               ? 'Connect your account securely using OAuth'
-              : 'Please provide your API key and publication ID'}
+              : 'Please provide your API key'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -399,37 +381,6 @@ export default function NewEspConnectionPage() {
                     {validationErrors.apiKey && (
                       <p className="text-sm text-destructive">
                         {validationErrors.apiKey}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="publicationId"
-                      className="text-sm font-medium"
-                    >
-                      Publication ID (optional)
-                    </label>
-                    <Input
-                      id="publicationId"
-                      type="text"
-                      placeholder="Enter your publication ID (optional)"
-                      value={publicationId}
-                      onChange={(e) => setPublicationId(e.target.value)}
-                      disabled={loading || fetchingLists}
-                      className={
-                        validationErrors.publicationId
-                          ? 'border-destructive'
-                          : ''
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Some ESPs require a publication ID for validation. If not
-                      provided, we'll try to fetch it automatically.
-                    </p>
-                    {validationErrors.publicationId && (
-                      <p className="text-sm text-destructive">
-                        {validationErrors.publicationId}
                       </p>
                     )}
                   </div>

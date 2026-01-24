@@ -255,10 +255,10 @@ function BillingSettingsPageContent() {
       )}
 
       <div className="space-y-6">
-        {/* Current Month Usage Card */}
+        {/* Current Billing Period Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Month Usage</CardTitle>
+            <CardTitle>Current Billing Period</CardTitle>
             <CardDescription>
               Your usage for the current billing period
             </CardDescription>
@@ -268,9 +268,7 @@ function BillingSettingsPageContent() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">
-                      Max Subscriber Count
-                    </p>
+                    <p className="text-sm text-gray-600">Subscriber Count</p>
                     <p className="text-2xl font-semibold">
                       {currentUsage.maxSubscriberCount.toLocaleString()}
                     </p>
@@ -352,15 +350,15 @@ function BillingSettingsPageContent() {
             ) : (
               <div className="space-y-4">
                 <p className="text-gray-600">No active subscription found.</p>
-                <Button
-                  variant="default"
-                  onClick={handleCreateCheckout}
-                  disabled={checkoutLoading}
-                >
-                  {checkoutLoading
-                    ? 'Creating checkout session...'
-                    : 'Set Up Subscription'}
-                </Button>
+                <div className="flex gap-4">
+                  <Button
+                    variant="default"
+                    onClick={handleCreateCheckout}
+                    disabled={checkoutLoading}
+                  >
+                    {checkoutLoading ? 'Opening...' : 'Get started'}
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

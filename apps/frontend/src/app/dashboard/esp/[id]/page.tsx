@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -56,12 +56,13 @@ import {
 } from '@/components/ui/tooltip';
 import { ListSelector } from '@/components/ListSelector';
 import { List } from '@/lib/api';
+import { useSyncPolling } from '@/hooks/useSyncPolling';
 
 export default function EspDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [connection, setConnection] = useState<EspConnection | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncHistory[]>([]);
@@ -115,6 +116,8 @@ export default function EspDetailPage() {
     []
   );
   const [showListSaveToast, setShowListSaveToast] = useState(false);
+  const lastSyncedAtRef = useRef<string | null>(null);
+  const lastCompletedSyncRef = useRef<SyncHistory | null>(null);
 
   // Pagination state from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -218,7 +221,7 @@ export default function EspDetailPage() {
     fetchData();
   }, [token, id, currentPage, itemsPerPage]);
 
-  const refreshSubscriberStats = async () => {
+  const refreshSubscriberStats = useCallback(async () => {
     if (!token || !id) return;
     try {
       const statsData = await espConnectionApi.getSubscriberStats(
@@ -229,7 +232,55 @@ export default function EspDetailPage() {
     } catch (err) {
       console.error('Error refreshing subscriber stats:', err);
     }
-  };
+  }, [id, token]);
+
+  const pollSyncStatus = useCallback(async () => {
+    if (!token || !id) return;
+
+    const [connectionData, syncData] = await Promise.all([
+      espConnectionApi.getConnection(id as string, token),
+      espConnectionApi.getSyncHistory(id as string, token, undefined, 1),
+    ]);
+
+    setConnection(connectionData);
+    setSyncHistory(syncData);
+
+    const latestSync = syncData[0];
+    const completedAt = latestSync?.completedAt ?? null;
+    const shouldRefreshStats =
+      connectionData.syncStatus !== 'syncing' &&
+      latestSync?.status === 'success' &&
+      completedAt &&
+      completedAt !== lastSyncedAtRef.current;
+    const shouldRefreshSubscribers = shouldRefreshStats;
+
+    if (shouldRefreshSubscribers) {
+      try {
+        const subscribersData = await espConnectionApi.getSubscribers(
+          id as string,
+          token,
+          undefined,
+          currentPage,
+          itemsPerPage
+        );
+        setSubscribers(subscribersData);
+      } catch (err) {
+        console.error('Error refreshing subscribers:', err);
+      }
+    }
+
+    if (shouldRefreshStats) {
+      lastSyncedAtRef.current = completedAt;
+      lastCompletedSyncRef.current = latestSync;
+      await refreshSubscriberStats();
+    }
+  }, [currentPage, id, itemsPerPage, refreshSubscriberStats, token]);
+
+  useSyncPolling({
+    enabled: Boolean(token && id),
+    isSyncing: connection?.syncStatus === 'syncing',
+    onPoll: pollSyncStatus,
+  });
 
   const getSelectedListIds = (): string[] => {
     if (connection?.publicationIds && connection.publicationIds.length > 0) {
@@ -593,7 +644,9 @@ export default function EspDetailPage() {
     subscriberStats?.unsubscribed ??
     subscribers.data.filter((s) => s.status === 'unsubscribed').length;
   const totalCount = subscriberStats?.total ?? subscribers.total;
-  const lastSync = syncHistory[0];
+  const lastSync = syncHistory[0]?.completedAt
+    ? syncHistory[0]
+    : lastCompletedSyncRef.current;
   const selectedListIds = getSelectedListIds();
   const hasListChanges =
     draftSelectedListIds.length !== selectedListIds.length ||
@@ -698,13 +751,14 @@ export default function EspDetailPage() {
                   <span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          disabled={
-                            checkingSubscription ||
-                            isExporting ||
-                            hasActiveSubscription === false
-                          }
-                        >
+                      <Button
+                        disabled={
+                          checkingSubscription ||
+                          isExporting ||
+                          (hasActiveSubscription === false &&
+                            !user?.deleteRequestedAt)
+                        }
+                      >
                           {checkingSubscription ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -737,7 +791,7 @@ export default function EspDetailPage() {
                     </DropdownMenu>
                   </span>
                 </TooltipTrigger>
-                {hasActiveSubscription === false && (
+                {hasActiveSubscription === false && !user?.deleteRequestedAt && (
                   <TooltipContent>
                     <p>Active subscription required to export</p>
                   </TooltipContent>
