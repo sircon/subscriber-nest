@@ -5,6 +5,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 export const metadata: Metadata = {
   title: 'Audience Safe',
   description: 'Sync and export your subscriber list from your ESP',
+  appleWebApp: {
+    title: 'Audience Safe',
+  },
 };
 
 export default function RootLayout({
