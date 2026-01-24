@@ -59,7 +59,7 @@ function StripeOnboardingForm() {
       const counts = await Promise.all(
         connections.map((conn) =>
           espConnectionApi
-            .getSubscriberCount(conn.id, token, () => { })
+            .getSubscriberCount(conn.id, token, () => {})
             .then((res) => res.count)
             .catch(() => 0)
         )
@@ -198,21 +198,20 @@ function StripeOnboardingForm() {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSkip}
+                variant="outline"
+                disabled={loading || skipLoading}
+              >
+                {skipLoading ? 'Skipping...' : 'Skip for now'}
+              </Button>
               <Button
                 onClick={handleConnectStripe}
                 className="w-full"
                 disabled={loading || skipLoading}
               >
                 {loading ? 'Connecting...' : 'Connect Stripe'}
-              </Button>
-              <Button
-                onClick={handleSkip}
-                className="w-full"
-                variant="outline"
-                disabled={loading || skipLoading}
-              >
-                {skipLoading ? 'Skipping...' : 'Skip for now'}
               </Button>
             </div>
           </CardContent>

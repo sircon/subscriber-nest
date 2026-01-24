@@ -161,14 +161,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const hasActiveSubscription =
-      await this.billingSubscriptionService.hasActiveSubscription(userId);
-    if (!hasActiveSubscription) {
-      throw new BadRequestException(
-        'Active subscription required to complete onboarding'
-      );
-    }
-
     user.isOnboarded = true;
     await this.userRepository.save(user);
 
