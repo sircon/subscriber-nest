@@ -448,8 +448,9 @@ export async function GET(request: NextRequest) {
   });
 
   const pngData = await sharp(Buffer.from(svg)).png().toBuffer();
+  const responseBody = new Uint8Array(pngData);
 
-  return new Response(pngData, {
+  return new Response(responseBody, {
     headers: {
       'Content-Type': 'image/png',
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',
