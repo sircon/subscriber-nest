@@ -2,7 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Public routes that don't require authentication
-const publicRoutes = ['/login', '/verify-code'];
+const publicRoutes = [
+  '/',
+  '/login',
+  '/verify-code',
+  '/og',
+  '/manifest',
+  '/icon',
+  '/apple-icon',
+  '/favicon.ico',
+];
 
 // Onboarding routes that require authentication but not onboarding
 const onboardingRoutes = ['/onboarding'];
@@ -10,7 +19,7 @@ const onboardingRoutes = ['/onboarding'];
 // Protected routes that require authentication and onboarding
 const protectedRoutes = ['/dashboard'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get auth token and user from cookies
@@ -101,6 +110,8 @@ export function middleware(request: NextRequest) {
   // Allow access
   return NextResponse.next();
 }
+
+export default proxy;
 
 // Configure which routes the middleware should run on
 export const config = {
