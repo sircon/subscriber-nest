@@ -45,9 +45,13 @@ export function proxy(request: NextRequest) {
   const isOnboarded = user?.isOnboarded ?? false;
 
   // Check if current path is a public route
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  const isPublicRoute = publicRoutes.some((route) => {
+    if (route === '/') {
+      return pathname === '/';
+    }
+
+    return pathname.startsWith(route);
+  });
 
   // Check if current path is an onboarding route
   const isOnboardingRoute = onboardingRoutes.some((route) =>
